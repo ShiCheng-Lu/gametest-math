@@ -5,12 +5,13 @@
   "main": "src/index.js",
   "type": "module",
   "scripts": {
-    "test": "tsc -p . && node scripts/index.js"
+    "build": "npx tsc -p . && npx typedoc"
   },
   "author": "ShiCheng-Lu",
   "license": "MIT",
   "dependencies": {
-    "@types/mojang-minecraft": "^0.1.2"
+    "@types/mojang-minecraft": "^0.1.2",
+    "typedoc": "^0.22.10"
   },
   "devDependencies": {
     "typescript": "^4.5.3"
