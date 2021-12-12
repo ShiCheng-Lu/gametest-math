@@ -31,7 +31,7 @@ export class Vector3 {
     }
 
     /**
-     * dd the supplied vector to this one and store the result in dest if supplied
+     * Add the supplied vector to this one and store the result in dest if supplied
      * @param v
      * @param dest
      */
@@ -164,7 +164,7 @@ export class Vector3 {
         return this.applyMathFunc(Math.round, dest);
     }
     /**
-     * set all components to zero;
+     * Set all components to zero
      * @returns 
      */
     zero() {
@@ -178,9 +178,10 @@ export class Vector3 {
     normalize(length?: number, dest?: Vector3): Vector3;
     normalize(dest?: number): Vector3;
     normalize(length?: Vector3 | number, dest?: Vector3): Vector3 {
-        dest = dest ?? (length instanceof Vector3 ? length : null) ?? this;
-        const dist = this.length() / (length instanceof Vector3 ? 1 : length);
-        return this.applyMathFunc((x) => x / dist, dest);
+        dest = dest ?? (length instanceof Vector3 ? length : undefined) ?? this;
+        const targetLength = (typeof length === "number") ? length : 1;
+        const dist = this.length();
+        return this.applyMathFunc((x) => x * targetLength / dist, dest);
     }
     /**
      * Return a string representation of this vector.
@@ -208,7 +209,7 @@ export class Vector3 {
      * @returns 
      */
     lengthSquared(): number {
-        return this.x * this.x + this.y * this.y + this.z + this.z;
+        return this.x * this.x + this.y * this.y + this.z * this.z;
     }
     /**
      * Return the dot product of this vector and v.

@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "build": "build.sh",
-    "test": "node scripts/tests/index.js"
+    "test": "npm run build && node scripts/tests/index.js",
+    "doc": "npx typedoc"
   },
   "author": "ShiCheng-Lu",
   "license": "MIT",
