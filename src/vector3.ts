@@ -1,4 +1,4 @@
-// import { BlockLocation, Location } from "mojang-minecraft";
+import { BlockLocation, Location } from "mojang-minecraft";
 
 // Note: all operations mutate the Vector unless |dest| is supplied
 
@@ -6,12 +6,12 @@ export class Vector3 {
     x: number;
     y: number;
     z: number;
-    constructor(x?: number | Vector3, y?: number, z?: number) {
+    constructor(x?: number | Vector3 | Location | BlockLocation, y?: number, z?: number) {
         if (x === undefined) {
             this.x = 0;
             this.y = 0;
             this.z = 0;
-        } else if (x instanceof Vector3) { //  || x instanceof Location || x instanceof BlockLocation
+        } else if (x instanceof Vector3 || x instanceof Location || x instanceof BlockLocation) { 
             this.x = x.x;
             this.y = x.y;
             this.z = x.z;
@@ -21,6 +21,13 @@ export class Vector3 {
             this.z = z;
         }
         return this;
+    }
+
+    toLocation(): Location {
+        return new Location(this.x, this.y, this.z);
+    }
+    toBlockLocation(): BlockLocation {
+        return new BlockLocation(this.x, this.y, this.z);
     }
 
     /**
