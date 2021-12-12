@@ -17,14 +17,10 @@ export class Vector3 {
             this.x = x.x;
             this.y = x.y;
             this.z = x.z;
-
-            world.getDimension("overworld").runCommand(`say init with 1 arg ${JSON.stringify([x.x, x.y, x.z])}`);
-            world.getDimension("overworld").runCommand(`say init with 1 arg ${JSON.stringify(this)}`);
         } else {
             this.x = x;
             this.y = y;
             this.z = z;
-            world.getDimension("overworld").runCommand("say init mult arg");
         }
         return this;
     }
