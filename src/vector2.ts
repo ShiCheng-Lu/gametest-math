@@ -202,8 +202,8 @@ export class Vector2 {
      * @param x 
      * @param y  
      */
-    dot(x: number, y: number, z: number): number;
-    dot(x: number | Vector2, y?: number, z?: number): number {
+    dot(x: number, y: number): number;
+    dot(x: number | Vector2, y?: number): number {
         // set destination to dest or y if adding vectors or self if not defined
         const vector = (x instanceof Vector2);
         let res = 0;
@@ -233,9 +233,9 @@ export class Vector2 {
      * @param y  
      * @returns 
      */
-    distance(x: number, y: number, z: number): number
-    distance(x: number | Vector2, y?: number, z?: number): number {
-        return Math.sqrt((x instanceof Vector2) ? this.distanceSquared(x) : this.distanceSquared(x, y, z));
+    distance(x: number, y: number): number
+    distance(x: number | Vector2, y?: number): number {
+        return Math.sqrt((x instanceof Vector2) ? this.distanceSquared(x) : this.distanceSquared(x, y));
     }
     /**
      * Return the squared distance between this Vector and v.
@@ -249,8 +249,8 @@ export class Vector2 {
      * @param y  
      * @returns 
      */
-    distanceSquared(x: number, y: number, z: number): number;
-    distanceSquared(x: number | Vector2, y?: number, z?: number): number {
+    distanceSquared(x: number, y: number): number;
+    distanceSquared(x: number | Vector2, y?: number): number {
         const vector = (x instanceof Vector2);
 
         const dx = this.x - (vector ? x.x : x);

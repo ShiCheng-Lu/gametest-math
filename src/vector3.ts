@@ -11,7 +11,7 @@ export class Vector3 {
             this.x = 0;
             this.y = 0;
             this.z = 0;
-        } else if (x instanceof Vector3 || x instanceof Location || x instanceof BlockLocation) { 
+        } else if (x instanceof Vector3 || x instanceof Location || x instanceof BlockLocation) {
             this.x = x.x;
             this.y = x.y;
             this.z = x.z;
