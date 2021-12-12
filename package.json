@@ -1,0 +1,18 @@
+{
+  "name": "gametest-maths",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "test": "tsc -p . && node scripts/index.js"
+  },
+  "author": "ShiCheng-Lu",
+  "license": "MIT",
+  "dependencies": {
+    "@types/mojang-minecraft": "^0.1.2"
+  },
+  "devDependencies": {
+    "typescript": "^4.5.3"
+  }
+}
