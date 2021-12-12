@@ -1,24 +1,30 @@
-import { BlockLocation, Location } from "mojang-minecraft";
+import { BlockLocation, Location, world } from "mojang-minecraft";
 
 // Note: all operations mutate the Vector unless |dest| is supplied
+
+type rawVector = { x: number, y: number, z: number }
 
 export class Vector3 {
     x: number;
     y: number;
     z: number;
-    constructor(x?: number | Vector3 | Location | BlockLocation, y?: number, z?: number) {
+    constructor(x?: number | rawVector, y?: number, z?: number) {
         if (x === undefined) {
             this.x = 0;
             this.y = 0;
             this.z = 0;
-        } else if (x instanceof Vector3 || x instanceof Location || x instanceof BlockLocation) {
+        } else if (typeof x === "object") {
             this.x = x.x;
             this.y = x.y;
             this.z = x.z;
+
+            world.getDimension("overworld").runCommand(`say init with 1 arg ${JSON.stringify([x.x, x.y, x.z])}`);
+            world.getDimension("overworld").runCommand(`say init with 1 arg ${JSON.stringify(this)}`);
         } else {
             this.x = x;
             this.y = y;
             this.z = z;
+            world.getDimension("overworld").runCommand("say init mult arg");
         }
         return this;
     }
@@ -31,7 +37,7 @@ export class Vector3 {
     }
 
     /**
-     * Add the supplied vector to this one and store the result in dest if supplied
+     * dd the supplied vector to this one and store the result in dest if supplied
      * @param v
      * @param dest
      */
@@ -119,8 +125,8 @@ export class Vector3 {
     private applyMathFunc(func: (x: number) => number, dest?: Vector3): Vector3 {
         dest = dest ?? this;
         dest.x = func(this.x);
-        dest.x = func(this.y);
-        dest.x = func(this.z);
+        dest.y = func(this.y);
+        dest.z = func(this.z);
         return dest;
     }
     /**
@@ -164,7 +170,7 @@ export class Vector3 {
         return this.applyMathFunc(Math.round, dest);
     }
     /**
-     * Set all components to zero
+     * set all components to zero;
      * @returns 
      */
     zero() {
