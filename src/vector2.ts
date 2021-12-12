@@ -2,14 +2,16 @@
 
 // Note: all operations mutate the Vector unless |dest| is supplied
 
+type rawVector = { x: number, y: number }
+
 export class Vector2 {
     x: number;
     y: number;
-    constructor(x?: number | Vector2, y?: number) {
+    constructor(x?: number | rawVector, y?: number) {
         if (x === undefined) {
             this.x = 0;
             this.y = 0;
-        } else if (x instanceof Vector2) { //  || x instanceof Location || x instanceof BlockLocation
+        } else if (typeof x === "object") {
             this.x = x.x;
             this.y = x.y;
         } else {
