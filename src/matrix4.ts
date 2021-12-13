@@ -1,6 +1,7 @@
 import { Vector3 } from "./vector3.js";
+import { Vector4 } from "./vector4.js";
 
-type rawMatrix4 = {
+export type rawMatrix4 = {
     [key: number]: [number, number, number, number]
     0: [number, number, number, number],
     1: [number, number, number, number],
@@ -10,27 +11,34 @@ type rawMatrix4 = {
 
 export class Matrix4 {
     [key: number]: [number, number, number, number]
-    0: [number, number, number, number]
-    1: [number, number, number, number]
-    2: [number, number, number, number]
-    3: [number, number, number, number]
+    0: [number, number, number, number] = [1, 0, 0, 0]
+    1: [number, number, number, number] = [0, 1, 0, 0]
+    2: [number, number, number, number] = [0, 0, 1, 0]
+    3: [number, number, number, number] = [0, 0, 0, 1]
 
     constructor();
     constructor(m: rawMatrix4);
     constructor(v1: Vector3, v2: Vector3, v3: Vector3);
-    constructor(v1?: Vector3 | rawMatrix4, v2?: Vector3, v3?: Vector3) {
+    constructor(v1: Vector4, v2: Vector4, v3: Vector4, vv: Vector4)
+    constructor(v1?: Vector3 | Vector4 | rawMatrix4, v2?: Vector3 | Vector4, v3?: Vector3 | Vector4, v4?: Vector4) {
         if (v1 === undefined) {
-            return this.identity();
+            return this;
         } else if (v1 instanceof Vector3) {
-            return this.set([
-                [v1.x, v2.x, v3.x, 0],
-                [v1.y, v2.y, v3.y, 0],
-                [v1.z, v2.z, v3.z, 0],
-                [0, 0, 0, 0],
-            ])
+            this[0] = [v1.x, v2.x, v3.x, 0];
+            this[1] = [v1.y, v2.y, v3.y, 0];
+            this[2] = [v1.z, v2.z, v3.z, 0];
+            this[3] = [0, 0, 0, 0];
+        } else if (v1 instanceof Vector4) {
+            v2 = v2 as Vector4;
+            v3 = v3 as Vector4;
+            this[0] = [v1.x, v2.x, v3.x, v4.x];
+            this[1] = [v1.y, v2.y, v3.y, v4.y];
+            this[2] = [v1.z, v2.z, v3.z, v4.z];
+            this[3] = [v1.w, v2.w, v3.w, v4.w];
         } else {
             return this.set(v1);
         }
+        return this;
     };
 
     add(m: Matrix4, dest?: Matrix4) {

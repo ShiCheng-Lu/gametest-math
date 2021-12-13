@@ -1,4 +1,4 @@
-type rawMatrix3 = {
+export type rawMatrix3 = {
     [key: number]: [number, number, number]
     0: [number, number, number]
     1: [number, number, number]

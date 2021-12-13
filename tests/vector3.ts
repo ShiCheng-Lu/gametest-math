@@ -1,9 +1,6 @@
-import { Vector3 } from "../src/index.js";
+import { Vector3, Vector4 } from "../src/index.js";
 
 
-const i = new Vector3(1, 2, 3);
-i.add(0, 1, 2);
-i.mul(5);
-
+const i = new Vector4({x: 1, y: 1, z: 3});
 console.log(i)
 
