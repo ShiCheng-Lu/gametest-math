@@ -1,4 +1,4 @@
-import { Vector3 } from ".";
+import { Vector3 } from "./vector3.js";
 
 type rawMatrix4 = {
     [key: number]: [number, number, number, number]
@@ -70,10 +70,19 @@ export class Matrix4 {
         return dest.set(result);
     }
 
-    identity() {
+    identity(): Matrix4 {
         for (let x = 0; x < 4; ++x) {
             for (let y = 0; y < 4; ++y) {
                 this[x][y] = (x === y) ? 1 : 0;
+            }
+        }
+        return this;
+    }
+
+    zero(): Matrix4 {
+        for (let x = 0; x < 4; ++x) {
+            for (let y = 0; y < 4; ++y) {
+                this[x][y] = 0;
             }
         }
         return this;
@@ -270,6 +279,37 @@ export class Matrix4 {
     get(dest?: Matrix4): Matrix4 {
         dest = dest ?? new Matrix4();
         return dest.set(this);
+    }
+
+    transpose(dest?: Matrix4): Matrix4 {
+        dest = dest ?? this;
+        const m00m11 = this[0][0] * this[1][1];
+        const m01m10 = this[0][1] * this[1][0];
+        const m02m10 = this[0][2] * this[1][0];
+        const m00m12 = this[0][0] * this[1][2];
+        const m01m12 = this[0][1] * this[1][2];
+        const m02m11 = this[0][2] * this[1][1];
+        const det = (m00m11 - m01m10) * this[2][2] + (m02m10 - m00m12) * this[2][1] + (m01m12 - m02m11) * this[2][0];
+        const s = 1.0 / det;
+        /* Invert and transpose in one go */
+        return dest.set([
+            [
+                (this[1][1] * this[2][2] - this[2][1] * this[1][2]) * s,
+                (this[2][0] * this[1][2] - this[1][0] * this[2][2]) * s,
+                (this[1][0] * this[2][1] - this[2][0] * this[1][1]) * s,
+                0,
+            ], [
+                (this[2][1] * this[0][2] - this[0][1] * this[2][2]) * s,
+                (this[0][0] * this[2][2] - this[2][0] * this[0][2]) * s,
+                (this[2][0] * this[0][1] - this[0][0] * this[2][1]) * s,
+                0,
+            ], [
+                (m01m12 - m02m11) * s,
+                (m02m10 - m00m12) * s,
+                (m00m11 - m01m10) * s,
+                0
+            ], [0, 0, 0, 0],
+        ]);
     }
 }
 

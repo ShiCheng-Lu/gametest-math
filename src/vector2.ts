@@ -2,7 +2,7 @@
 
 // Note: all operations mutate the Vector unless |dest| is supplied
 
-type rawVector2 = { x: number, y: number }
+export type rawVector2 = { x: number, y: number }
 
 export class Vector2 {
     x: number;
