@@ -2,12 +2,12 @@
 
 // Note: all operations mutate the Vector unless |dest| is supplied
 
-type rawVector = { x: number, y: number }
+type rawVector2 = { x: number, y: number }
 
 export class Vector2 {
     x: number;
     y: number;
-    constructor(x?: number | rawVector, y?: number) {
+    constructor(x?: number | rawVector2, y?: number) {
         if (x === undefined) {
             this.x = 0;
             this.y = 0;
@@ -165,6 +165,15 @@ export class Vector2 {
         dest = dest ?? (length instanceof Vector2 ? length : null) ?? this;
         const dist = this.length() / (length instanceof Vector2 ? 1 : length);
         return this.applyMathFunc((x) => x / dist, dest);
+    }
+    /**
+     * Truncate of the individual components of this and store the result in dest if supplied
+     * Round towards 0 and retain the integer part
+     * @param dest 
+     * @returns 
+     */
+    trunc(dest?: Vector2): Vector2 {
+        return this.applyMathFunc(Math.trunc, dest);
     }
     /**
      * Return a string representation of this vector.

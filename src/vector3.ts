@@ -2,13 +2,17 @@ import { BlockLocation, Location, world } from "mojang-minecraft";
 
 // Note: all operations mutate the Vector unless |dest| is supplied
 
-type rawVector = { x: number, y: number, z: number }
+type rawVector3 = { x: number, y: number, z: number }
 
 export class Vector3 {
     x: number;
     y: number;
     z: number;
-    constructor(x?: number | rawVector, y?: number, z?: number) {
+
+    constructor();
+    constructor(v: rawVector3)
+    constructor(x: number, y: number, z: number);
+    constructor(x?: number | rawVector3, y?: number, z?: number) {
         if (x === undefined) {
             this.x = 0;
             this.y = 0;
@@ -117,7 +121,6 @@ export class Vector3 {
     }
 
 
-
     private applyMathFunc(func: (x: number) => number, dest?: Vector3): Vector3 {
         dest = dest ?? this;
         dest.x = func(this.x);
@@ -171,6 +174,15 @@ export class Vector3 {
      */
     zero() {
         return this.applyMathFunc(() => 0);
+    }
+    /**
+     * Truncate of the individual components of this and store the result in dest if supplied
+     * Round towards 0 and retain the integer part
+     * @param dest 
+     * @returns 
+     */
+    trunc(dest?: Vector3): Vector3 {
+        return this.applyMathFunc(Math.trunc, dest);
     }
     /**
      * Normalize this vector and store the result in dest if supplied
@@ -317,5 +329,16 @@ export class Vector3 {
         dest.y = fy;
         dest.z = fz;
         return dest;
+    }
+
+    set(v: Vector3): Vector3;
+    set(x: number, y: number, z: number): Vector3;
+    set(x: number | Vector3, y?: number, z?: number): Vector3 {
+        const vector = (x instanceof Vector3);
+
+        this.x = (vector ? x.x : x);
+        this.y = (vector ? x.y : y);
+        this.z = (vector ? x.z : z);
+        return this;
     }
 }
