@@ -176,6 +176,32 @@ export class Vector2 {
         return this.applyMathFunc(Math.trunc, dest);
     }
     /**
+     * Set the components of this vector to be the component-wise minimum of this and the other vector
+     * and store the result in dest is defined
+     * @param v 
+     * @param dest 
+     * @returns 
+     */
+     max(v: Vector2, dest?: Vector2): Vector2 {
+        dest = dest ?? this;
+        dest.x = Math.max(this.x, v.x);
+        dest.y = Math.max(this.y, v.y);
+        return dest;
+    }
+    /**
+     * Set the components of this vector to be the component-wise maximum of this and the other vector
+     * and store the result in dest is defined
+     * @param v 
+     * @param dest 
+     * @returns 
+     */
+    min(v: Vector2, dest?: Vector2): Vector2 {
+        dest = dest ?? this;
+        dest.x = Math.min(this.x, v.x);
+        dest.y = Math.min(this.y, v.y);
+        return dest;
+    }
+    /**
      * Return a string representation of this vector.
      * @returns 
      */

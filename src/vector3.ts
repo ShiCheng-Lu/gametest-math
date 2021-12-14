@@ -134,6 +134,39 @@ export class Vector3 {
         dest.z = this.z * (vector ? x.z : scale ? x : z);
         return dest;
     }
+    /**
+     * Multiply the given matrix mat with this Vector4f, perform perspective division and store the (x, y, z) result in dest if supplied
+     * @param mat 
+     * @param dest 
+     * @returns 
+     */
+    mulProject(mat: Matrix4, dest?: Vector3) {
+        dest = dest ?? this;
+        const invW = 1.0 / (mat[0][3] * this.x + mat[1][3] * this.y + mat[2][3] * this.z + mat[3][3]);
+        const rx = (mat[0][0] * this.x + mat[1][0] * this.y + mat[2][0] * this.z + mat[3][0]) * invW;
+        const ry = (mat[0][1] * this.x + mat[1][1] * this.y + mat[2][1] * this.z + mat[3][1]) * invW;
+        const rz = (mat[0][2] * this.x + mat[1][2] * this.y + mat[2][2] * this.z + mat[3][2]) * invW;
+        dest.x = rx;
+        dest.y = ry;
+        dest.z = rz;
+        return dest;
+    }
+    /**
+     * 
+     * @param mat 
+     * @param dest 
+     * @returns 
+     */
+    mulPosition(mat: Matrix4, dest?: Vector3) {
+        dest = dest ?? this;
+        const rx = (mat[0][0] * this.x + mat[1][0] * this.y + mat[2][0] * this.z + mat[3][0]);
+        const ry = (mat[0][1] * this.x + mat[1][1] * this.y + mat[2][1] * this.z + mat[3][1]);
+        const rz = (mat[0][2] * this.x + mat[1][2] * this.y + mat[2][2] * this.z + mat[3][2]);
+        dest.x = rx;
+        dest.y = ry;
+        dest.z = rz;
+        return dest;
+    }
 
 
     private applyMathFunc(func: (x: number) => number, dest?: Vector3): Vector3 {
@@ -211,6 +244,34 @@ export class Vector3 {
         const targetLength = (typeof length === "number") ? length : 1;
         const dist = this.length();
         return this.applyMathFunc((x) => x * targetLength / dist, dest);
+    }
+    /**
+     * Set the components of this vector to be the component-wise minimum of this and the other vector
+     * and store the result in dest is defined
+     * @param v 
+     * @param dest 
+     * @returns 
+     */
+    max(v: Vector3, dest?: Vector3): Vector3 {
+        dest = dest ?? this;
+        dest.x = Math.max(this.x, v.x);
+        dest.y = Math.max(this.y, v.y);
+        dest.z = Math.max(this.z, v.z);
+        return dest;
+    }
+    /**
+     * Set the components of this vector to be the component-wise maximum of this and the other vector
+     * and store the result in dest is defined
+     * @param v 
+     * @param dest 
+     * @returns 
+     */
+    min(v: Vector3, dest?: Vector3): Vector3 {
+        dest = dest ?? this;
+        dest.x = Math.min(this.x, v.x);
+        dest.y = Math.min(this.y, v.y);
+        dest.z = Math.min(this.z, v.z);
+        return dest;
     }
     /**
      * Return a string representation of this vector.

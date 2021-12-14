@@ -224,6 +224,36 @@ export class Vector4 {
         return this.applyMathFunc((x) => x * targetLength / dist, dest);
     }
     /**
+     * Set the components of this vector to be the component-wise minimum of this and the other vector
+     * and store the result in dest is defined
+     * @param v 
+     * @param dest 
+     * @returns 
+     */
+    max(v: Vector4, dest?: Vector4): Vector4 {
+        dest = dest ?? this;
+        dest.x = Math.max(this.x, v.x);
+        dest.y = Math.max(this.y, v.y);
+        dest.z = Math.max(this.z, v.z);
+        dest.w = Math.max(this.w, v.w);
+        return dest;
+    }
+    /**
+     * Set the components of this vector to be the component-wise maximum of this and the other vector
+     * and store the result in dest is defined
+     * @param v 
+     * @param dest 
+     * @returns 
+     */
+    min(v: Vector4, dest?: Vector4): Vector4 {
+        dest = dest ?? this;
+        dest.x = Math.min(this.x, v.x);
+        dest.y = Math.min(this.y, v.y);
+        dest.z = Math.min(this.z, v.z);
+        dest.w = Math.min(this.w, v.w);
+        return dest;
+    }
+    /**
      * Return a string representation of this vector.
      * @returns 
      */
