@@ -1,5 +1,5 @@
 import { BlockLocation, Location } from "mojang-minecraft";
-import { Matrix4, rawVector3 } from "./index.js";
+import { Matrix4, Vector3Like } from "./index.js";
 // Note: all operations mutate the Vector unless |dest| is supplied
 
 export type rawVector4 = { x: number, y: number, z: number, w: number }
@@ -12,9 +12,9 @@ export class Vector4 {
 
     constructor();
     constructor(v: rawVector4);
-    constructor(v: rawVector3);
+    constructor(v: Vector3Like);
     constructor(x: number, y: number, z: number, w: number);
-    constructor(x?: number | rawVector3 | rawVector4, y?: number, z?: number, w?: number) {
+    constructor(x?: number | Vector3Like | rawVector4, y?: number, z?: number, w?: number) {
         if (x === undefined) {
             this.x = 0;
             this.y = 0;

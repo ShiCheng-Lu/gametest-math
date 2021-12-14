@@ -25,7 +25,7 @@
 import { BlockLocation, Location } from "mojang-minecraft";
 import { Matrix3, Matrix4, Vector2 } from "./index.js";
 
-export type IVector3 = {
+export type Vector3Like = {
     x: number,
     y: number,
     z: number,
@@ -60,7 +60,7 @@ export class Vector3 {
      * 
      * @param v the {@link Vector3} to copy the values from
      */
-    constructor(v: IVector3);
+    constructor(v: Vector3Like);
     /**
      * Create a new {@link Vector3} with the first two components from the
      * given `v` and the given `z`
@@ -77,7 +77,7 @@ export class Vector3 {
      * @param z the value of z
      */
     constructor(x: number, y: number, z: number);
-    constructor(x?: number | Vector2 | IVector3, y?: number, z?: number) {
+    constructor(x?: number | Vector2 | Vector3Like, y?: number, z?: number) {
         if (x === undefined) {              // ()
             z = 0, y = 0, x = 0;
         } else if (x instanceof Vector2) {  // (v: Vector2, z: number)
