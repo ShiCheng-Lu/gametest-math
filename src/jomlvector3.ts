@@ -23,7 +23,9 @@
  */
 
 import { BlockLocation, Location } from "mojang-minecraft";
-import { Matrix3, Matrix4, Vector2 } from "./index.js";
+import { Matrix3 } from "./matrix3.js";
+import { Matrix4 } from "./matrix4.js";
+import { Vector2 } from "./vector2.js";
 
 export type Vector3Like = {
     x: number,
@@ -308,7 +310,7 @@ export class Vector3 {
             w = 1;
         }
         const x = this.x, y = this.y, z = this.z;
-        const invW = 1.0 / mat[0][3] * x + mat[1][3] * y + mat[2][3] * z + mat[3][3] * w;
+        const invW = 1.0 / (mat[0][3] * x + mat[1][3] * y + mat[2][3] * z + mat[3][3] * w);
         dest.x = (mat[0][0] * x + mat[1][0] * y + mat[2][0] * z + mat[3][0]) * invW;
         dest.y = (mat[0][1] * x + mat[1][1] * y + mat[2][1] * z + mat[3][1]) * invW;
         dest.z = (mat[0][2] * x + mat[1][2] * y + mat[2][2] * z + mat[3][2]) * invW;
@@ -543,15 +545,13 @@ export class Vector3 {
      */
     public rotateAxis(angle: number, aX: number, aY: number, aZ: number, dest?: Vector3) {
         dest = dest ?? this;
-        if (aY == 0.0 && aZ == 0.0 && Math.abs(aX) === 1)
+        if (aY === 0.0 && aZ === 0.0 && Math.abs(aX) === 1)
             return this.rotateX(aX * angle, dest);
-        else if (aX == 0.0 && aZ == 0.0 && Math.abs(aY) === 1)
+        else if (aX === 0.0 && aZ === 0.0 && Math.abs(aY) === 1)
             return this.rotateY(aY * angle, dest);
-        else if (aX == 0.0 && aY == 0.0 && Math.abs(aZ) === 1)
+        else if (aX === 0.0 && aY === 0.0 && Math.abs(aZ) === 1)
             return this.rotateZ(aZ * angle, dest);
-        return this.rotateAxisInternal(angle, aX, aY, aZ, dest);
-    }
-    private rotateAxisInternal(angle: number, aX: number, aY: number, aZ: number, dest: Vector3) {
+        
         const hangle = angle * 0.5;
         const sinAngle = Math.sin(hangle);
         const qx = aX * sinAngle, qy = aY * sinAngle, qz = aZ * sinAngle;
@@ -1152,6 +1152,11 @@ export class Vector3 {
         return this.applyFunction(Math.round, dest);
     }
 
+    /**
+     * Round each compoent of the vector to the nearest integer towards 0
+     * 
+     * @returns 
+     */
     public trunc(dest?: Vector3) {
         return this.applyFunction(Math.trunc, dest);
     }

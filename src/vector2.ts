@@ -2,7 +2,10 @@
 
 // Note: all operations mutate the Vector unless |dest| is supplied
 
+import { add } from "./add.js"
+
 export type rawVector2 = { x: number, y: number }
+
 
 export class Vector2 {
     x: number;
@@ -21,8 +24,9 @@ export class Vector2 {
         return this;
     }
 
+
     /**
-     * dd the supplied vector to this one and store the result in dest if supplied
+     * Add the supplied vector to this one and store the result in dest if supplied
      * @param v
      * @param dest
      */
@@ -37,9 +41,9 @@ export class Vector2 {
     add(x: number | Vector2, y?: number | Vector2, dest?: Vector2): Vector2 {
         // set destination to dest or y if adding vectors or self if not defined
         dest = dest ?? ((y instanceof Vector2) ? y : null) ?? this;
-
+    
         const vector = (x instanceof Vector2);
-
+    
         dest.x = this.x + (vector ? x.x : x);
         dest.y = this.y + (vector ? x.y : y as number);
         return dest;
@@ -182,7 +186,7 @@ export class Vector2 {
      * @param dest 
      * @returns 
      */
-     max(v: Vector2, dest?: Vector2): Vector2 {
+    max(v: Vector2, dest?: Vector2): Vector2 {
         dest = dest ?? this;
         dest.x = Math.max(this.x, v.x);
         dest.y = Math.max(this.y, v.y);
@@ -295,3 +299,7 @@ export class Vector2 {
         return dx * dx + dy * dy;
     }
 }
+
+
+const i = new Vector2();
+
