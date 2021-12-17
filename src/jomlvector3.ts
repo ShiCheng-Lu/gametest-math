@@ -24,7 +24,7 @@
 
 import { BlockLocation, Location } from "mojang-minecraft";
 import { Matrix3 } from "./matrix3.js";
-import { Matrix4 } from "./matrix4.js";
+import { Matrix4 } from "./jomlmatrix4.js";
 import { Vector2 } from "./vector2.js";
 
 export type Vector3Like = {

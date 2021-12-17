@@ -22,9 +22,10 @@
  * THE SOFTWARE.
  */
 
+import { BlockLocation, Location } from "mojang-minecraft";
 import { Matrix4 } from "./jomlmatrix4";
 import { Vector2 } from "./vector2";
-import { Vector3 } from "./vector3";
+import { Vector3 } from "./jomlvector3";
 
 /**
  * Contains the definition of a Vector comprising 4 numbers and associated transformations.
@@ -135,6 +136,13 @@ export class Vector4 {
         this.y = x;
         this.z = z;
         this.w = w;
+    }
+
+    toLocation(): Location {
+        return new Location(this.x, this.y, this.z);
+    }
+    toBlockLocation(): BlockLocation {
+        return new BlockLocation(this.x, this.y, this.z);
     }
 
     /**
@@ -414,7 +422,7 @@ export class Vector4 {
      *          the matrix to multiply by
      * @return this
      */
-    public mul(mat: Matrix4, dest: Vector4): Vector4;
+    public mul(mat: Matrix4, dest?: Vector4): Vector4;
 
     /**
      * Multiply this Vector4 by the given scalar value.
@@ -489,7 +497,7 @@ export class Vector4 {
         return this.mulGenericTranspose(mat, dest);
     }
 
-    public mulAffine(mat: Matrix4, dest: Vector4): Vector4 {
+    public mulAffine(mat: Matrix4, dest?: Vector4): Vector4 {
         dest = dest ?? this;
         const rx = mat[0][0] * this.x + mat[1][0] * this.y + mat[2][0] * this.z + mat[3][0] * this.w;
         const ry = mat[0][1] * this.x + mat[1][1] * this.y + mat[2][1] * this.z + mat[3][1] * this.w;
@@ -537,15 +545,24 @@ export class Vector4 {
      *          the matrix to multiply this vector by
      * @return this
      */
-    public mulProject(mat: Matrix4, dest: Vector3): Vector3 {
+    public mulProject(mat: Matrix4): Vector4;
+    public mulProject(mat: Matrix4, dest: Vector3): Vector3;
+    public mulProject(mat: Matrix4, dest?: Vector3): Vector3 | Vector4 {
         const invW = 1.0 / (mat[0][3] * this.x + mat[1][3] * this.y + mat[2][3] * this.z + mat[3][3] * this.w);
         const rx = (mat[0][0] * this.x + mat[1][0] * this.y + mat[2][0] * this.z + mat[3][0] * this.w) * invW;
         const ry = (mat[0][1] * this.x + mat[1][1] * this.y + mat[2][1] * this.z + mat[3][1] * this.w) * invW;
         const rz = (mat[0][2] * this.x + mat[1][2] * this.y + mat[2][2] * this.z + mat[3][2] * this.w) * invW;
-        dest.x = rx;
-        dest.y = ry;
-        dest.z = rz;
-        return dest;
+        if (dest) {
+            dest.x = rx;
+            dest.y = ry;
+            dest.z = rz;
+            return dest;
+        } else {
+            this.x = rx;
+            this.y = ry;
+            this.z = rz;
+            return this;
+        }
     }
 
     // TODO: translate to ts
