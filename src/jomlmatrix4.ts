@@ -1789,11 +1789,10 @@ export class Matrix4 {
         return dest.set(x, y, z).mulProject(this, w, dest);
     }
 
-    public transformProject(x: number, y: number, z: number, w: number, dest?: Vector3 | Vector4): Vector3 {
-        dest = dest ?? new Vector3();
-        if (dest instanceof Vector3) {
-            return dest.mulProject(this);
-        }
+    public transformProject(x: number, y: number, z: number, w: number, dest?: Vector3 | Vector4): Vector3 | Vector4 {
+        dest = dest ?? new Vector4();
+
+        return dest;
     }
 
     public transformPosition(v: Vector3, dest?: Vector3): Vector3
@@ -2811,7 +2810,7 @@ export class Matrix4 {
      *          will hold the result
      * @return dest
      */
-    public translateLocal(offset: Vector3, dest: Matrix4);
+    public translateLocal(offset: Vector3, dest: Matrix4): Matrix4;
 
     /**
      * Pre-multiply a translation to this matrix by translating by the given number of
@@ -2837,16 +2836,18 @@ export class Matrix4 {
      *          will hold the result
      * @return dest
      */
-    public translateLocal(x: number, y: number, z: number, dest: Matrix4);
-    public translateLocal(x: number | Vector3, y?: number | Matrix4, z?: number, dest?: Matrix4) {
+    public translateLocal(x: number, y: number, z: number, dest: Matrix4): Matrix4;
+    public translateLocal(x: number | Vector3, y?: number | Matrix4, z?: number, dest?: Matrix4): Matrix4 {
         dest = dest ?? (y instanceof Matrix4 ? y : this);
         if (x instanceof Vector3) {
             z = x.z, y = x.y, x = x.x;
+        } else {
+            y = y as number;
         }
 
         if (this.PROPERTY_IDENTITY)
-            return dest.translation(x, y as number, z);
-        return this.translateLocalGeneric(x, y as number, z, dest);
+            return dest.translation(x, y, z);
+        return this.translateLocalGeneric(x, y, z, dest);
     }
     private translateLocalGeneric(x: number, y: number, z: number, dest: Matrix4) {
         return dest.set(
@@ -3218,9 +3219,7 @@ export class Matrix4 {
      *            the Euler angles
      * @return this
      */
-    public rotateXYZ(angles: Vector3) {
-        return rotateXYZ(angles.x, angles.y, angles.z);
-    }
+    public rotateXYZ(angles: Vector3, dest?: Matrix4): Matrix4;
 
     /**
      * Apply rotation of <code>angleX</code> radians about the X axis, followed by a rotation of <code>angleY</code> radians about the Y axis and
@@ -3245,8 +3244,14 @@ export class Matrix4 {
      *            the angle to rotate about Z
      * @return this
      */
-    public rotateXYZ(angleX: number, angleY: number, angleZ: number, dest?: Matrix4): Matrix4 {
+    public rotateXYZ(angleX: number, angleY: number, angleZ: number, dest?: Matrix4): Matrix4;
+    public rotateXYZ(angleX: number | Vector3, angleY?: number | Matrix4, angleZ?: number, dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
+        if (angleX instanceof Vector3) {
+            angleZ = angleX.z, angleY = angleX.y, angleX = angleX.x;
+        } else {
+            angleY = angleY as number;
+        }
         if (this.PROPERTY_IDENTITY)
             return dest.rotationXYZ(angleX, angleY, angleZ);
         else if (this.PROPERTY_TRANSLATION)
@@ -3393,10 +3398,7 @@ export class Matrix4 {
      *            the Euler angles
      * @return this
      */
-    public rotateZYX(angles: Vector3): Matrix4 {
-        return rotateZYX(angles.z, angles.y, angles.x);
-    }
-
+    public rotateZYX(angles: Vector3, dest?: Matrix4): Matrix4;
     /**
      * Apply rotation of <code>angleZ</code> radians about the Z axis, followed by a rotation of <code>angleY</code> radians about the Y axis and
      * followed by a rotation of <code>angleX</code> radians about the X axis.
@@ -3420,8 +3422,14 @@ export class Matrix4 {
      *            the angle to rotate about X
      * @return this
      */
-    public rotateZYX(angleZ: number, angleY: number, angleX: number, dest?: Matrix4): Matrix4 {
-        dest = dest ?? this;
+    public rotateZYX(angleZ: number, angleY: number, angleX: number, dest?: Matrix4): Matrix4;
+    public rotateZYX(angleZ: number | Vector3, angleY?: number | Matrix4, angleX?: number, dest?: Matrix4): Matrix4 {
+        dest = dest ?? (angleY instanceof Matrix4 ? angleY : this);
+        if (angleZ instanceof Vector3) {
+            angleX = angleZ.x, angleY = angleZ.y, angleZ = angleZ.z;
+        } else {
+            angleY = angleY as number;
+        }
         if (this.PROPERTY_IDENTITY)
             return dest.rotationZYX(angleZ, angleY, angleX);
         else if (this.PROPERTY_TRANSLATION)
@@ -3559,9 +3567,7 @@ export class Matrix4 {
      *            the Euler angles
      * @return this
      */
-    public rotateYXZ(angles: Vector3): Matrix4 {
-        return rotateYXZ(angles.y, angles.x, angles.z);
-    }
+    public rotateYXZ(angles: Vector3, dest?: Matrix4): Matrix4;
 
     /**
      * Apply rotation of <code>angleY</code> radians about the Y axis, followed by a rotation of <code>angleX</code> radians about the X axis and
@@ -3586,8 +3592,14 @@ export class Matrix4 {
      *            the angle to rotate about Z
      * @return this
      */
-    public rotateYXZ(angleY: number, angleX: number, angleZ: number, dest?: Matrix4): Matrix4 {
-        dest = dest ?? this;
+    public rotateYXZ(angleY: number, angleX: number, angleZ: number, dest?: Matrix4): Matrix4;
+    public rotateYXZ(angleY: number | Vector3, angleX?: number | Matrix4, angleZ?: number, dest?: Matrix4): Matrix4 {
+        dest = dest ?? (angleX instanceof Matrix4 ? angleX : this);
+        if (angleY instanceof Vector3) {
+            angleZ = angleY.z, angleX = angleY.x, angleY = angleY.y;
+        } else {
+            angleX = angleX as number;
+        }
         if (this.PROPERTY_IDENTITY)
             return dest.rotationYXZ(angleY, angleX, angleZ);
         else if (this.PROPERTY_TRANSLATION)
@@ -3663,11 +3675,8 @@ export class Matrix4 {
      *            the angle to rotate about Z
      * @return this
      */
-    public rotateAffineYXZ(angleY: number, angleX: number, angleZ: number): Matrix4 {
-        return rotateAffineYXZ(angleY, angleX, angleZ, this);
-    }
-
-    public rotateAffineYXZ(angleY: number, angleX: number, angleZ: number, dest: Matrix4): Matrix4 {
+    public rotateAffineYXZ(angleY: number, angleX: number, angleZ: number, dest?: Matrix4): Matrix4 {
+        dest = dest ?? this;
         const sinX = Math.sin(angleX);
         const cosX = Math.cos(angleX);
         const sinY = Math.sin(angleY);
@@ -3685,7 +3694,7 @@ export class Matrix4 {
         const nm10 = this[1][0] * cosX + nm20 * sinX;
         const nm11 = this[1][1] * cosX + nm21 * sinX;
         const nm12 = this[1][2] * cosX + nm22 * sinX;
-        dest.set(
+        return dest.set(
             nm00 * cosZ + nm10 * sinZ,
             nm01 * cosZ + nm11 * sinZ,
             nm02 * cosZ + nm12 * sinZ,
@@ -3976,7 +3985,7 @@ export class Matrix4 {
      *          the scaling factors
      * @return this
      */
-    public translationRotateScaleInvert(translation: Vector3, quat: Quaternion, scale: number);
+    public translationRotateScaleInvert(translation: Vector3, quat: Quaternion, scale: number): Matrix4;
     public translationRotateScaleInvert(
         tx: number | Vector3, ty: number | Quaternion, tz: number | Vector3,
         qx?: number, qy?: number, qz?: number, qw?: number,
@@ -4035,6 +4044,35 @@ export class Matrix4 {
         return this;
     }
 
+    /**
+     * Set <code>this</code> matrix to <code>T * R * S * M</code>, where <code>T</code> is the given <code>translation</code>,
+     * <code>R</code> is a rotation - and possibly scaling - transformation specified by the given quaternion, <code>S</code> is a scaling transformation
+     * which scales the axes by <code>scale</code> and <code>M</code> is an {@link #isAffine() affine} matrix.
+     * <p>
+     * When transforming a vector by the resulting matrix the transformation described by <code>M</code> will be applied first, then the scaling, then rotation and
+     * at last the translation.
+     * <p>
+     * When used with a right-handed coordinate system, the produced rotation will rotate a vector 
+     * counter-clockwise around the rotation axis, when viewing along the negative axis direction towards the origin.
+     * When used with a left-handed coordinate system, the rotation is clockwise.
+     * <p>
+     * This method is equivalent to calling: <code>translation(translation).rotate(quat).scale(scale).mulAffine(m)</code>
+     * 
+     * @see #translation(Vector3fc)
+     * @see #rotate(Quaterniondc)
+     * @see #mulAffine(Matrix4dc)
+     * 
+     * @param translation
+     *          the translation
+     * @param quat
+     *          the quaternion representing a rotation
+     * @param scale
+     *          the scaling factors
+     * @param m
+     *          the {@link #isAffine() affine} matrix to multiply by
+     * @return this
+     */
+    public translationRotateScaleMulAffine(translation: Vector3, quat: Quaternion, scale: Vector3, m: Matrix4): Matrix4;
 
     /**
      * Set <code>this</code> matrix to <code>T * R * S * M</code>, where <code>T</code> is a translation by the given <code>(tx, ty, tz)</code>,
@@ -4079,10 +4117,32 @@ export class Matrix4 {
      *          the {@link #isAffine() affine} matrix to multiply by
      * @return this
      */
-    public translationRotateScaleMulAffine(tx: number, ty: number, tz: number,
+    public translationRotateScaleMulAffine(
+        tx: number, ty: number, tz: number,
         qx: number, qy: number, qz: number, qw: number,
         sx: number, sy: number, sz: number,
-        m: Matrix4): Matrix4 {
+        m: Matrix4): Matrix4;
+    public translationRotateScaleMulAffine(
+        tx: number | Vector3, ty: number | Quaternion, tz: number | Vector3,
+        qx: number | Matrix4, qy?: number, qz?: number, qw?: number,
+        sx?: number, sy?: number, sz?: number,
+        m?: Matrix4): Matrix4 {
+        if (qx instanceof Matrix4) {
+            m = qx;
+            qx = 0;
+        }
+        if (tz instanceof Vector3) {
+            sz = tz.z, sy = tz.y, sx = tz.x;
+            tz = 0;
+        }
+        if (ty instanceof Quaternion) {
+            qw = ty.w, qz = ty.z, qy = ty.y, qx = ty.x;
+            ty = 0;
+        }
+        if (tx instanceof Vector3) {
+            tz = tx.z, ty = tx.y, tx = tx.x;
+        }
+
         const w2 = qw * qw;
         const x2 = qx * qx;
         const y2 = qy * qy;
@@ -4130,38 +4190,6 @@ export class Matrix4 {
     }
 
     /**
-     * Set <code>this</code> matrix to <code>T * R * S * M</code>, where <code>T</code> is the given <code>translation</code>,
-     * <code>R</code> is a rotation - and possibly scaling - transformation specified by the given quaternion, <code>S</code> is a scaling transformation
-     * which scales the axes by <code>scale</code> and <code>M</code> is an {@link #isAffine() affine} matrix.
-     * <p>
-     * When transforming a vector by the resulting matrix the transformation described by <code>M</code> will be applied first, then the scaling, then rotation and
-     * at last the translation.
-     * <p>
-     * When used with a right-handed coordinate system, the produced rotation will rotate a vector 
-     * counter-clockwise around the rotation axis, when viewing along the negative axis direction towards the origin.
-     * When used with a left-handed coordinate system, the rotation is clockwise.
-     * <p>
-     * This method is equivalent to calling: <code>translation(translation).rotate(quat).scale(scale).mulAffine(m)</code>
-     * 
-     * @see #translation(Vector3fc)
-     * @see #rotate(Quaterniondc)
-     * @see #mulAffine(Matrix4dc)
-     * 
-     * @param translation
-     *          the translation
-     * @param quat
-     *          the quaternion representing a rotation
-     * @param scale
-     *          the scaling factors
-     * @param m
-     *          the {@link #isAffine() affine} matrix to multiply by
-     * @return this
-     */
-    public translationRotateScaleMulAffine(translation: Vector3, quat: Quaternion, scale: Vector3, m: Matrix4): Matrix4 {
-        return translationRotateScaleMulAffine(translation.x(), translation.y(), translation.z(), quat.x(), quat.y(), quat.z(), quat.w(), scale.x(), scale.y(), scale.z(), m);
-    }
-
-    /**
      * Set <code>this</code> matrix to <code>T * R</code>, where <code>T</code> is a translation by the given <code>(tx, ty, tz)</code> and
      * <code>R</code> is a rotation - and possibly scaling - transformation specified by the quaternion <code>(qx, qy, qz, qw)</code>.
      * <p>
@@ -4192,7 +4220,38 @@ export class Matrix4 {
      *          the scalar part of the quaternion
      * @return this
      */
-    public translationRotate(tx: number, ty: number, tz: number, qx: number, qy: number, qz: number, qw: number): Matrix4 {
+    public translationRotate(tx: number, ty: number, tz: number, qx: number, qy: number, qz: number, qw: number): Matrix4;
+
+    /**
+     * Set <code>this</code> matrix to <code>T * R</code>, where <code>T</code> is a translation by the given <code>(tx, ty, tz)</code> and
+     * <code>R</code> is a rotation - and possibly scaling - transformation specified by the given quaternion.
+     * <p>
+     * When transforming a vector by the resulting matrix the rotation - and possibly scaling - transformation will be applied first and then the translation.
+     * <p>
+     * When used with a right-handed coordinate system, the produced rotation will rotate a vector 
+     * counter-clockwise around the rotation axis, when viewing along the negative axis direction towards the origin.
+     * When used with a left-handed coordinate system, the rotation is clockwise.
+     * <p>
+     * This method is equivalent to calling: <code>translation(tx, ty, tz).rotate(quat)</code>
+     * 
+     * @see #translation(double, double, double)
+     * @see #rotate(Quaterniondc)
+     * 
+     * @param tx
+     *          the number of units by which to translate the x-component
+     * @param ty
+     *          the number of units by which to translate the y-component
+     * @param tz
+     *          the number of units by which to translate the z-component
+     * @param quat
+     *          the quaternion representing a rotation
+     * @return this
+     */
+    public translationRotate(tx: number, ty: number, tz: number, quat: Quaternion): Matrix4;
+    public translationRotate(tx: number, ty: number, tz: number, qx: number | Quaternion, qy?: number, qz?: number, qw?: number): Matrix4 {
+        if (qx instanceof Quaternion) {
+            qw = qx.w, qz = qx.z, qy = qx.y, qx = qx.x;
+        }
         const w2 = qw * qw;
         const x2 = qx * qx;
         const y2 = qy * qy;
@@ -4221,35 +4280,6 @@ export class Matrix4 {
     }
 
     /**
-     * Set <code>this</code> matrix to <code>T * R</code>, where <code>T</code> is a translation by the given <code>(tx, ty, tz)</code> and
-     * <code>R</code> is a rotation - and possibly scaling - transformation specified by the given quaternion.
-     * <p>
-     * When transforming a vector by the resulting matrix the rotation - and possibly scaling - transformation will be applied first and then the translation.
-     * <p>
-     * When used with a right-handed coordinate system, the produced rotation will rotate a vector 
-     * counter-clockwise around the rotation axis, when viewing along the negative axis direction towards the origin.
-     * When used with a left-handed coordinate system, the rotation is clockwise.
-     * <p>
-     * This method is equivalent to calling: <code>translation(tx, ty, tz).rotate(quat)</code>
-     * 
-     * @see #translation(double, double, double)
-     * @see #rotate(Quaterniondc)
-     * 
-     * @param tx
-     *          the number of units by which to translate the x-component
-     * @param ty
-     *          the number of units by which to translate the y-component
-     * @param tz
-     *          the number of units by which to translate the z-component
-     * @param quat
-     *          the quaternion representing a rotation
-     * @return this
-     */
-    public translationRotate(tx: number, ty: number, tz: number, quat: Quaternion): Matrix4 {
-        return translationRotate(tx, ty, tz, quat.x(), quat.y(), quat.z(), quat.w());
-    }
-
-    /**
      * Apply the rotation - and possibly scaling - transformation of the given {@link Quaterniondc} to this matrix and store
      * the result in <code>dest</code>.
      * <p>
@@ -4275,7 +4305,7 @@ export class Matrix4 {
      *          will hold the result
      * @return dest
      */
-    public rotate(quat: Quaternion, dest: Matrix4): Matrix4 {
+    public rotate(quat: Quaternion, dest?: Matrix4): Matrix4 {
         if (this.PROPERTY_IDENTITY)
             return dest.rotation(quat);
         else if (this.PROPERTY_TRANSLATION)
@@ -4284,7 +4314,8 @@ export class Matrix4 {
             return this.rotateAffine(quat, dest);
         return this.rotateGeneric(quat, dest);
     }
-    private rotateGeneric(quat: Quaternion, dest: Matrix4): Matrix4 {
+    private rotateGeneric(quat: Quaternion, dest?: Matrix4): Matrix4 {
+        dest = dest ?? this;
         const w2 = quat.w * quat.w, x2 = quat.x * quat.x;
         const y2 = quat.y * quat.y, z2 = quat.z * quat.z;
         const zw = quat.z * quat.w, dzw = zw + zw, xy = quat.x * quat.y, dxy = xy + xy;
@@ -4503,7 +4534,8 @@ export class Matrix4 {
      *          will hold the result
      * @return dest
      */
-    public rotateLocal(quat: Quaternion, dest: Matrix4): Matrix4 {
+    public rotateLocal(quat: Quaternion, dest?: Matrix4): Matrix4 {
+        dest = dest ?? this;
         const w2 = quat.w * quat.w, x2 = quat.x * quat.x;
         const y2 = quat.y * quat.y, z2 = quat.z * quat.z;
         const zw = quat.z * quat.w, dzw = zw + zw, xy = quat.x * quat.y, dxy = xy + xy;
@@ -4538,33 +4570,6 @@ export class Matrix4 {
         );
         //     ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
         // return dest;
-    }
-
-    /**
-     * Pre-multiply the rotation - and possibly scaling - transformation of the given {@link Quaterniondc} to this matrix.
-     * <p>
-     * When used with a right-handed coordinate system, the produced rotation will rotate a vector 
-     * counter-clockwise around the rotation axis, when viewing along the negative axis direction towards the origin.
-     * When used with a left-handed coordinate system, the rotation is clockwise.
-     * <p>
-     * If <code>M</code> is <code>this</code> matrix and <code>Q</code> the rotation matrix obtained from the given quaternion,
-     * then the new matrix will be <code>Q * M</code>. So when transforming a
-     * vector <code>v</code> with the new matrix by using <code>Q * M * v</code>,
-     * the quaternion rotation will be applied last!
-     * <p>
-     * In order to set the matrix to a rotation transformation without pre-multiplying,
-     * use {@link #rotation(Quaterniondc)}.
-     * <p>
-     * Reference: <a href="http://en.wikipedia.org/wiki/Rotation_matrix#Quaternion">http://en.wikipedia.org</a>
-     * 
-     * @see #rotation(Quaterniondc)
-     * 
-     * @param quat
-     *          the {@link Quaterniondc}
-     * @return this
-     */
-    public rotateLocal(quat: Quaternion): Matrix4 {
-        return rotateLocal(quat, this);
     }
 
     /**
@@ -4698,8 +4703,8 @@ export class Matrix4 {
     }
 
     public getColumn(column: number, dest: Vector3): Vector3;
-    public getColumn(column: number, dest: Vector4): Vector4;
-    public getColumn(column: number, dest?: Vector4): Vector4 {
+    public getColumn(column: number, dest?: Vector4): Vector4;
+    public getColumn(column: number, dest?: Vector3 | Vector4): Vector3 | Vector4 {
         dest = dest ?? new Vector4();
         switch (column) {
             case 0:
@@ -4895,19 +4900,7 @@ export class Matrix4 {
      *             will hold the result
      * @return dest
      */
-    public cofactor3x3(dest: Matrix3): Matrix3 {
-        dest = dest ?? new Matrix3();
-        dest[0][0] = this[1][1] * this[2][2] - this[2][1] * this[1][2];
-        dest[0][1] = this[2][0] * this[1][2] - this[1][0] * this[2][2];
-        dest[0][2] = this[1][0] * this[2][1] - this[2][0] * this[1][1];
-        dest[1][0] = this[2][1] * this[0][2] - this[0][1] * this[2][2];
-        dest[1][1] = this[0][0] * this[2][2] - this[2][0] * this[0][2];
-        dest[1][2] = this[2][0] * this[0][1] - this[0][0] * this[2][1];
-        dest[2][0] = this[0][1] * this[1][2] - this[0][2] * this[1][1];
-        dest[2][1] = this[0][2] * this[1][0] - this[0][0] * this[1][2];
-        dest[2][2] = this[0][0] * this[1][1] - this[0][1] * this[1][0];
-        return dest;
-    }
+    public cofactor3x3(dest?: Matrix3): Matrix3;
 
     /**
      * Compute the cofactor matrix of the upper left 3x3 submatrix of <code>this</code>
@@ -4921,30 +4914,34 @@ export class Matrix4 {
      *             will hold the result
      * @return dest
      */
-    public cofactor3x3(dest?: Matrix4): Matrix4 {
-        const nm10 = m21 * m02 - m01 * m22;
-        const nm11 = m00 * m22 - m20 * m02;
-        const nm12 = m20 * m01 - m00 * m21;
-        const nm20 = m01 * m12 - m11 * m02;
-        const nm21 = m02 * m10 - m12 * m00;
-        const nm22 = m00 * m11 - m10 * m01;
-        return dest
-            ._m00(m11 * m22 - m21 * m12)
-            ._m01(m20 * m12 - m10 * m22)
-            ._m02(m10 * m21 - m20 * m11)
-            ._m03(0.0)
-            ._m10(nm10)
-            ._m11(nm11)
-            ._m12(nm12)
-            ._m13(0.0)
-            ._m20(nm20)
-            ._m21(nm21)
-            ._m22(nm22)
-            ._m23(0.0)
-            ._m30(0.0)
-            ._m31(0.0)
-            ._m32(0.0)
-            ._m33(1.0)
+    public cofactor3x3(dest?: Matrix4): Matrix4;
+    public cofactor3x3(dest?: Matrix3 | Matrix4): Matrix3 | Matrix4 {
+        dest = dest ?? this;
+        const nm10 = this[2][1] * this[0][2] - this[0][1] * this[2][2];
+        const nm11 = this[0][0] * this[2][2] - this[2][0] * this[0][2];
+        const nm12 = this[2][0] * this[0][1] - this[0][0] * this[2][1];
+        const nm20 = this[0][1] * this[1][2] - this[1][1] * this[0][2];
+        const nm21 = this[0][2] * this[1][0] - this[1][2] * this[0][0];
+        const nm22 = this[0][0] * this[1][1] - this[1][0] * this[0][1];
+
+        dest[0][0] = (this[1][1] * this[2][2] - this[2][1] * this[1][2])
+        dest[0][1] = (this[2][0] * this[1][2] - this[1][0] * this[2][2])
+        dest[0][2] = (this[1][0] * this[2][1] - this[2][0] * this[1][1])
+        dest[1][0] = (nm10)
+        dest[1][1] = (nm11)
+        dest[1][2] = (nm12)
+        dest[2][0] = (nm20)
+        dest[2][1] = (nm21)
+        dest[2][2] = (nm22)
+        if (dest instanceof Matrix3) return dest;
+        dest[0][3] = (0.0)
+        dest[1][3] = (0.0)
+        dest[2][3] = (0.0)
+        dest[3][0] = (0.0)
+        dest[3][1] = (0.0)
+        dest[3][2] = (0.0)
+        dest[3][3] = (1.0)
+        return dest;
         // ._properties((properties | PROPERTY_AFFINE) & ~(PROPERTY_TRANSLATION | PROPERTY_PERSPECTIVE));
     }
 
@@ -4957,42 +4954,49 @@ export class Matrix4 {
      * 
      * @return this
      */
-    public normalize3x3(): Matrix4 {
-        return normalize3x3(this);
-    }
 
-    public normalize3x3(dest: Matrix4): Matrix4 {
-        const invXlen = 1 / Math.sqrt(m00 * m00 + m01 * m01 + m02 * m02);
-        const invYlen = 1 / Math.sqrt(m10 * m10 + m11 * m11 + m12 * m12);
-        const invZlen = 1 / Math.sqrt(m20 * m20 + m21 * m21 + m22 * m22);
-        dest._m00(m00 * invXlen)._m01(m01 * invXlen)._m02(m02 * invXlen)
-            ._m10(m10 * invYlen)._m11(m11 * invYlen)._m12(m12 * invYlen)
-            ._m20(m20 * invZlen)._m21(m21 * invZlen)._m22(m22 * invZlen)
-            ._m30(m30)._m31(m31)._m32(m32)._m33(m33)
-            ._properties(properties);
+    public normalize3x3(dest?: Matrix4): Matrix4;
+    public normalize3x3(dest: Matrix3): Matrix3;
+    public normalize3x3(dest?: Matrix3 | Matrix4): Matrix3 | Matrix4 {
+        dest = dest ?? this;
+
+        const invXlen = 1 / Math.sqrt(this[0][0] * this[0][0] + this[0][1] * this[0][1] + this[0][2] * this[0][2]);
+        const invYlen = 1 / Math.sqrt(this[1][0] * this[1][0] + this[1][1] * this[1][1] + this[1][2] * this[1][2]);
+        const invZlen = 1 / Math.sqrt(this[2][0] * this[2][0] + this[2][1] * this[2][1] + this[2][2] * this[2][2]);
+
+
+        dest[0][0] = this[0][0] * invXlen;
+        dest[0][1] = this[0][1] * invXlen;
+        dest[0][2] = this[0][2] * invXlen;
+        dest[1][0] = this[1][0] * invYlen;
+        dest[1][1] = this[1][1] * invYlen;
+        dest[1][2] = this[1][2] * invYlen;
+        dest[2][0] = this[2][0] * invZlen;
+        dest[2][1] = this[2][1] * invZlen;
+        dest[2][2] = this[2][2] * invZlen;
+        if (dest instanceof Matrix3) return dest;
+        dest[3][1] = this[3][1];
+        dest[3][2] = this[3][2];
+        dest[3][3] = this[3][3];
         return dest;
     }
 
-    public normalize3x3(Matrix3d dest): Matrix3 {
-        const invXlen = Math.invsqrt(m00 * m00 + m01 * m01 + m02 * m02);
-        const invYlen = Math.invsqrt(m10 * m10 + m11 * m11 + m12 * m12);
-        const invZlen = Math.invsqrt(m20 * m20 + m21 * m21 + m22 * m22);
-        dest.m00(m00 * invXlen); dest.m01(m01 * invXlen); dest.m02(m02 * invXlen);
-        dest.m10(m10 * invYlen); dest.m11(m11 * invYlen); dest.m12(m12 * invYlen);
-        dest.m20(m20 * invZlen); dest.m21(m21 * invZlen); dest.m22(m22 * invZlen);
-        return dest;
-    }
 
     public unproject(winCoords: Vector3, viewport: number[], dest: Vector3): Vector3;
-    public unproject(winX: number, winY: number, winZ?: number, viewport?: number[], dest: Vector3): Vector4;
+    public unproject(winX: number, winY: number, winZ: number, viewport: number[], dest: Vector3): Vector4;
     public unproject(winCoords: Vector3, viewport: number[], dest?: Vector4): Vector4;
-    public unproject(winX: number, winY: number, winZ?: number, viewport?: number[], dest?: Vector4): Vector4;
+    public unproject(winX: number, winY: number, winZ: number, viewport: number[], dest?: Vector4): Vector4;
 
     public unproject(winX: number | Vector3, winY: number | number[], winZ?: number | Vector3 | Vector4, viewport?: number[], dest?: Vector4 | Vector3): Vector3 | Vector4 {
         dest = dest ?? (typeof winZ !== "number" ? winZ : new Vector4());
-        if (typeof winZ !== "number") {
+        if (typeof winY === "object") {
             viewport = winY;
+        }
+        if (winX instanceof Vector3) {
             winZ = winX.z, winY = winX.y, winX = winX.x;
+        } else {
+            winY = winY as number;
+            winZ = winZ as number;
         }
 
         const a = this[0][0] * this[1][1] - this[0][1] * this[1][0];
@@ -5084,28 +5088,28 @@ export class Matrix4 {
         return this;
     }
 
-    public unprojectRay(Vector2dc winCoords, viewport: number[], originDest: Vector3, dirDest: Vector3): Matrix4 {
-        return unprojectRay(winCoords.x(), winCoords.y(), viewport, originDest, dirDest);
+    public unprojectRay(winCoords: Vector2, viewport: number[], originDest: Vector3, dirDest: Vector3): Matrix4 {
+        return this.unprojectRay(winCoords.x, winCoords.y, viewport, originDest, dirDest);
     }
 
-    public Vector4d unprojectInv(winCoords: Vector3, viewport: number[], dest: Vector4) {
-        return unprojectInv(winCoords.x(), winCoords.y(), winCoords.z(), viewport, dest);
+    public unprojectInv(winCoords: Vector3, viewport: number[], dest: Vector4): Vector4 {
+        return this.unprojectInv(winCoords.x, winCoords.y, winCoords.z, viewport, dest);
     }
 
-    public Vector4d unprojectInv(winX: number, winY: number, winZ: number, viewport: number[], dest: Vector4) {
+    public unprojectInv(winX: number, winY: number, winZ: number, viewport: number[], dest: Vector4): Vector4 {
         const ndcX = (winX - viewport[0]) / viewport[2] * 2.0 - 1.0;
         const ndcY = (winY - viewport[1]) / viewport[3] * 2.0 - 1.0;
         const ndcZ = winZ + winZ - 1.0;
-        const invW = 1.0 / (m03 * ndcX + m13 * ndcY + m23 * ndcZ + m33);
-        dest.x = (m00 * ndcX + m10 * ndcY + m20 * ndcZ + m30) * invW;
-        dest.y = (m01 * ndcX + m11 * ndcY + m21 * ndcZ + m31) * invW;
-        dest.z = (m02 * ndcX + m12 * ndcY + m22 * ndcZ + m32) * invW;
+        const invW = 1.0 / (this[0][3] * ndcX + this[1][3] * ndcY + this[2][3] * ndcZ + this[3][3]);
+        dest.x = (this[0][0] * ndcX + this[1][0] * ndcY + this[2][0] * ndcZ + this[3][0]) * invW;
+        dest.y = (this[0][1] * ndcX + this[1][1] * ndcY + this[2][1] * ndcZ + this[3][1]) * invW;
+        dest.z = (this[0][2] * ndcX + this[1][2] * ndcY + this[2][2] * ndcZ + this[3][2]) * invW;
         dest.w = 1.0;
         return dest;
     }
 
     public unprojectInv(winCoords: Vector3, viewport: number[], dest: Vector3): Vector3 {
-        return unprojectInv(winCoords.x(), winCoords.y(), winCoords.z(), viewport, dest);
+        return this.unprojectInv(winCoords.x, winCoords.y, winCoords.z, viewport, dest);
     }
 
     public unprojectInv(winX: number, winY: number, winZ: number, viewport: number[], dest: Vector3): Vector3 {
@@ -5120,7 +5124,7 @@ export class Matrix4 {
     }
 
     public unprojectInvRay(winCoords: Vector2, viewport: number[], originDest: Vector3, dirDest: Vector3): Matrix4 {
-        return unprojectInvRay(winCoords.x(), winCoords.y(), viewport, originDest, dirDest);
+        return this.unprojectInvRay(winCoords.x, winCoords.y, viewport, originDest, dirDest);
     }
 
     public unprojectInvRay(winX: number, winY: number, viewport: number[], originDest: Vector3, dirDest: Vector3): Matrix4 {
@@ -5157,7 +5161,31 @@ export class Matrix4 {
         return project(position.x, position.y, position.z, viewport, dest);
     }
 
-    public reflect(a: number, b: number, c: number, d: number, dest: Matrix4): Matrix4 {
+    /**
+     * Apply a mirror/reflection transformation to this matrix that reflects about the given plane
+     * specified via the equation <code>x*a + y*b + z*c + d = 0</code>.
+     * <p>
+     * The vector <code>(a, b, c)</code> must be a unit vector.
+     * <p>
+     * If <code>M</code> is <code>this</code> matrix and <code>R</code> the reflection matrix,
+     * then the new matrix will be <code>M * R</code>. So when transforming a
+     * vector <code>v</code> with the new matrix by using <code>M * R * v</code>, the
+     * reflection will be applied first!
+     * <p>
+     * Reference: <a href="https://msdn.microsoft.com/en-us/library/windows/desktop/bb281733(v=vs.85).aspx">msdn.microsoft.com</a>
+     * 
+     * @param a
+     *          the x factor in the plane equation
+     * @param b
+     *          the y factor in the plane equation
+     * @param c
+     *          the z factor in the plane equation
+     * @param d
+     *          the constant in the plane equation
+     * @return this
+     */
+    public reflect(a: number, b: number, c: number, d: number, dest?: Matrix4): Matrix4 {
+        dest = dest ?? this;
         if (this.PROPERTY_IDENTITY)
             return dest.reflection(a, b, c, d);
         if (this.PROPERTY_IDENTITY)
@@ -5237,33 +5265,6 @@ export class Matrix4 {
 
     /**
      * Apply a mirror/reflection transformation to this matrix that reflects about the given plane
-     * specified via the equation <code>x*a + y*b + z*c + d = 0</code>.
-     * <p>
-     * The vector <code>(a, b, c)</code> must be a unit vector.
-     * <p>
-     * If <code>M</code> is <code>this</code> matrix and <code>R</code> the reflection matrix,
-     * then the new matrix will be <code>M * R</code>. So when transforming a
-     * vector <code>v</code> with the new matrix by using <code>M * R * v</code>, the
-     * reflection will be applied first!
-     * <p>
-     * Reference: <a href="https://msdn.microsoft.com/en-us/library/windows/desktop/bb281733(v=vs.85).aspx">msdn.microsoft.com</a>
-     * 
-     * @param a
-     *          the x factor in the plane equation
-     * @param b
-     *          the y factor in the plane equation
-     * @param c
-     *          the z factor in the plane equation
-     * @param d
-     *          the constant in the plane equation
-     * @return this
-     */
-    public reflect(a: number, b: number, c: number, d: number): Matrix4 {
-        return reflect(a, b, c, d, this);
-    }
-
-    /**
-     * Apply a mirror/reflection transformation to this matrix that reflects about the given plane
      * specified via the plane normal and a point on the plane.
      * <p>
      * If <code>M</code> is <code>this</code> matrix and <code>R</code> the reflection matrix,
@@ -5292,7 +5293,7 @@ export class Matrix4 {
         const nny = ny * invLength;
         const nnz = nz * invLength;
         /* See: http://mathworld.wolfram.com/Plane.html */
-        return reflect(nnx, nny, nnz, -nnx * px - nny * py - nnz * pz, dest);
+        return this.reflect(nnx, nny, nnz, -nnx * px - nny * py - nnz * pz, dest);
     }
 
     /**
@@ -5310,8 +5311,8 @@ export class Matrix4 {
      *          a point on the plane
      * @return this
      */
-    public reflect(normal: Vector3, point: Vector3): Matrix4 {
-        return reflect(normal.x(), normal.y(), normal.z(), point.x(), point.y(), point.z());
+    public reflect(normal: Vector3, point: Vector3, dest: Matrix4): Matrix4 {
+        return this.reflect(normal.x, normal.y, normal.z, point.x, point.y, point.z, dest);
     }
 
     /**
@@ -5341,11 +5342,7 @@ export class Matrix4 {
         const normalX = orientation.x * num3 + orientation.w * num2;
         const normalY = orientation.y * num3 - orientation.w * num1;
         const normalZ = 1.0 - (orientation.x * num1 + orientation.y * num2);
-        return reflect(normalX, normalY, normalZ, point.x, point.y, point.z, dest);
-    }
-
-    public reflect(normal: Vector3, point: Vector3, dest: Matrix4): Matrix4 {
-        return reflect(normal.x, normal.y, normal.z, point.x, point.y, point.z, dest);
+        return this.reflect(normalX, normalY, normalZ, point.x, point.y, point.z, dest);
     }
 
     /**
@@ -5454,6 +5451,39 @@ export class Matrix4 {
 
     /**
      * Apply an orthographic projection transformation for a right-handed coordinate system
+     * using OpenGL's NDC z range of <code>[-1..+1]</code> to this matrix and store the result in <code>dest</code>.
+     * <p>
+     * If <code>M</code> is <code>this</code> matrix and <code>O</code> the orthographic projection matrix,
+     * then the new matrix will be <code>M * O</code>. So when transforming a
+     * vector <code>v</code> with the new matrix by using <code>M * O * v</code>, the
+     * orthographic projection transformation will be applied first!
+     * <p>
+     * In order to set the matrix to an orthographic projection without post-multiplying it,
+     * use {@link #setOrtho(double, double, double, double, double, double) setOrtho()}.
+     * <p>
+     * Reference: <a href="http://www.songho.ca/opengl/gl_projectionmatrix.html#ortho">http://www.songho.ca</a>
+     * 
+     * @see #setOrtho(double, double, double, double, double, double)
+     * 
+     * @param left
+     *            the distance from the center to the left frustum edge
+     * @param right
+     *            the distance from the center to the right frustum edge
+     * @param bottom
+     *            the distance from the center to the bottom frustum edge
+     * @param top
+     *            the distance from the center to the top frustum edge
+     * @param zNear
+     *            near clipping plane distance
+     * @param zFar
+     *            far clipping plane distance
+     * @param dest
+     *            will hold the result
+     * @return dest
+     */
+    public ortho(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number, dest?: Matrix4): Matrix4;
+    /**
+     * Apply an orthographic projection transformation for a right-handed coordinate system
      * using the given NDC z range to this matrix and store the result in <code>dest</code>.
      * <p>
      * If <code>M</code> is <code>this</code> matrix and <code>O</code> the orthographic projection matrix,
@@ -5487,7 +5517,11 @@ export class Matrix4 {
      *            will hold the result
      * @return dest
      */
-    public ortho(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number, zZeroToOne: boolean, dest: Matrix4): Matrix4 {
+    public ortho(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number, zZeroToOne: boolean, dest?: Matrix4): Matrix4;
+    public ortho(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number, zZeroToOne?: boolean | Matrix4, dest?: Matrix4): Matrix4 {
+        dest = dest ?? (zZeroToOne instanceof Matrix4 ? zZeroToOne : this);
+        zZeroToOne = (typeof zZeroToOne === "boolean") ? zZeroToOne : false;
+
         if (this.PROPERTY_IDENTITY)
             return dest.setOrtho(left, right, bottom, top, zNear, zFar, zZeroToOne);
         return this.orthoGeneric(left, right, bottom, top, zNear, zFar, zZeroToOne, dest);
@@ -5522,8 +5556,9 @@ export class Matrix4 {
         return dest;
     }
 
+
     /**
-     * Apply an orthographic projection transformation for a right-handed coordinate system
+     * Apply an orthographic projection transformation for a left-handed coordiante system
      * using OpenGL's NDC z range of <code>[-1..+1]</code> to this matrix and store the result in <code>dest</code>.
      * <p>
      * If <code>M</code> is <code>this</code> matrix and <code>O</code> the orthographic projection matrix,
@@ -5532,11 +5567,11 @@ export class Matrix4 {
      * orthographic projection transformation will be applied first!
      * <p>
      * In order to set the matrix to an orthographic projection without post-multiplying it,
-     * use {@link #setOrtho(double, double, double, double, double, double) setOrtho()}.
+     * use {@link #setOrthoLH(double, double, double, double, double, double) setOrthoLH()}.
      * <p>
      * Reference: <a href="http://www.songho.ca/opengl/gl_projectionmatrix.html#ortho">http://www.songho.ca</a>
      * 
-     * @see #setOrtho(double, double, double, double, double, double)
+     * @see #setOrthoLH(double, double, double, double, double, double)
      * 
      * @param left
      *            the distance from the center to the left frustum edge
@@ -5554,81 +5589,7 @@ export class Matrix4 {
      *            will hold the result
      * @return dest
      */
-    public ortho(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number, dest: Matrix4): Matrix4 {
-        return ortho(left, right, bottom, top, zNear, zFar, false, dest);
-    }
-
-    /**
-     * Apply an orthographic projection transformation for a right-handed coordinate system
-     * using the given NDC z range to this matrix.
-     * <p>
-     * If <code>M</code> is <code>this</code> matrix and <code>O</code> the orthographic projection matrix,
-     * then the new matrix will be <code>M * O</code>. So when transforming a
-     * vector <code>v</code> with the new matrix by using <code>M * O * v</code>, the
-     * orthographic projection transformation will be applied first!
-     * <p>
-     * In order to set the matrix to an orthographic projection without post-multiplying it,
-     * use {@link #setOrtho(double, double, double, double, double, double, boolean) setOrtho()}.
-     * <p>
-     * Reference: <a href="http://www.songho.ca/opengl/gl_projectionmatrix.html#ortho">http://www.songho.ca</a>
-     * 
-     * @see #setOrtho(double, double, double, double, double, double, boolean)
-     * 
-     * @param left
-     *            the distance from the center to the left frustum edge
-     * @param right
-     *            the distance from the center to the right frustum edge
-     * @param bottom
-     *            the distance from the center to the bottom frustum edge
-     * @param top
-     *            the distance from the center to the top frustum edge
-     * @param zNear
-     *            near clipping plane distance
-     * @param zFar
-     *            far clipping plane distance
-     * @param zZeroToOne
-     *            whether to use Vulkan's and Direct3D's NDC z range of <code>[0..+1]</code> when <code>true</code>
-     *            or whether to use OpenGL's NDC z range of <code>[-1..+1]</code> when <code>false</code>
-     * @return this
-     */
-    public ortho(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number, zZeroToOne: boolean): Matrix4 {
-        return ortho(left, right, bottom, top, zNear, zFar, zZeroToOne, this);
-    }
-
-    /**
-     * Apply an orthographic projection transformation for a right-handed coordinate system
-     * using OpenGL's NDC z range of <code>[-1..+1]</code> to this matrix.
-     * <p>
-     * If <code>M</code> is <code>this</code> matrix and <code>O</code> the orthographic projection matrix,
-     * then the new matrix will be <code>M * O</code>. So when transforming a
-     * vector <code>v</code> with the new matrix by using <code>M * O * v</code>, the
-     * orthographic projection transformation will be applied first!
-     * <p>
-     * In order to set the matrix to an orthographic projection without post-multiplying it,
-     * use {@link #setOrtho(double, double, double, double, double, double) setOrtho()}.
-     * <p>
-     * Reference: <a href="http://www.songho.ca/opengl/gl_projectionmatrix.html#ortho">http://www.songho.ca</a>
-     * 
-     * @see #setOrtho(double, double, double, double, double, double)
-     * 
-     * @param left
-     *            the distance from the center to the left frustum edge
-     * @param right
-     *            the distance from the center to the right frustum edge
-     * @param bottom
-     *            the distance from the center to the bottom frustum edge
-     * @param top
-     *            the distance from the center to the top frustum edge
-     * @param zNear
-     *            near clipping plane distance
-     * @param zFar
-     *            far clipping plane distance
-     * @return this
-     */
-    public ortho(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number): Matrix4 {
-        return ortho(left, right, bottom, top, zNear, zFar, false);
-    }
-
+    public orthoLH(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number, dest?: Matrix4): Matrix4;
     /**
      * Apply an orthographic projection transformation for a left-handed coordiante system
      * using the given NDC z range to this matrix and store the result in <code>dest</code>.
@@ -5664,7 +5625,11 @@ export class Matrix4 {
      *            will hold the result
      * @return dest
      */
-    public orthoLH(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number, zZeroToOne: boolean, dest: Matrix4): Matrix4 {
+    public orthoLH(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number, zZeroToOne: boolean, dest?: Matrix4): Matrix4;
+    public orthoLH(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number, zZeroToOne?: boolean | Matrix4, dest?: Matrix4): Matrix4 {
+        dest = dest ?? (zZeroToOne instanceof Matrix4 ? zZeroToOne : this);
+        zZeroToOne = (typeof zZeroToOne === "boolean") ? zZeroToOne : false;
+
         if (this.PROPERTY_IDENTITY)
             return dest.setOrthoLH(left, right, bottom, top, zNear, zFar, zZeroToOne);
         return this.orthoLHGeneric(left, right, bottom, top, zNear, zFar, zZeroToOne, dest);
@@ -5699,112 +5664,6 @@ export class Matrix4 {
         return dest;
     }
 
-    /**
-     * Apply an orthographic projection transformation for a left-handed coordiante system
-     * using OpenGL's NDC z range of <code>[-1..+1]</code> to this matrix and store the result in <code>dest</code>.
-     * <p>
-     * If <code>M</code> is <code>this</code> matrix and <code>O</code> the orthographic projection matrix,
-     * then the new matrix will be <code>M * O</code>. So when transforming a
-     * vector <code>v</code> with the new matrix by using <code>M * O * v</code>, the
-     * orthographic projection transformation will be applied first!
-     * <p>
-     * In order to set the matrix to an orthographic projection without post-multiplying it,
-     * use {@link #setOrthoLH(double, double, double, double, double, double) setOrthoLH()}.
-     * <p>
-     * Reference: <a href="http://www.songho.ca/opengl/gl_projectionmatrix.html#ortho">http://www.songho.ca</a>
-     * 
-     * @see #setOrthoLH(double, double, double, double, double, double)
-     * 
-     * @param left
-     *            the distance from the center to the left frustum edge
-     * @param right
-     *            the distance from the center to the right frustum edge
-     * @param bottom
-     *            the distance from the center to the bottom frustum edge
-     * @param top
-     *            the distance from the center to the top frustum edge
-     * @param zNear
-     *            near clipping plane distance
-     * @param zFar
-     *            far clipping plane distance
-     * @param dest
-     *            will hold the result
-     * @return dest
-     */
-    public orthoLH(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number, dest: Matrix4): Matrix4 {
-        return orthoLH(left, right, bottom, top, zNear, zFar, false, dest);
-    }
-
-    /**
-     * Apply an orthographic projection transformation for a left-handed coordiante system
-     * using the given NDC z range to this matrix.
-     * <p>
-     * If <code>M</code> is <code>this</code> matrix and <code>O</code> the orthographic projection matrix,
-     * then the new matrix will be <code>M * O</code>. So when transforming a
-     * vector <code>v</code> with the new matrix by using <code>M * O * v</code>, the
-     * orthographic projection transformation will be applied first!
-     * <p>
-     * In order to set the matrix to an orthographic projection without post-multiplying it,
-     * use {@link #setOrthoLH(double, double, double, double, double, double, boolean) setOrthoLH()}.
-     * <p>
-     * Reference: <a href="http://www.songho.ca/opengl/gl_projectionmatrix.html#ortho">http://www.songho.ca</a>
-     * 
-     * @see #setOrthoLH(double, double, double, double, double, double, boolean)
-     * 
-     * @param left
-     *            the distance from the center to the left frustum edge
-     * @param right
-     *            the distance from the center to the right frustum edge
-     * @param bottom
-     *            the distance from the center to the bottom frustum edge
-     * @param top
-     *            the distance from the center to the top frustum edge
-     * @param zNear
-     *            near clipping plane distance
-     * @param zFar
-     *            far clipping plane distance
-     * @param zZeroToOne
-     *            whether to use Vulkan's and Direct3D's NDC z range of <code>[0..+1]</code> when <code>true</code>
-     *            or whether to use OpenGL's NDC z range of <code>[-1..+1]</code> when <code>false</code>
-     * @return this
-     */
-    public orthoLH(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number, zZeroToOne: boolean): Matrix4 {
-        return orthoLH(left, right, bottom, top, zNear, zFar, zZeroToOne, this);
-    }
-
-    /**
-     * Apply an orthographic projection transformation for a left-handed coordiante system
-     * using OpenGL's NDC z range of <code>[-1..+1]</code> to this matrix.
-     * <p>
-     * If <code>M</code> is <code>this</code> matrix and <code>O</code> the orthographic projection matrix,
-     * then the new matrix will be <code>M * O</code>. So when transforming a
-     * vector <code>v</code> with the new matrix by using <code>M * O * v</code>, the
-     * orthographic projection transformation will be applied first!
-     * <p>
-     * In order to set the matrix to an orthographic projection without post-multiplying it,
-     * use {@link #setOrthoLH(double, double, double, double, double, double) setOrthoLH()}.
-     * <p>
-     * Reference: <a href="http://www.songho.ca/opengl/gl_projectionmatrix.html#ortho">http://www.songho.ca</a>
-     * 
-     * @see #setOrthoLH(double, double, double, double, double, double)
-     * 
-     * @param left
-     *            the distance from the center to the left frustum edge
-     * @param right
-     *            the distance from the center to the right frustum edge
-     * @param bottom
-     *            the distance from the center to the bottom frustum edge
-     * @param top
-     *            the distance from the center to the top frustum edge
-     * @param zNear
-     *            near clipping plane distance
-     * @param zFar
-     *            far clipping plane distance
-     * @return this
-     */
-    public orthoLH(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number): Matrix4 {
-        return orthoLH(left, right, bottom, top, zNear, zFar, false);
-    }
 
     /**
      * Set this matrix to be an orthographic projection transformation for a right-handed coordinate system
@@ -5834,7 +5693,8 @@ export class Matrix4 {
      *            or whether to use OpenGL's NDC z range of <code>[-1..+1]</code> when <code>false</code>
      * @return this
      */
-    public setOrtho(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number, zZeroToOne: boolean): Matrix4 {
+    public setOrtho(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number, zZeroToOne?: boolean): Matrix4 {
+        zZeroToOne = zZeroToOne ?? false;
         if (!this.PROPERTY_IDENTITY)
             this.identity();
         this[0][0] = 2.0 / (right - left);
@@ -5845,35 +5705,6 @@ export class Matrix4 {
         this[3][2] = (zZeroToOne ? zNear : (zFar + zNear)) / (zNear - zFar);
         // properties = PROPERTY_AFFINE;
         return this;
-    }
-
-    /**
-     * Set this matrix to be an orthographic projection transformation for a right-handed coordinate system
-     * using OpenGL's NDC z range of <code>[-1..+1]</code>.
-     * <p>
-     * In order to apply the orthographic projection to an already existing transformation,
-     * use {@link #ortho(double, double, double, double, double, double) ortho()}.
-     * <p>
-     * Reference: <a href="http://www.songho.ca/opengl/gl_projectionmatrix.html#ortho">http://www.songho.ca</a>
-     * 
-     * @see #ortho(double, double, double, double, double, double)
-     * 
-     * @param left
-     *            the distance from the center to the left frustum edge
-     * @param right
-     *            the distance from the center to the right frustum edge
-     * @param bottom
-     *            the distance from the center to the bottom frustum edge
-     * @param top
-     *            the distance from the center to the top frustum edge
-     * @param zNear
-     *            near clipping plane distance
-     * @param zFar
-     *            far clipping plane distance
-     * @return this
-     */
-    public setOrtho(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number): Matrix4 {
-        return setOrtho(left, right, bottom, top, zNear, zFar, false);
     }
 
     /**
@@ -5905,6 +5736,7 @@ export class Matrix4 {
      * @return this
      */
     public setOrthoLH(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number, zZeroToOne: boolean): Matrix4 {
+        zZeroToOne = zZeroToOne ?? false;
         if (!this.PROPERTY_IDENTITY)
             this.identity();
         this[0][0] = 2.0 / (right - left);
@@ -5918,34 +5750,37 @@ export class Matrix4 {
     }
 
     /**
-     * Set this matrix to be an orthographic projection transformation for a left-handed coordinate system
-     * using OpenGL's NDC z range of <code>[-1..+1]</code>.
+     * Apply a symmetric orthographic projection transformation for a right-handed coordinate system
+     * using OpenGL's NDC z range of <code>[-1..+1]</code> to this matrix and store the result in <code>dest</code>.
      * <p>
-     * In order to apply the orthographic projection to an already existing transformation,
-     * use {@link #orthoLH(double, double, double, double, double, double) orthoLH()}.
+     * This method is equivalent to calling {@link #ortho(double, double, double, double, double, double, Matrix4d) ortho()} with
+     * <code>left=-width/2</code>, <code>right=+width/2</code>, <code>bottom=-height/2</code> and <code>top=+height/2</code>.
+     * <p>
+     * If <code>M</code> is <code>this</code> matrix and <code>O</code> the orthographic projection matrix,
+     * then the new matrix will be <code>M * O</code>. So when transforming a
+     * vector <code>v</code> with the new matrix by using <code>M * O * v</code>, the
+     * orthographic projection transformation will be applied first!
+     * <p>
+     * In order to set the matrix to a symmetric orthographic projection without post-multiplying it,
+     * use {@link #setOrthoSymmetric(double, double, double, double) setOrthoSymmetric()}.
      * <p>
      * Reference: <a href="http://www.songho.ca/opengl/gl_projectionmatrix.html#ortho">http://www.songho.ca</a>
      * 
-     * @see #orthoLH(double, double, double, double, double, double)
+     * @see #setOrthoSymmetric(double, double, double, double)
      * 
-     * @param left
-     *            the distance from the center to the left frustum edge
-     * @param right
-     *            the distance from the center to the right frustum edge
-     * @param bottom
-     *            the distance from the center to the bottom frustum edge
-     * @param top
-     *            the distance from the center to the top frustum edge
+     * @param width
+     *            the distance between the right and left frustum edges
+     * @param height
+     *            the distance between the top and bottom frustum edges
      * @param zNear
      *            near clipping plane distance
      * @param zFar
      *            far clipping plane distance
-     * @return this
+     * @param dest
+     *            will hold the result
+     * @return dest
      */
-    public setOrthoLH(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number): Matrix4 {
-        return setOrthoLH(left, right, bottom, top, zNear, zFar, false);
-    }
-
+    public orthoSymmetric(width: number, height: number, zNear: number, zFar: number, dest?: Matrix4): Matrix4;
     /**
      * Apply a symmetric orthographic projection transformation for a right-handed coordinate system
      * using the given NDC z range to this matrix and store the result in <code>dest</code>.
@@ -5980,7 +5815,11 @@ export class Matrix4 {
      *            or whether to use OpenGL's NDC z range of <code>[-1..+1]</code> when <code>false</code>
      * @return dest
      */
-    public orthoSymmetric(width: number, height: number, zNear: number, zFar: number, zZeroToOne: boolean, dest: Matrix4): Matrix4 {
+    public orthoSymmetric(width: number, height: number, zNear: number, zFar: number, zZeroToOne: boolean, dest?: Matrix4): Matrix4;
+    public orthoSymmetric(width: number, height: number, zNear: number, zFar: number, zZeroToOne?: boolean | Matrix4, dest?: Matrix4): Matrix4 {
+        dest = dest ?? (zZeroToOne instanceof Matrix4 ? zZeroToOne : this);
+        zZeroToOne = (typeof zZeroToOne === "boolean") ? zZeroToOne : false;
+
         if (this.PROPERTY_IDENTITY)
             return dest.setOrthoSymmetric(width, height, zNear, zFar, zZeroToOne);
         return this.orthoSymmetricGeneric(width, height, zNear, zFar, zZeroToOne, dest);
@@ -6014,10 +5853,10 @@ export class Matrix4 {
     }
 
     /**
-     * Apply a symmetric orthographic projection transformation for a right-handed coordinate system
+     * Apply a symmetric orthographic projection transformation for a left-handed coordinate system
      * using OpenGL's NDC z range of <code>[-1..+1]</code> to this matrix and store the result in <code>dest</code>.
      * <p>
-     * This method is equivalent to calling {@link #ortho(double, double, double, double, double, double, Matrix4d) ortho()} with
+     * This method is equivalent to calling {@link #orthoLH(double, double, double, double, double, double, Matrix4d) orthoLH()} with
      * <code>left=-width/2</code>, <code>right=+width/2</code>, <code>bottom=-height/2</code> and <code>top=+height/2</code>.
      * <p>
      * If <code>M</code> is <code>this</code> matrix and <code>O</code> the orthographic projection matrix,
@@ -6026,11 +5865,11 @@ export class Matrix4 {
      * orthographic projection transformation will be applied first!
      * <p>
      * In order to set the matrix to a symmetric orthographic projection without post-multiplying it,
-     * use {@link #setOrthoSymmetric(double, double, double, double) setOrthoSymmetric()}.
+     * use {@link #setOrthoSymmetricLH(double, double, double, double) setOrthoSymmetricLH()}.
      * <p>
      * Reference: <a href="http://www.songho.ca/opengl/gl_projectionmatrix.html#ortho">http://www.songho.ca</a>
      * 
-     * @see #setOrthoSymmetric(double, double, double, double)
+     * @see #setOrthoSymmetricLH(double, double, double, double)
      * 
      * @param width
      *            the distance between the right and left frustum edges
@@ -6044,78 +5883,7 @@ export class Matrix4 {
      *            will hold the result
      * @return dest
      */
-    public orthoSymmetric(width: number, height: number, zNear: number, zFar: number, dest: Matrix4): Matrix4 {
-        return orthoSymmetric(width, height, zNear, zFar, false, dest);
-    }
-
-    /**
-     * Apply a symmetric orthographic projection transformation for a right-handed coordinate system
-     * using the given NDC z range to this matrix.
-     * <p>
-     * This method is equivalent to calling {@link #ortho(double, double, double, double, double, double, boolean) ortho()} with
-     * <code>left=-width/2</code>, <code>right=+width/2</code>, <code>bottom=-height/2</code> and <code>top=+height/2</code>.
-     * <p>
-     * If <code>M</code> is <code>this</code> matrix and <code>O</code> the orthographic projection matrix,
-     * then the new matrix will be <code>M * O</code>. So when transforming a
-     * vector <code>v</code> with the new matrix by using <code>M * O * v</code>, the
-     * orthographic projection transformation will be applied first!
-     * <p>
-     * In order to set the matrix to a symmetric orthographic projection without post-multiplying it,
-     * use {@link #setOrthoSymmetric(double, double, double, double, boolean) setOrthoSymmetric()}.
-     * <p>
-     * Reference: <a href="http://www.songho.ca/opengl/gl_projectionmatrix.html#ortho">http://www.songho.ca</a>
-     * 
-     * @see #setOrthoSymmetric(double, double, double, double, boolean)
-     * 
-     * @param width
-     *            the distance between the right and left frustum edges
-     * @param height
-     *            the distance between the top and bottom frustum edges
-     * @param zNear
-     *            near clipping plane distance
-     * @param zFar
-     *            far clipping plane distance
-     * @param zZeroToOne
-     *            whether to use Vulkan's and Direct3D's NDC z range of <code>[0..+1]</code> when <code>true</code>
-     *            or whether to use OpenGL's NDC z range of <code>[-1..+1]</code> when <code>false</code>
-     * @return this
-     */
-    public orthoSymmetric(width: number, height: number, zNear: number, zFar: number, zZeroToOne: boolean): Matrix4 {
-        return orthoSymmetric(width, height, zNear, zFar, zZeroToOne, this);
-    }
-
-    /**
-     * Apply a symmetric orthographic projection transformation for a right-handed coordinate system
-     * using OpenGL's NDC z range of <code>[-1..+1]</code> to this matrix.
-     * <p>
-     * This method is equivalent to calling {@link #ortho(double, double, double, double, double, double) ortho()} with
-     * <code>left=-width/2</code>, <code>right=+width/2</code>, <code>bottom=-height/2</code> and <code>top=+height/2</code>.
-     * <p>
-     * If <code>M</code> is <code>this</code> matrix and <code>O</code> the orthographic projection matrix,
-     * then the new matrix will be <code>M * O</code>. So when transforming a
-     * vector <code>v</code> with the new matrix by using <code>M * O * v</code>, the
-     * orthographic projection transformation will be applied first!
-     * <p>
-     * In order to set the matrix to a symmetric orthographic projection without post-multiplying it,
-     * use {@link #setOrthoSymmetric(double, double, double, double) setOrthoSymmetric()}.
-     * <p>
-     * Reference: <a href="http://www.songho.ca/opengl/gl_projectionmatrix.html#ortho">http://www.songho.ca</a>
-     * 
-     * @see #setOrthoSymmetric(double, double, double, double)
-     * 
-     * @param width
-     *            the distance between the right and left frustum edges
-     * @param height
-     *            the distance between the top and bottom frustum edges
-     * @param zNear
-     *            near clipping plane distance
-     * @param zFar
-     *            far clipping plane distance
-     * @return this
-     */
-    public orthoSymmetric(width: number, height: number, zNear: number, zFar: number): Matrix4 {
-        return orthoSymmetric(width, height, zNear, zFar, false, this);
-    }
+    public orthoSymmetricLH(width: number, height: number, zNear: number, zFar: number, dest?: Matrix4): Matrix4;
 
     /**
      * Apply a symmetric orthographic projection transformation for a left-handed coordinate system
@@ -6151,7 +5919,11 @@ export class Matrix4 {
      *            or whether to use OpenGL's NDC z range of <code>[-1..+1]</code> when <code>false</code>
      * @return dest
      */
-    public orthoSymmetricLH(width: number, height: number, zNear: number, zFar: number, zZeroToOne: boolean, dest: Matrix4): Matrix4 {
+    public orthoSymmetricLH(width: number, height: number, zNear: number, zFar: number, zZeroToOne: boolean, dest?: Matrix4): Matrix4;
+    public orthoSymmetricLH(width: number, height: number, zNear: number, zFar: number, zZeroToOne?: boolean | Matrix4, dest?: Matrix4): Matrix4 {
+        dest = dest ?? (zZeroToOne instanceof Matrix4 ? zZeroToOne : this);
+        zZeroToOne = (typeof zZeroToOne === "boolean") ? zZeroToOne : false;
+
         if (this.PROPERTY_IDENTITY)
             return dest.setOrthoSymmetricLH(width, height, zNear, zFar, zZeroToOne);
         return this.orthoSymmetricLHGeneric(width, height, zNear, zFar, zZeroToOne, dest);
@@ -6185,110 +5957,6 @@ export class Matrix4 {
     }
 
     /**
-     * Apply a symmetric orthographic projection transformation for a left-handed coordinate system
-     * using OpenGL's NDC z range of <code>[-1..+1]</code> to this matrix and store the result in <code>dest</code>.
-     * <p>
-     * This method is equivalent to calling {@link #orthoLH(double, double, double, double, double, double, Matrix4d) orthoLH()} with
-     * <code>left=-width/2</code>, <code>right=+width/2</code>, <code>bottom=-height/2</code> and <code>top=+height/2</code>.
-     * <p>
-     * If <code>M</code> is <code>this</code> matrix and <code>O</code> the orthographic projection matrix,
-     * then the new matrix will be <code>M * O</code>. So when transforming a
-     * vector <code>v</code> with the new matrix by using <code>M * O * v</code>, the
-     * orthographic projection transformation will be applied first!
-     * <p>
-     * In order to set the matrix to a symmetric orthographic projection without post-multiplying it,
-     * use {@link #setOrthoSymmetricLH(double, double, double, double) setOrthoSymmetricLH()}.
-     * <p>
-     * Reference: <a href="http://www.songho.ca/opengl/gl_projectionmatrix.html#ortho">http://www.songho.ca</a>
-     * 
-     * @see #setOrthoSymmetricLH(double, double, double, double)
-     * 
-     * @param width
-     *            the distance between the right and left frustum edges
-     * @param height
-     *            the distance between the top and bottom frustum edges
-     * @param zNear
-     *            near clipping plane distance
-     * @param zFar
-     *            far clipping plane distance
-     * @param dest
-     *            will hold the result
-     * @return dest
-     */
-    public orthoSymmetricLH(width: number, height: number, zNear: number, zFar: number, dest: Matrix4): Matrix4 {
-        return orthoSymmetricLH(width, height, zNear, zFar, false, dest);
-    }
-
-    /**
-     * Apply a symmetric orthographic projection transformation for a left-handed coordinate system
-     * using the given NDC z range to this matrix.
-     * <p>
-     * This method is equivalent to calling {@link #orthoLH(double, double, double, double, double, double, boolean) orthoLH()} with
-     * <code>left=-width/2</code>, <code>right=+width/2</code>, <code>bottom=-height/2</code> and <code>top=+height/2</code>.
-     * <p>
-     * If <code>M</code> is <code>this</code> matrix and <code>O</code> the orthographic projection matrix,
-     * then the new matrix will be <code>M * O</code>. So when transforming a
-     * vector <code>v</code> with the new matrix by using <code>M * O * v</code>, the
-     * orthographic projection transformation will be applied first!
-     * <p>
-     * In order to set the matrix to a symmetric orthographic projection without post-multiplying it,
-     * use {@link #setOrthoSymmetricLH(double, double, double, double, boolean) setOrthoSymmetricLH()}.
-     * <p>
-     * Reference: <a href="http://www.songho.ca/opengl/gl_projectionmatrix.html#ortho">http://www.songho.ca</a>
-     * 
-     * @see #setOrthoSymmetricLH(double, double, double, double, boolean)
-     * 
-     * @param width
-     *            the distance between the right and left frustum edges
-     * @param height
-     *            the distance between the top and bottom frustum edges
-     * @param zNear
-     *            near clipping plane distance
-     * @param zFar
-     *            far clipping plane distance
-     * @param zZeroToOne
-     *            whether to use Vulkan's and Direct3D's NDC z range of <code>[0..+1]</code> when <code>true</code>
-     *            or whether to use OpenGL's NDC z range of <code>[-1..+1]</code> when <code>false</code>
-     * @return this
-     */
-    public orthoSymmetricLH(width: number, height: number, zNear: number, zFar: number, zZeroToOne: boolean): Matrix4 {
-        return orthoSymmetricLH(width, height, zNear, zFar, zZeroToOne, this);
-    }
-
-    /**
-     * Apply a symmetric orthographic projection transformation for a left-handed coordinate system
-     * using OpenGL's NDC z range of <code>[-1..+1]</code> to this matrix.
-     * <p>
-     * This method is equivalent to calling {@link #orthoLH(double, double, double, double, double, double) orthoLH()} with
-     * <code>left=-width/2</code>, <code>right=+width/2</code>, <code>bottom=-height/2</code> and <code>top=+height/2</code>.
-     * <p>
-     * If <code>M</code> is <code>this</code> matrix and <code>O</code> the orthographic projection matrix,
-     * then the new matrix will be <code>M * O</code>. So when transforming a
-     * vector <code>v</code> with the new matrix by using <code>M * O * v</code>, the
-     * orthographic projection transformation will be applied first!
-     * <p>
-     * In order to set the matrix to a symmetric orthographic projection without post-multiplying it,
-     * use {@link #setOrthoSymmetricLH(double, double, double, double) setOrthoSymmetricLH()}.
-     * <p>
-     * Reference: <a href="http://www.songho.ca/opengl/gl_projectionmatrix.html#ortho">http://www.songho.ca</a>
-     * 
-     * @see #setOrthoSymmetricLH(double, double, double, double)
-     * 
-     * @param width
-     *            the distance between the right and left frustum edges
-     * @param height
-     *            the distance between the top and bottom frustum edges
-     * @param zNear
-     *            near clipping plane distance
-     * @param zFar
-     *            far clipping plane distance
-     * @return this
-     */
-    public orthoSymmetricLH(width: number, height: number, zNear: number, zFar: number): Matrix4 {
-        return orthoSymmetricLH(width, height, zNear, zFar, false, this);
-    }
-
-    /**
      * Set this matrix to be a symmetric orthographic projection transformation for a right-handed coordinate system
      * using the given NDC z range.
      * <p>
@@ -6316,42 +5984,15 @@ export class Matrix4 {
      * @return this
      */
     public setOrthoSymmetric(width: number, height: number, zNear: number, zFar: number, zZeroToOne: boolean): Matrix4 {
+        zZeroToOne = zZeroToOne ?? false;
         if (!this.PROPERTY_IDENTITY)
             this.identity();
-        _m00(2.0 / width).
-            _m11(2.0 / height).
-            _m22((zZeroToOne ? 1.0 : 2.0) / (zNear - zFar)).
-            _m32((zZeroToOne ? zNear : (zFar + zNear)) / (zNear - zFar)).
-            properties = PROPERTY_AFFINE;
+        this[0][0] = (2.0 / width)
+        this[1][1] = (2.0 / height)
+        this[2][2] = ((zZeroToOne ? 1.0 : 2.0) / (zNear - zFar))
+        this[3][2] = ((zZeroToOne ? zNear : (zFar + zNear)) / (zNear - zFar))
+        // properties = PROPERTY_AFFINE;
         return this;
-    }
-
-    /**
-     * Set this matrix to be a symmetric orthographic projection transformation for a right-handed coordinate system
-     * using OpenGL's NDC z range of <code>[-1..+1]</code>.
-     * <p>
-     * This method is equivalent to calling {@link #setOrtho(double, double, double, double, double, double) setOrtho()} with
-     * <code>left=-width/2</code>, <code>right=+width/2</code>, <code>bottom=-height/2</code> and <code>top=+height/2</code>.
-     * <p>
-     * In order to apply the symmetric orthographic projection to an already existing transformation,
-     * use {@link #orthoSymmetric(double, double, double, double) orthoSymmetric()}.
-     * <p>
-     * Reference: <a href="http://www.songho.ca/opengl/gl_projectionmatrix.html#ortho">http://www.songho.ca</a>
-     * 
-     * @see #orthoSymmetric(double, double, double, double)
-     * 
-     * @param width
-     *            the distance between the right and left frustum edges
-     * @param height
-     *            the distance between the top and bottom frustum edges
-     * @param zNear
-     *            near clipping plane distance
-     * @param zFar
-     *            far clipping plane distance
-     * @return this
-     */
-    public setOrthoSymmetric(width: number, height: number, zNear: number, zFar: number): Matrix4 {
-        return setOrthoSymmetric(width, height, zNear, zFar, false);
     }
 
     /**
@@ -6381,42 +6022,15 @@ export class Matrix4 {
      * @return this
      */
     public setOrthoSymmetricLH(width: number, height: number, zNear: number, zFar: number, zZeroToOne: boolean): Matrix4 {
-        if ((properties & PROPERTY_IDENTITY) == 0)
-            _identity();
-        _m00(2.0 / width).
-            _m11(2.0 / height).
-            _m22((zZeroToOne ? 1.0 : 2.0) / (zFar - zNear)).
-            _m32((zZeroToOne ? zNear : (zFar + zNear)) / (zNear - zFar)).
-            properties = PROPERTY_AFFINE;
+        zZeroToOne = zZeroToOne ?? false;
+        if (!this.PROPERTY_IDENTITY)
+            this.identity();
+        this[0][0] = 2.0 / width;
+        this[1][1] = 2.0 / height;
+        this[2][2] = (zZeroToOne ? 1.0 : 2.0) / (zFar - zNear);
+        this[3][2] = (zZeroToOne ? zNear : (zFar + zNear)) / (zNear - zFar);
+        // properties = PROPERTY_AFFINE;
         return this;
-    }
-
-    /**
-     * Set this matrix to be a symmetric orthographic projection transformation for a left-handed coordinate system
-     * using OpenGL's NDC z range of <code>[-1..+1]</code>.
-     * <p>
-     * This method is equivalent to calling {@link #setOrthoLH(double, double, double, double, double, double) setOrthoLH()} with
-     * <code>left=-width/2</code>, <code>right=+width/2</code>, <code>bottom=-height/2</code> and <code>top=+height/2</code>.
-     * <p>
-     * In order to apply the symmetric orthographic projection to an already existing transformation,
-     * use {@link #orthoSymmetricLH(double, double, double, double) orthoSymmetricLH()}.
-     * <p>
-     * Reference: <a href="http://www.songho.ca/opengl/gl_projectionmatrix.html#ortho">http://www.songho.ca</a>
-     * 
-     * @see #orthoSymmetricLH(double, double, double, double)
-     * 
-     * @param width
-     *            the distance between the right and left frustum edges
-     * @param height
-     *            the distance between the top and bottom frustum edges
-     * @param zNear
-     *            near clipping plane distance
-     * @param zFar
-     *            far clipping plane distance
-     * @return this
-     */
-    public setOrthoSymmetricLH(width: number, height: number, zNear: number, zFar: number): Matrix4 {
-        return setOrthoSymmetricLH(width, height, zNear, zFar, false);
     }
 
     /**
@@ -6451,10 +6065,11 @@ export class Matrix4 {
      *            will hold the result
      * @return dest
      */
-    public ortho2D(left: number, right: number, bottom: number, top: number, dest: Matrix4): Matrix4 {
-        if ((properties & PROPERTY_IDENTITY) != 0)
+    public ortho2D(left: number, right: number, bottom: number, top: number, dest?: Matrix4): Matrix4 {
+        dest = dest ?? this;
+        if (this.PROPERTY_IDENTITY)
             return dest.setOrtho2D(left, right, bottom, top);
-        return ortho2DGeneric(left, right, bottom, top, dest);
+        return this.ortho2DGeneric(left, right, bottom, top, dest);
     }
     private ortho2DGeneric(left: number, right: number, bottom: number, top: number, dest: Matrix4): Matrix4 {
         // calculate right matrix elements
@@ -6464,57 +6079,24 @@ export class Matrix4 {
         const rm31 = (top + bottom) / (bottom - top);
         // perform optimized multiplication
         // compute the last column first, because other columns do not depend on it
-        dest._m30(m00 * rm30 + m10 * rm31 + m30)
-            ._m31(m01 * rm30 + m11 * rm31 + m31)
-            ._m32(m02 * rm30 + m12 * rm31 + m32)
-            ._m33(m03 * rm30 + m13 * rm31 + m33)
-            ._m00(m00 * rm00)
-            ._m01(m01 * rm00)
-            ._m02(m02 * rm00)
-            ._m03(m03 * rm00)
-            ._m10(m10 * rm11)
-            ._m11(m11 * rm11)
-            ._m12(m12 * rm11)
-            ._m13(m13 * rm11)
-            ._m20(-m20)
-            ._m21(-m21)
-            ._m22(-m22)
-            ._m23(-m23)
-            ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION | PROPERTY_ORTHONORMAL));
+        dest[3][0] = this[0][0] * rm30 + this[1][0] * rm31 + this[3][0];
+        dest[3][1] = this[0][1] * rm30 + this[1][1] * rm31 + this[3][1];
+        dest[3][2] = this[0][2] * rm30 + this[1][2] * rm31 + this[3][2];
+        dest[3][3] = this[0][3] * rm30 + this[1][3] * rm31 + this[3][3];
+        dest[0][0] = this[0][0] * rm00;
+        dest[0][1] = this[0][1] * rm00;
+        dest[0][2] = this[0][2] * rm00;
+        dest[0][3] = this[0][3] * rm00;
+        dest[1][0] = this[1][0] * rm11;
+        dest[1][1] = this[1][1] * rm11;
+        dest[1][2] = this[1][2] * rm11;
+        dest[1][3] = this[1][3] * rm11;
+        dest[2][0] = -this[2][0];
+        dest[2][1] = -this[2][1];
+        dest[2][2] = -this[2][2];
+        dest[2][3] = -this[2][3];
+        // ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION | PROPERTY_ORTHONORMAL));
         return dest;
-    }
-
-    /**
-     * Apply an orthographic projection transformation for a right-handed coordinate system to this matrix.
-     * <p>
-     * This method is equivalent to calling {@link #ortho(double, double, double, double, double, double) ortho()} with
-     * <code>zNear=-1</code> and <code>zFar=+1</code>.
-     * <p>
-     * If <code>M</code> is <code>this</code> matrix and <code>O</code> the orthographic projection matrix,
-     * then the new matrix will be <code>M * O</code>. So when transforming a
-     * vector <code>v</code> with the new matrix by using <code>M * O * v</code>, the
-     * orthographic projection transformation will be applied first!
-     * <p>
-     * In order to set the matrix to an orthographic projection without post-multiplying it,
-     * use {@link #setOrtho2D(double, double, double, double) setOrtho2D()}.
-     * <p>
-     * Reference: <a href="http://www.songho.ca/opengl/gl_projectionmatrix.html#ortho">http://www.songho.ca</a>
-     * 
-     * @see #ortho(double, double, double, double, double, double)
-     * @see #setOrtho2D(double, double, double, double)
-     * 
-     * @param left
-     *            the distance from the center to the left frustum edge
-     * @param right
-     *            the distance from the center to the right frustum edge
-     * @param bottom
-     *            the distance from the center to the bottom frustum edge
-     * @param top
-     *            the distance from the center to the top frustum edge
-     * @return this
-     */
-    public ortho2D(left: number, right: number, bottom: number, top: number): Matrix4 {
-        return ortho2D(left, right, bottom, top, this);
     }
 
     /**
@@ -6548,10 +6130,11 @@ export class Matrix4 {
      *            will hold the result
      * @return dest
      */
-    public ortho2DLH(left: number, right: number, bottom: number, top: number, dest: Matrix4): Matrix4 {
-        if ((properties & PROPERTY_IDENTITY) != 0)
+    public ortho2DLH(left: number, right: number, bottom: number, top: number, dest?: Matrix4): Matrix4 {
+        dest = dest ?? this;
+        if (this.PROPERTY_IDENTITY)
             return dest.setOrtho2DLH(left, right, bottom, top);
-        return ortho2DLHGeneric(left, right, bottom, top, dest);
+        return this.ortho2DLHGeneric(left, right, bottom, top, dest);
     }
     private ortho2DLHGeneric(left: number, right: number, bottom: number, top: number, dest: Matrix4): Matrix4 {
         // calculate right matrix elements
@@ -6561,57 +6144,24 @@ export class Matrix4 {
         const rm31 = (top + bottom) / (bottom - top);
         // perform optimized multiplication
         // compute the last column first, because other columns do not depend on it
-        dest._m30(m00 * rm30 + m10 * rm31 + m30)
-            ._m31(m01 * rm30 + m11 * rm31 + m31)
-            ._m32(m02 * rm30 + m12 * rm31 + m32)
-            ._m33(m03 * rm30 + m13 * rm31 + m33)
-            ._m00(m00 * rm00)
-            ._m01(m01 * rm00)
-            ._m02(m02 * rm00)
-            ._m03(m03 * rm00)
-            ._m10(m10 * rm11)
-            ._m11(m11 * rm11)
-            ._m12(m12 * rm11)
-            ._m13(m13 * rm11)
-            ._m20(m20)
-            ._m21(m21)
-            ._m22(m22)
-            ._m23(m23)
-            ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION | PROPERTY_ORTHONORMAL));
+        dest[3][0] = this[0][0] * rm30 + this[1][0] * rm31 + this[3][0];
+        dest[3][1] = this[0][1] * rm30 + this[1][1] * rm31 + this[3][1];
+        dest[3][2] = this[0][2] * rm30 + this[1][2] * rm31 + this[3][2];
+        dest[3][3] = this[0][3] * rm30 + this[1][3] * rm31 + this[3][3];
+        dest[0][0] = this[0][0] * rm00;
+        dest[0][1] = this[0][1] * rm00;
+        dest[0][2] = this[0][2] * rm00;
+        dest[0][3] = this[0][3] * rm00;
+        dest[1][0] = this[1][0] * rm11;
+        dest[1][1] = this[1][1] * rm11;
+        dest[1][2] = this[1][2] * rm11;
+        dest[1][3] = this[1][3] * rm11;
+        dest[2][0] = this[2][0];
+        dest[2][1] = this[2][1];
+        dest[2][2] = this[2][2];
+        dest[2][3] = this[2][3];
+        // ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION | PROPERTY_ORTHONORMAL));
         return dest;
-    }
-
-    /**
-     * Apply an orthographic projection transformation for a left-handed coordinate system to this matrix.
-     * <p>
-     * This method is equivalent to calling {@link #orthoLH(double, double, double, double, double, double) orthoLH()} with
-     * <code>zNear=-1</code> and <code>zFar=+1</code>.
-     * <p>
-     * If <code>M</code> is <code>this</code> matrix and <code>O</code> the orthographic projection matrix,
-     * then the new matrix will be <code>M * O</code>. So when transforming a
-     * vector <code>v</code> with the new matrix by using <code>M * O * v</code>, the
-     * orthographic projection transformation will be applied first!
-     * <p>
-     * In order to set the matrix to an orthographic projection without post-multiplying it,
-     * use {@link #setOrtho2DLH(double, double, double, double) setOrtho2DLH()}.
-     * <p>
-     * Reference: <a href="http://www.songho.ca/opengl/gl_projectionmatrix.html#ortho">http://www.songho.ca</a>
-     * 
-     * @see #orthoLH(double, double, double, double, double, double)
-     * @see #setOrtho2DLH(double, double, double, double)
-     * 
-     * @param left
-     *            the distance from the center to the left frustum edge
-     * @param right
-     *            the distance from the center to the right frustum edge
-     * @param bottom
-     *            the distance from the center to the bottom frustum edge
-     * @param top
-     *            the distance from the center to the top frustum edge
-     * @return this
-     */
-    public ortho2DLH(left: number, right: number, bottom: number, top: number): Matrix4 {
-        return ortho2DLH(left, right, bottom, top, this);
     }
 
     /**
@@ -6639,14 +6189,14 @@ export class Matrix4 {
      * @return this
      */
     public setOrtho2D(left: number, right: number, bottom: number, top: number): Matrix4 {
-        if ((properties & PROPERTY_IDENTITY) == 0)
-            _identity();
-        _m00(2.0 / (right - left)).
-            _m11(2.0 / (top - bottom)).
-            _m22(-1.0).
-            _m30((right + left) / (left - right)).
-            _m31((top + bottom) / (bottom - top)).
-            properties = PROPERTY_AFFINE;
+        if (!this.PROPERTY_IDENTITY)
+            this.identity();
+        this[0][0] = 2.0 / (right - left);
+        this[1][1] = 2.0 / (top - bottom);
+        this[2][2] = -1.0;
+        this[3][0] = (right + left) / (left - right);
+        this[3][1] = (top + bottom) / (bottom - top);
+        // properties = PROPERTY_AFFINE;
         return this;
     }
 
@@ -6675,43 +6225,14 @@ export class Matrix4 {
      * @return this
      */
     public setOrtho2DLH(left: number, right: number, bottom: number, top: number): Matrix4 {
-        if ((properties & PROPERTY_IDENTITY) == 0)
-            _identity();
-        _m00(2.0 / (right - left)).
-            _m11(2.0 / (top - bottom)).
-            _m30((right + left) / (left - right)).
-            _m31((top + bottom) / (bottom - top)).
-            properties = PROPERTY_AFFINE;
+        if (!this.PROPERTY_IDENTITY)
+            this.identity();
+        this[0][0] = 2.0 / (right - left);
+        this[1][1] = 2.0 / (top - bottom);
+        this[3][0] = (right + left) / (left - right);
+        this[3][1] = (top + bottom) / (bottom - top);
+        // properties = PROPERTY_AFFINE;
         return this;
-    }
-
-    /**
-     * Apply a rotation transformation to this matrix to make <code>-z</code> point along <code>dir</code>. 
-     * <p>
-     * If <code>M</code> is <code>this</code> matrix and <code>L</code> the lookalong rotation matrix,
-     * then the new matrix will be <code>M * L</code>. So when transforming a
-     * vector <code>v</code> with the new matrix by using <code>M * L * v</code>, the
-     * lookalong rotation transformation will be applied first!
-     * <p>
-     * This is equivalent to calling
-     * {@link #lookAt(Vector3dc, Vector3dc, Vector3dc) lookAt}
-     * with <code>eye = (0, 0, 0)</code> and <code>center = dir</code>.
-     * <p>
-     * In order to set the matrix to a lookalong transformation without post-multiplying it,
-     * use {@link #setLookAlong(Vector3dc, Vector3dc) setLookAlong()}.
-     * 
-     * @see #lookAlong(double, double, double, double, double, double)
-     * @see #lookAt(Vector3dc, Vector3dc, Vector3dc)
-     * @see #setLookAlong(Vector3dc, Vector3dc)
-     * 
-     * @param dir
-     *            the direction in space to look along
-     * @param up
-     *            the direction of 'up'
-     * @return this
-     */
-    public lookAlong(dir: Vector3, up: Vector3): Matrix4 {
-        return lookAlong(dir.x(), dir.y(), dir.z(), up.x(), up.y(), up.z(), this);
     }
 
     /**
@@ -6742,8 +6263,8 @@ export class Matrix4 {
      *            will hold the result
      * @return dest
      */
-    public lookAlong(dir: Vector3, up: Vector3, dest: Matrix4): Matrix4 {
-        return lookAlong(dir.x(), dir.y(), dir.z(), up.x(), up.y(), up.z(), dest);
+    public lookAlong(dir: Vector3, up: Vector3, dest?: Matrix4): Matrix4 {
+        return this.lookAlong(dir.x, dir.y, dir.z, up.x, up.y, up.z, dest);
     }
 
     /**
@@ -6790,17 +6311,17 @@ export class Matrix4 {
 
     private lookAlongGeneric(dirX: number, dirY: number, dirZ: number, upX: number, upY: number, upZ: number, dest: Matrix4): Matrix4 {
         // Normalize direction
-        const invDirLength = Math.invsqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
+        const invDirLength = 1 / Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
         dirX *= -invDirLength;
         dirY *= -invDirLength;
         dirZ *= -invDirLength;
         // left = up x direction
-        const leftX, leftY, leftZ;
+        let leftX, leftY, leftZ;
         leftX = upY * dirZ - upZ * dirY;
         leftY = upZ * dirX - upX * dirZ;
         leftZ = upX * dirY - upY * dirX;
         // normalize left
-        const invLeftLength = Math.invsqrt(leftX * leftX + leftY * leftY + leftZ * leftZ);
+        const invLeftLength = 1 / Math.sqrt(leftX * leftX + leftY * leftY + leftZ * leftZ);
         leftX *= invLeftLength;
         leftY *= invLeftLength;
         leftZ *= invLeftLength;
@@ -6820,32 +6341,32 @@ export class Matrix4 {
         const rm22 = dirZ;
         // perform optimized matrix multiplication
         // introduce temporaries for dependent results
-        const nm00 = m00 * rm00 + m10 * rm01 + m20 * rm02;
-        const nm01 = m01 * rm00 + m11 * rm01 + m21 * rm02;
-        const nm02 = m02 * rm00 + m12 * rm01 + m22 * rm02;
-        const nm03 = m03 * rm00 + m13 * rm01 + m23 * rm02;
-        const nm10 = m00 * rm10 + m10 * rm11 + m20 * rm12;
-        const nm11 = m01 * rm10 + m11 * rm11 + m21 * rm12;
-        const nm12 = m02 * rm10 + m12 * rm11 + m22 * rm12;
-        const nm13 = m03 * rm10 + m13 * rm11 + m23 * rm12;
-        dest._m20(m00 * rm20 + m10 * rm21 + m20 * rm22)
-            ._m21(m01 * rm20 + m11 * rm21 + m21 * rm22)
-            ._m22(m02 * rm20 + m12 * rm21 + m22 * rm22)
-            ._m23(m03 * rm20 + m13 * rm21 + m23 * rm22)
-            // set the rest of the matrix elements
-            ._m00(nm00)
-            ._m01(nm01)
-            ._m02(nm02)
-            ._m03(nm03)
-            ._m10(nm10)
-            ._m11(nm11)
-            ._m12(nm12)
-            ._m13(nm13)
-            ._m30(m30)
-            ._m31(m31)
-            ._m32(m32)
-            ._m33(m33)
-            ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
+        const nm00 = this[0][0] * rm00 + this[1][0] * rm01 + this[2][0] * rm02;
+        const nm01 = this[0][1] * rm00 + this[1][1] * rm01 + this[2][1] * rm02;
+        const nm02 = this[0][2] * rm00 + this[1][2] * rm01 + this[2][2] * rm02;
+        const nm03 = this[0][3] * rm00 + this[1][3] * rm01 + this[2][3] * rm02;
+        const nm10 = this[0][0] * rm10 + this[1][0] * rm11 + this[2][0] * rm12;
+        const nm11 = this[0][1] * rm10 + this[1][1] * rm11 + this[2][1] * rm12;
+        const nm12 = this[0][2] * rm10 + this[1][2] * rm11 + this[2][2] * rm12;
+        const nm13 = this[0][3] * rm10 + this[1][3] * rm11 + this[2][3] * rm12;
+        dest[2][0] = this[0][0] * rm20 + this[1][0] * rm21 + this[2][0] * rm22;
+        dest[2][1] = this[0][1] * rm20 + this[1][1] * rm21 + this[2][1] * rm22;
+        dest[2][2] = this[0][2] * rm20 + this[1][2] * rm21 + this[2][2] * rm22;
+        dest[2][3] = this[0][3] * rm20 + this[1][3] * rm21 + this[2][3] * rm22;
+        // set the rest of the matrix elements
+        dest[0][0] = nm00;
+        dest[0][1] = nm01;
+        dest[0][2] = nm02;
+        dest[0][3] = nm03;
+        dest[1][0] = nm10;
+        dest[1][1] = nm11;
+        dest[1][2] = nm12;
+        dest[1][3] = nm13;
+        dest[3][0] = this[3][0];
+        dest[3][1] = this[3][1];
+        dest[3][2] = this[3][2];
+        dest[3][3] = this[3][3];
+        // ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
         return dest;
     }
 
@@ -6869,9 +6390,7 @@ export class Matrix4 {
      *            the direction of 'up'
      * @return this
      */
-    public setLookAlong(dir: Vector3, up: Vector3): Matrix4 {
-        return setLookAlong(dir.x(), dir.y(), dir.z(), up.x(), up.y(), up.z());
-    }
+    public setLookAlong(dir: Vector3, up: Vector3): Matrix4;
 
     /**
      * Set this matrix to a rotation transformation to make <code>-z</code>
@@ -6902,19 +6421,32 @@ export class Matrix4 {
      * @return this
      */
     public setLookAlong(dirX: number, dirY: number, dirZ: number,
-        upX: number, upY: number, upZ: number): Matrix4 {
+        upX: number, upY: number, upZ: number): Matrix4;
+    public setLookAlong(dirX: number | Vector3, dirY: number | Vector3, dirZ?: number,
+        upX?: number, upY?: number, upZ?: number): Matrix4 {
+        if (dirY instanceof Vector3) {
+            upZ = dirY.z, upY = dirY.y, upX = dirY.x;
+        }
+        if (dirX instanceof Vector3) {
+            dirZ = dirX.z, dirY = dirX.y, dirX = dirX.x;
+        } else {
+            dirY = dirY as number;
+            dirX = dirX as number;
+        }
+
+
         // Normalize direction
-        const invDirLength = Math.invsqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
+        const invDirLength = 1 / Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
         dirX *= -invDirLength;
         dirY *= -invDirLength;
         dirZ *= -invDirLength;
         // left = up x direction
-        const leftX, leftY, leftZ;
+        let leftX, leftY, leftZ;
         leftX = upY * dirZ - upZ * dirY;
         leftY = upZ * dirX - upX * dirZ;
         leftZ = upX * dirY - upY * dirX;
         // normalize left
-        const invLeftLength = Math.invsqrt(leftX * leftX + leftY * leftY + leftZ * leftZ);
+        const invLeftLength = 1 / Math.sqrt(leftX * leftX + leftY * leftY + leftZ * leftZ);
         leftX *= invLeftLength;
         leftY *= invLeftLength;
         leftZ *= invLeftLength;
@@ -6922,23 +6454,23 @@ export class Matrix4 {
         const upnX = dirY * leftZ - dirZ * leftY;
         const upnY = dirZ * leftX - dirX * leftZ;
         const upnZ = dirX * leftY - dirY * leftX;
-        _m00(leftX).
-            _m01(upnX).
-            _m02(dirX).
-            _m03(0.0).
-            _m10(leftY).
-            _m11(upnY).
-            _m12(dirY).
-            _m13(0.0).
-            _m20(leftZ).
-            _m21(upnZ).
-            _m22(dirZ).
-            _m23(0.0).
-            _m30(0.0).
-            _m31(0.0).
-            _m32(0.0).
-            _m33(1.0).
-            properties = PROPERTY_AFFINE | PROPERTY_ORTHONORMAL;
+        this[0][0] = leftX;
+        this[0][1] = upnX;
+        this[0][2] = dirX;
+        this[0][3] = 0.0;
+        this[1][0] = leftY;
+        this[1][1] = upnY;
+        this[1][2] = dirY;
+        this[1][3] = 0.0;
+        this[2][0] = leftZ;
+        this[2][1] = upnZ;
+        this[2][2] = dirZ;
+        this[2][3] = 0.0;
+        this[3][0] = 0.0;
+        this[3][1] = 0.0;
+        this[3][2] = 0.0;
+        this[3][3] = 1.0;
+        // properties = PROPERTY_AFFINE | PROPERTY_ORTHONORMAL;
         return this;
     }
 
@@ -6964,9 +6496,7 @@ export class Matrix4 {
      *            the direction of 'up'
      * @return this
      */
-    public setLookAt(eye: Vector3, center: Vector3, up: Vector3): Matrix4 {
-        return setLookAt(eye.x(), eye.y(), eye.z(), center.x(), center.y(), center.z(), up.x(), up.y(), up.z());
-    }
+    public setLookAt(eye: Vector3, center: Vector3, up: Vector3): Matrix4;
 
     /**
      * Set this matrix to be a "lookat" transformation for a right-handed coordinate system, 
@@ -7000,24 +6530,41 @@ export class Matrix4 {
      */
     public setLookAt(eyeX: number, eyeY: number, eyeZ: number,
         centerX: number, centerY: number, centerZ: number,
-        upX: number, upY: number, upZ: number): Matrix4 {
+        upX: number, upY: number, upZ: number): Matrix4;
+    public setLookAt(eyeX: number | Vector3, eyeY: number | Vector3, eyeZ: number | Vector3,
+        centerX?: number, centerY?: number, centerZ?: number,
+        upX?: number, upY?: number, upZ?: number): Matrix4 {
+
+        if (eyeZ instanceof Vector3) {
+            upZ = eyeZ.z, upY = eyeZ.y, upX = eyeZ.x;
+        }
+        if (eyeY instanceof Vector3) {
+            centerZ = eyeY.z, centerY = eyeY.y, centerX = eyeY.x;
+        }
+        if (eyeX instanceof Vector3) {
+            eyeZ = eyeX.z, eyeY = eyeX.y, eyeX = eyeX.x;
+        } else {
+            eyeX = eyeX as number;
+            eyeY = eyeY as number;
+            eyeZ = eyeZ as number;
+        }
         // Compute direction from position to lookAt
-        const dirX, dirY, dirZ;
+        let dirX, dirY, dirZ;
         dirX = eyeX - centerX;
         dirY = eyeY - centerY;
         dirZ = eyeZ - centerZ;
         // Normalize direction
-        const invDirLength = Math.invsqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
+        const invDirLength = 1 / Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
         dirX *= invDirLength;
         dirY *= invDirLength;
         dirZ *= invDirLength;
         // left = up x direction
-        const leftX, leftY, leftZ;
+        let leftX, leftY, leftZ;
         leftX = upY * dirZ - upZ * dirY;
         leftY = upZ * dirX - upX * dirZ;
         leftZ = upX * dirY - upY * dirX;
         // normalize left
-        const invLeftLength = Math.invsqrt(leftX * leftX + leftY * leftY + leftZ * leftZ);
+        let invLeftLength = 1 / Math.sqrt(leftX * leftX + leftY * leftY + leftZ * leftZ);
         leftX *= invLeftLength;
         leftY *= invLeftLength;
         leftZ *= invLeftLength;
@@ -7025,24 +6572,24 @@ export class Matrix4 {
         const upnX = dirY * leftZ - dirZ * leftY;
         const upnY = dirZ * leftX - dirX * leftZ;
         const upnZ = dirX * leftY - dirY * leftX;
-        return this.
-            _m00(leftX).
-            _m01(upnX).
-            _m02(dirX).
-            _m03(0.0).
-            _m10(leftY).
-            _m11(upnY).
-            _m12(dirY).
-            _m13(0.0).
-            _m20(leftZ).
-            _m21(upnZ).
-            _m22(dirZ).
-            _m23(0.0).
-            _m30(-(leftX * eyeX + leftY * eyeY + leftZ * eyeZ)).
-            _m31(-(upnX * eyeX + upnY * eyeY + upnZ * eyeZ)).
-            _m32(-(dirX * eyeX + dirY * eyeY + dirZ * eyeZ)).
-            _m33(1.0).
-            _properties(PROPERTY_AFFINE | PROPERTY_ORTHONORMAL);
+        this[0][0] = leftX;
+        this[0][1] = upnX;
+        this[0][2] = dirX;
+        this[0][3] = 0.0;
+        this[1][0] = leftY;
+        this[1][1] = upnY;
+        this[1][2] = dirY;
+        this[1][3] = 0.0;
+        this[2][0] = leftZ;
+        this[2][1] = upnZ;
+        this[2][2] = dirZ;
+        this[2][3] = 0.0;
+        this[3][0] = -(leftX * eyeX + leftY * eyeY + leftZ * eyeZ);
+        this[3][1] = -(upnX * eyeX + upnY * eyeY + upnZ * eyeZ);
+        this[3][2] = -(dirX * eyeX + dirY * eyeY + dirZ * eyeZ);
+        this[3][3] = 1.0;
+        return this;
+        // _properties(PROPERTY_AFFINE | PROPERTY_ORTHONORMAL);
     }
 
     /**
@@ -7071,34 +6618,7 @@ export class Matrix4 {
      * @return dest
      */
     public lookAt(eye: Vector3, center: Vector3, up: Vector3, dest: Matrix4): Matrix4 {
-        return lookAt(eye.x(), eye.y(), eye.z(), center.x(), center.y(), center.z(), up.x(), up.y(), up.z(), dest);
-    }
-
-    /**
-     * Apply a "lookat" transformation to this matrix for a right-handed coordinate system, 
-     * that aligns <code>-z</code> with <code>center - eye</code>.
-     * <p>
-     * If <code>M</code> is <code>this</code> matrix and <code>L</code> the lookat matrix,
-     * then the new matrix will be <code>M * L</code>. So when transforming a
-     * vector <code>v</code> with the new matrix by using <code>M * L * v</code>,
-     * the lookat transformation will be applied first!
-     * <p>
-     * In order to set the matrix to a lookat transformation without post-multiplying it,
-     * use {@link #setLookAt(Vector3dc, Vector3dc, Vector3dc)}.
-     * 
-     * @see #lookAt(double, double, double, double, double, double, double, double, double)
-     * @see #setLookAlong(Vector3dc, Vector3dc)
-     * 
-     * @param eye
-     *            the position of the camera
-     * @param center
-     *            the point in space to look at
-     * @param up
-     *            the direction of 'up'
-     * @return this
-     */
-    public lookAt(eye: Vector3, center: Vector3, up: Vector3): Matrix4 {
-        return lookAt(eye.x(), eye.y(), eye.z(), center.x(), center.y(), center.z(), up.x(), up.y(), up.z(), this);
+        return lookAt(eye.x, eye.y, eye.z, center.x, center.y, center.z, up.x, up.y, up.z, dest);
     }
 
     /**
@@ -7143,28 +6663,28 @@ export class Matrix4 {
         upX: number, upY: number, upZ: number, dest: Matrix4): Matrix4 {
 
         dest = dest ?? this;
-        if ((properties & PROPERTY_IDENTITY) != 0)
+        if (this.PROPERTY_IDENTITY)
             return dest.setLookAt(eyeX, eyeY, eyeZ, centerX, centerY, centerZ, upX, upY, upZ);
-        else if ((properties & PROPERTY_PERSPECTIVE) != 0)
-            return lookAtPerspective(eyeX, eyeY, eyeZ, centerX, centerY, centerZ, upX, upY, upZ, dest);
+        else if (this.PROPERTY_PERSPECTIVE)
+            return this.lookAtPerspective(eyeX, eyeY, eyeZ, centerX, centerY, centerZ, upX, upY, upZ, dest);
 
         // Compute direction from position to lookAt
-        const dirX, dirY, dirZ;
+        let dirX, dirY, dirZ;
         dirX = eyeX - centerX;
         dirY = eyeY - centerY;
         dirZ = eyeZ - centerZ;
         // Normalize direction
-        const invDirLength = Math.invsqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
+        const invDirLength = 1 / Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
         dirX *= invDirLength;
         dirY *= invDirLength;
         dirZ *= invDirLength;
         // left = up x direction
-        const leftX, leftY, leftZ;
+        let leftX, leftY, leftZ;
         leftX = upY * dirZ - upZ * dirY;
         leftY = upZ * dirX - upX * dirZ;
         leftZ = upX * dirY - upY * dirX;
         // normalize left
-        const invLeftLength = Math.invsqrt(leftX * leftX + leftY * leftY + leftZ * leftZ);
+        const invLeftLength = 1 / Math.sqrt(leftX * leftX + leftY * leftY + leftZ * leftZ);
         leftX *= invLeftLength;
         leftY *= invLeftLength;
         leftZ *= invLeftLength;
@@ -7185,36 +6705,26 @@ export class Matrix4 {
         const rm30 = -(leftX * eyeX + leftY * eyeY + leftZ * eyeZ);
         const rm31 = -(upnX * eyeX + upnY * eyeY + upnZ * eyeZ);
         const rm32 = -(dirX * eyeX + dirY * eyeY + dirZ * eyeZ);
-        const nm00 = m00 * rm00 + m10 * rm01 + m20 * rm02;
-        const nm01 = m01 * rm00 + m11 * rm01 + m21 * rm02;
-        const nm02 = m02 * rm00 + m12 * rm01 + m22 * rm02;
-        const nm03 = m03 * rm00 + m13 * rm01 + m23 * rm02;
-        const nm10 = m00 * rm10 + m10 * rm11 + m20 * rm12;
-        const nm11 = m01 * rm10 + m11 * rm11 + m21 * rm12;
-        const nm12 = m02 * rm10 + m12 * rm11 + m22 * rm12;
-        const nm13 = m03 * rm10 + m13 * rm11 + m23 * rm12;
-        // perform optimized matrix multiplication
-        // compute last column first, because others do not depend on it
-        dest._m30(m00 * rm30 + m10 * rm31 + m20 * rm32 + m30)
-            ._m31(m01 * rm30 + m11 * rm31 + m21 * rm32 + m31)
-            ._m32(m02 * rm30 + m12 * rm31 + m22 * rm32 + m32)
-            ._m33(m03 * rm30 + m13 * rm31 + m23 * rm32 + m33)
-            // introduce temporaries for dependent results
-            ._m20(m00 * rm20 + m10 * rm21 + m20 * rm22)
-            ._m21(m01 * rm20 + m11 * rm21 + m21 * rm22)
-            ._m22(m02 * rm20 + m12 * rm21 + m22 * rm22)
-            ._m23(m03 * rm20 + m13 * rm21 + m23 * rm22)
-            // set the rest of the matrix elements
-            ._m00(nm00)
-            ._m01(nm01)
-            ._m02(nm02)
-            ._m03(nm03)
-            ._m10(nm10)
-            ._m11(nm11)
-            ._m12(nm12)
-            ._m13(nm13)
-            ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
-        return dest;
+        return dest.set(
+            this[0][0] * rm00 + this[1][0] * rm01 + this[2][0] * rm02,
+            this[0][1] * rm00 + this[1][1] * rm01 + this[2][1] * rm02,
+            this[0][2] * rm00 + this[1][2] * rm01 + this[2][2] * rm02,
+            this[0][3] * rm00 + this[1][3] * rm01 + this[2][3] * rm02,
+            this[0][0] * rm10 + this[1][0] * rm11 + this[2][0] * rm12,
+            this[0][1] * rm10 + this[1][1] * rm11 + this[2][1] * rm12,
+            this[0][2] * rm10 + this[1][2] * rm11 + this[2][2] * rm12,
+            this[0][3] * rm10 + this[1][3] * rm11 + this[2][3] * rm12,
+            this[0][0] * rm20 + this[1][0] * rm21 + this[2][0] * rm22,
+            this[0][1] * rm20 + this[1][1] * rm21 + this[2][1] * rm22,
+            this[0][2] * rm20 + this[1][2] * rm21 + this[2][2] * rm22,
+            this[0][3] * rm20 + this[1][3] * rm21 + this[2][3] * rm22,
+            this[0][0] * rm30 + this[1][0] * rm31 + this[2][0] * rm32 + this[3][0],
+            this[0][1] * rm30 + this[1][1] * rm31 + this[2][1] * rm32 + this[3][1],
+            this[0][2] * rm30 + this[1][2] * rm31 + this[2][2] * rm32 + this[3][2],
+            this[0][3] * rm30 + this[1][3] * rm31 + this[2][3] * rm32 + this[3][3],
+        )
+        // ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
+        // return dest;
     }
 
     /**
@@ -7261,22 +6771,22 @@ export class Matrix4 {
         centerX: number, centerY: number, centerZ: number,
         upX: number, upY: number, upZ: number, dest: Matrix4): Matrix4 {
         // Compute direction from position to lookAt
-        const dirX, dirY, dirZ;
+        let dirX, dirY, dirZ;
         dirX = eyeX - centerX;
         dirY = eyeY - centerY;
         dirZ = eyeZ - centerZ;
         // Normalize direction
-        const invDirLength = Math.invsqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
+        const invDirLength = 1 / Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
         dirX *= invDirLength;
         dirY *= invDirLength;
         dirZ *= invDirLength;
         // left = up x direction
-        const leftX, leftY, leftZ;
+        let leftX, leftY, leftZ;
         leftX = upY * dirZ - upZ * dirY;
         leftY = upZ * dirX - upX * dirZ;
         leftZ = upX * dirY - upY * dirX;
         // normalize left
-        const invLeftLength = Math.invsqrt(leftX * leftX + leftY * leftY + leftZ * leftZ);
+        const invLeftLength = 1 / Math.sqrt(leftX * leftX + leftY * leftY + leftZ * leftZ);
         leftX *= invLeftLength;
         leftY *= invLeftLength;
         leftZ *= invLeftLength;
@@ -7287,31 +6797,32 @@ export class Matrix4 {
         const rm30 = -(leftX * eyeX + leftY * eyeY + leftZ * eyeZ);
         const rm31 = -(upnX * eyeX + upnY * eyeY + upnZ * eyeZ);
         const rm32 = -(dirX * eyeX + dirY * eyeY + dirZ * eyeZ);
-        const nm10 = m00 * leftY;
-        const nm20 = m00 * leftZ;
-        const nm21 = m11 * upnZ;
-        const nm30 = m00 * rm30;
-        const nm31 = m11 * rm31;
-        const nm32 = m22 * rm32 + m32;
-        const nm33 = m23 * rm32;
-        return dest
-            ._m00(m00 * leftX)
-            ._m01(m11 * upnX)
-            ._m02(m22 * dirX)
-            ._m03(m23 * dirX)
-            ._m10(nm10)
-            ._m11(m11 * upnY)
-            ._m12(m22 * dirY)
-            ._m13(m23 * dirY)
-            ._m20(nm20)
-            ._m21(nm21)
-            ._m22(m22 * dirZ)
-            ._m23(m23 * dirZ)
-            ._m30(nm30)
-            ._m31(nm31)
-            ._m32(nm32)
-            ._m33(nm33)
-            ._properties(0);
+        const nm10 = this[0][0] * leftY;
+        const nm20 = this[0][0] * leftZ;
+        const nm21 = this[1][1] * upnZ;
+        const nm30 = this[0][0] * rm30;
+        const nm31 = this[1][1] * rm31;
+        const nm32 = this[2][2] * rm32 + this[3][2];
+        const nm33 = this[2][3] * rm32;
+
+        dest[0][0] = this[0][0] * leftX;
+        dest[0][1] = this[1][1] * upnX;
+        dest[0][2] = this[2][2] * dirX;
+        dest[0][3] = this[2][3] * dirX;
+        dest[1][0] = nm10;
+        dest[1][1] = this[1][1] * upnY;
+        dest[1][2] = this[2][2] * dirY;
+        dest[1][3] = this[2][3] * dirY;
+        dest[2][0] = nm20;
+        dest[2][1] = nm21;
+        dest[2][2] = this[2][2] * dirZ;
+        dest[2][3] = this[2][3] * dirZ;
+        dest[3][0] = nm30;
+        dest[3][1] = nm31;
+        dest[3][2] = nm32;
+        dest[3][3] = nm33;
+        // ._properties(0);
+        return dest;
     }
 
     /**
@@ -7337,7 +6848,7 @@ export class Matrix4 {
      * @return this
      */
     public setLookAtLH(eye: Vector3, center: Vector3, up: Vector3): Matrix4 {
-        return setLookAtLH(eye.x(), eye.y(), eye.z(), center.x(), center.y(), center.z(), up.x(), up.y(), up.z());
+        return setLookAtLH(eye.x, eye.y, eye.z, center.x, center.y, center.z, up.x, up.y, up.z);
     }
 
     /**
@@ -7375,22 +6886,22 @@ export class Matrix4 {
         upX: number, upY: number, upZ: number, dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         // Compute direction from position to lookAt
-        const dirX, dirY, dirZ;
+        let dirX, dirY, dirZ;
         dirX = centerX - eyeX;
         dirY = centerY - eyeY;
         dirZ = centerZ - eyeZ;
         // Normalize direction
-        const invDirLength = Math.invsqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
+        const invDirLength = 1 / Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
         dirX *= invDirLength;
         dirY *= invDirLength;
         dirZ *= invDirLength;
         // left = up x direction
-        const leftX, leftY, leftZ;
+        let leftX, leftY, leftZ;
         leftX = upY * dirZ - upZ * dirY;
         leftY = upZ * dirX - upX * dirZ;
         leftZ = upX * dirY - upY * dirX;
         // normalize left
-        const invLeftLength = Math.invsqrt(leftX * leftX + leftY * leftY + leftZ * leftZ);
+        const invLeftLength = 1 / Math.sqrt(leftX * leftX + leftY * leftY + leftZ * leftZ);
         leftX *= invLeftLength;
         leftY *= invLeftLength;
         leftZ *= invLeftLength;
@@ -7398,23 +6909,23 @@ export class Matrix4 {
         const upnX = dirY * leftZ - dirZ * leftY;
         const upnY = dirZ * leftX - dirX * leftZ;
         const upnZ = dirX * leftY - dirY * leftX;
-        _m00(leftX).
-            _m01(upnX).
-            _m02(dirX).
-            _m03(0.0).
-            _m10(leftY).
-            _m11(upnY).
-            _m12(dirY).
-            _m13(0.0).
-            _m20(leftZ).
-            _m21(upnZ).
-            _m22(dirZ).
-            _m23(0.0).
-            _m30(-(leftX * eyeX + leftY * eyeY + leftZ * eyeZ)).
-            _m31(-(upnX * eyeX + upnY * eyeY + upnZ * eyeZ)).
-            _m32(-(dirX * eyeX + dirY * eyeY + dirZ * eyeZ)).
-            _m33(1.0).
-            properties = PROPERTY_AFFINE | PROPERTY_ORTHONORMAL;
+        this[0][0] = leftX;
+        this[0][1] = upnX;
+        this[0][2] = dirX;
+        this[0][3] = 0.0;
+        this[1][0] = leftY;
+        this[1][1] = upnY;
+        this[1][2] = dirY;
+        this[1][3] = 0.0;
+        this[2][0] = leftZ;
+        this[2][1] = upnZ;
+        this[2][2] = dirZ;
+        this[2][3] = 0.0;
+        this[3][0] = -(leftX * eyeX + leftY * eyeY + leftZ * eyeZ);
+        this[3][1] = -(upnX * eyeX + upnY * eyeY + upnZ * eyeZ);
+        this[3][2] = -(dirX * eyeX + dirY * eyeY + dirZ * eyeZ);
+        this[3][3] = 1.0;
+        // properties = PROPERTY_AFFINE | PROPERTY_ORTHONORMAL;
         return this;
     }
 
@@ -7443,34 +6954,8 @@ export class Matrix4 {
      *            will hold the result
      * @return dest
      */
-    public lookAtLH(eye: Vector3, center: Vector3, up: Vector3, dest: Matrix4): Matrix4 {
-        return lookAtLH(eye.x(), eye.y(), eye.z(), center.x(), center.y(), center.z(), up.x(), up.y(), up.z(), dest);
-    }
-
-    /**
-     * Apply a "lookat" transformation to this matrix for a left-handed coordinate system, 
-     * that aligns <code>+z</code> with <code>center - eye</code>.
-     * <p>
-     * If <code>M</code> is <code>this</code> matrix and <code>L</code> the lookat matrix,
-     * then the new matrix will be <code>M * L</code>. So when transforming a
-     * vector <code>v</code> with the new matrix by using <code>M * L * v</code>,
-     * the lookat transformation will be applied first!
-     * <p>
-     * In order to set the matrix to a lookat transformation without post-multiplying it,
-     * use {@link #setLookAtLH(Vector3dc, Vector3dc, Vector3dc)}.
-     * 
-     * @see #lookAtLH(double, double, double, double, double, double, double, double, double)
-     * 
-     * @param eye
-     *            the position of the camera
-     * @param center
-     *            the point in space to look at
-     * @param up
-     *            the direction of 'up'
-     * @return this
-     */
-    public lookAtLH(eye: Vector3, center: Vector3, up: Vector3): Matrix4 {
-        return lookAtLH(eye.x(), eye.y(), eye.z(), center.x(), center.y(), center.z(), up.x(), up.y(), up.z(), this);
+    public lookAtLH(eye: Vector3, center: Vector3, up: Vector3, dest?: Matrix4): Matrix4 {
+        return lookAtLH(eye.x, eye.y, eye.z, center.x, center.y, center.z, up.x, up.y, up.z, dest);
     }
 
     /**
@@ -7512,33 +6997,34 @@ export class Matrix4 {
      */
     public lookAtLH(eyeX: number, eyeY: number, eyeZ: number,
         centerX: number, centerY: number, centerZ: number,
-        upX: number, upY: number, upZ: number, dest: Matrix4): Matrix4 {
-        if ((properties & PROPERTY_IDENTITY) != 0)
+        upX: number, upY: number, upZ: number, dest?: Matrix4): Matrix4 {
+        dest = dest ?? this;
+        if (this.PROPERTY_IDENTITY)
             return dest.setLookAtLH(eyeX, eyeY, eyeZ, centerX, centerY, centerZ, upX, upY, upZ);
-        else if ((properties & PROPERTY_PERSPECTIVE) != 0)
-            return lookAtPerspectiveLH(eyeX, eyeY, eyeZ, centerX, centerY, centerZ, upX, upY, upZ, dest);
-        return lookAtLHGeneric(eyeX, eyeY, eyeZ, centerX, centerY, centerZ, upX, upY, upZ, dest);
+        else if (this.PROPERTY_PERSPECTIVE)
+            return this.lookAtPerspectiveLH(eyeX, eyeY, eyeZ, centerX, centerY, centerZ, upX, upY, upZ, dest);
+        return this.lookAtLHGeneric(eyeX, eyeY, eyeZ, centerX, centerY, centerZ, upX, upY, upZ, dest);
     }
     private lookAtLHGeneric(eyeX: number, eyeY: number, eyeZ: number,
         centerX: number, centerY: number, centerZ: number,
         upX: number, upY: number, upZ: number, dest: Matrix4): Matrix4 {
         // Compute direction from position to lookAt
-        const dirX, dirY, dirZ;
+        let dirX, dirY, dirZ;
         dirX = centerX - eyeX;
         dirY = centerY - eyeY;
         dirZ = centerZ - eyeZ;
         // Normalize direction
-        const invDirLength = Math.invsqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
+        const invDirLength = 1 / Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
         dirX *= invDirLength;
         dirY *= invDirLength;
         dirZ *= invDirLength;
         // left = up x direction
-        const leftX, leftY, leftZ;
+        let leftX, leftY, leftZ;
         leftX = upY * dirZ - upZ * dirY;
         leftY = upZ * dirX - upX * dirZ;
         leftZ = upX * dirY - upY * dirX;
         // normalize left
-        const invLeftLength = Math.invsqrt(leftX * leftX + leftY * leftY + leftZ * leftZ);
+        const invLeftLength = 1 / Math.sqrt(leftX * leftX + leftY * leftY + leftZ * leftZ);
         leftX *= invLeftLength;
         leftY *= invLeftLength;
         leftZ *= invLeftLength;
@@ -7560,76 +7046,26 @@ export class Matrix4 {
         const rm31 = -(upnX * eyeX + upnY * eyeY + upnZ * eyeZ);
         const rm32 = -(dirX * eyeX + dirY * eyeY + dirZ * eyeZ);
         // introduce temporaries for dependent results
-        const nm00 = m00 * rm00 + m10 * rm01 + m20 * rm02;
-        const nm01 = m01 * rm00 + m11 * rm01 + m21 * rm02;
-        const nm02 = m02 * rm00 + m12 * rm01 + m22 * rm02;
-        const nm03 = m03 * rm00 + m13 * rm01 + m23 * rm02;
-        const nm10 = m00 * rm10 + m10 * rm11 + m20 * rm12;
-        const nm11 = m01 * rm10 + m11 * rm11 + m21 * rm12;
-        const nm12 = m02 * rm10 + m12 * rm11 + m22 * rm12;
-        const nm13 = m03 * rm10 + m13 * rm11 + m23 * rm12;
-        // perform optimized matrix multiplication
-        // compute last column first, because others do not depend on it
-        dest._m30(m00 * rm30 + m10 * rm31 + m20 * rm32 + m30)
-            ._m31(m01 * rm30 + m11 * rm31 + m21 * rm32 + m31)
-            ._m32(m02 * rm30 + m12 * rm31 + m22 * rm32 + m32)
-            ._m33(m03 * rm30 + m13 * rm31 + m23 * rm32 + m33)
-            ._m20(m00 * rm20 + m10 * rm21 + m20 * rm22)
-            ._m21(m01 * rm20 + m11 * rm21 + m21 * rm22)
-            ._m22(m02 * rm20 + m12 * rm21 + m22 * rm22)
-            ._m23(m03 * rm20 + m13 * rm21 + m23 * rm22)
-            // set the rest of the matrix elements
-            ._m00(nm00)
-            ._m01(nm01)
-            ._m02(nm02)
-            ._m03(nm03)
-            ._m10(nm10)
-            ._m11(nm11)
-            ._m12(nm12)
-            ._m13(nm13)
-            ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
-        return dest;
-    }
-
-    /**
-     * Apply a "lookat" transformation to this matrix for a left-handed coordinate system, 
-     * that aligns <code>+z</code> with <code>center - eye</code>.
-     * <p>
-     * If <code>M</code> is <code>this</code> matrix and <code>L</code> the lookat matrix,
-     * then the new matrix will be <code>M * L</code>. So when transforming a
-     * vector <code>v</code> with the new matrix by using <code>M * L * v</code>,
-     * the lookat transformation will be applied first!
-     * <p>
-     * In order to set the matrix to a lookat transformation without post-multiplying it,
-     * use {@link #setLookAtLH(double, double, double, double, double, double, double, double, double) setLookAtLH()}.
-     * 
-     * @see #lookAtLH(Vector3dc, Vector3dc, Vector3dc)
-     * @see #setLookAtLH(double, double, double, double, double, double, double, double, double)
-     * 
-     * @param eyeX
-     *              the x-coordinate of the eye/camera location
-     * @param eyeY
-     *              the y-coordinate of the eye/camera location
-     * @param eyeZ
-     *              the z-coordinate of the eye/camera location
-     * @param centerX
-     *              the x-coordinate of the point to look at
-     * @param centerY
-     *              the y-coordinate of the point to look at
-     * @param centerZ
-     *              the z-coordinate of the point to look at
-     * @param upX
-     *              the x-coordinate of the up vector
-     * @param upY
-     *              the y-coordinate of the up vector
-     * @param upZ
-     *              the z-coordinate of the up vector
-     * @return this
-     */
-    public Matrix4d lookAtLH(eyeX: number, eyeY: number, eyeZ: number,
-        centerX: number, centerY: number, centerZ: number,
-        upX: number, upY: number, upZ: number) {
-        return lookAtLH(eyeX, eyeY, eyeZ, centerX, centerY, centerZ, upX, upY, upZ, this);
+        return dest.set(
+            this[0][0] * rm00 + this[1][0] * rm01 + this[2][0] * rm02,
+            this[0][1] * rm00 + this[1][1] * rm01 + this[2][1] * rm02,
+            this[0][2] * rm00 + this[1][2] * rm01 + this[2][2] * rm02,
+            this[0][3] * rm00 + this[1][3] * rm01 + this[2][3] * rm02,
+            this[0][0] * rm10 + this[1][0] * rm11 + this[2][0] * rm12,
+            this[0][1] * rm10 + this[1][1] * rm11 + this[2][1] * rm12,
+            this[0][2] * rm10 + this[1][2] * rm11 + this[2][2] * rm12,
+            this[0][3] * rm10 + this[1][3] * rm11 + this[2][3] * rm12,
+            this[0][0] * rm20 + this[1][0] * rm21 + this[2][0] * rm22,
+            this[0][1] * rm20 + this[1][1] * rm21 + this[2][1] * rm22,
+            this[0][2] * rm20 + this[1][2] * rm21 + this[2][2] * rm22,
+            this[0][3] * rm20 + this[1][3] * rm21 + this[2][3] * rm22,
+            this[0][0] * rm30 + this[1][0] * rm31 + this[2][0] * rm32 + this[3][0],
+            this[0][1] * rm30 + this[1][1] * rm31 + this[2][1] * rm32 + this[3][1],
+            this[0][2] * rm30 + this[1][2] * rm31 + this[2][2] * rm32 + this[3][2],
+            this[0][3] * rm30 + this[1][3] * rm31 + this[2][3] * rm32 + this[3][3],
+        )
+        // ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
+        // return dest;
     }
 
     /**
@@ -7672,26 +7108,26 @@ export class Matrix4 {
      *          will hold the result
      * @return dest
      */
-    public Matrix4d lookAtPerspectiveLH(eyeX: number, eyeY: number, eyeZ: number,
+    public lookAtPerspectiveLH(eyeX: number, eyeY: number, eyeZ: number,
         centerX: number, centerY: number, centerZ: number,
         upX: number, upY: number, upZ: number, dest: Matrix4): Matrix4 {
         // Compute direction from position to lookAt
-        const dirX, dirY, dirZ;
+        let dirX, dirY, dirZ;
         dirX = centerX - eyeX;
         dirY = centerY - eyeY;
         dirZ = centerZ - eyeZ;
         // Normalize direction
-        const invDirLength = Math.invsqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
+        const invDirLength = 1 / Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
         dirX *= invDirLength;
         dirY *= invDirLength;
         dirZ *= invDirLength;
         // left = up x direction
-        const leftX, leftY, leftZ;
+        let leftX, leftY, leftZ;
         leftX = upY * dirZ - upZ * dirY;
         leftY = upZ * dirX - upX * dirZ;
         leftZ = upX * dirY - upY * dirX;
         // normalize left
-        const invLeftLength = Math.invsqrt(leftX * leftX + leftY * leftY + leftZ * leftZ);
+        const invLeftLength = 1 / Math.sqrt(leftX * leftX + leftY * leftY + leftZ * leftZ);
         leftX *= invLeftLength;
         leftY *= invLeftLength;
         leftZ *= invLeftLength;
@@ -7714,41 +7150,27 @@ export class Matrix4 {
         const rm31 = -(upnX * eyeX + upnY * eyeY + upnZ * eyeZ);
         const rm32 = -(dirX * eyeX + dirY * eyeY + dirZ * eyeZ);
 
-        const nm00 = m00 * rm00;
-        const nm01 = m11 * rm01;
-        const nm02 = m22 * rm02;
-        const nm03 = m23 * rm02;
-        const nm10 = m00 * rm10;
-        const nm11 = m11 * rm11;
-        const nm12 = m22 * rm12;
-        const nm13 = m23 * rm12;
-        const nm20 = m00 * rm20;
-        const nm21 = m11 * rm21;
-        const nm22 = m22 * rm22;
-        const nm23 = m23 * rm22;
-        const nm30 = m00 * rm30;
-        const nm31 = m11 * rm31;
-        const nm32 = m22 * rm32 + m32;
-        const nm33 = m23 * rm32;
-        dest._m00(nm00)
-            ._m01(nm01)
-            ._m02(nm02)
-            ._m03(nm03)
-            ._m10(nm10)
-            ._m11(nm11)
-            ._m12(nm12)
-            ._m13(nm13)
-            ._m20(nm20)
-            ._m21(nm21)
-            ._m22(nm22)
-            ._m23(nm23)
-            ._m30(nm30)
-            ._m31(nm31)
-            ._m32(nm32)
-            ._m33(nm33)
-            ._properties(0);
+        return dest.set(
+            this[0][0] * rm00,
+            this[1][1] * rm01,
+            this[2][2] * rm02,
+            this[2][3] * rm02,
+            this[0][0] * rm10,
+            this[1][1] * rm11,
+            this[2][2] * rm12,
+            this[2][3] * rm12,
+            this[0][0] * rm20,
+            this[1][1] * rm21,
+            this[2][2] * rm22,
+            this[2][3] * rm22,
+            this[0][0] * rm30,
+            this[1][1] * rm31,
+            this[2][2] * rm32 + this[3][2],
+            this[2][3] * rm32,
+        );
+        // ._properties(0);
 
-        return dest;
+        // return dest;
     }
 
     /**
@@ -7769,30 +7191,30 @@ export class Matrix4 {
      *             the number of tiles along the y axis
      * @return this
      */
-    public tile(x: number, y: number, w: number, h: number): Matrix4 {
-        return tile(x, y, w, h, this);
-    }
-    public tile(x: number, y: number, w: number, h: number, dest: Matrix4): Matrix4 {
+    public tile(x: number, y: number, w: number, h: number, dest?: Matrix4): Matrix4 {
+        dest = dest ?? this;
         const tx = w - 1 - (x << 1), ty = h - 1 - (y << 1);
-        return dest
-            ._m30(Math.fma(m00, tx, Math.fma(m10, ty, m30)))
-            ._m31(Math.fma(m01, tx, Math.fma(m11, ty, m31)))
-            ._m32(Math.fma(m02, tx, Math.fma(m12, ty, m32)))
-            ._m33(Math.fma(m03, tx, Math.fma(m13, ty, m33)))
-            ._m00(m00 * w)
-            ._m01(m01 * w)
-            ._m02(m02 * w)
-            ._m03(m03 * w)
-            ._m10(m10 * h)
-            ._m11(m11 * h)
-            ._m12(m12 * h)
-            ._m13(m13 * h)
-            ._m20(m20)
-            ._m21(m21)
-            ._m22(m22)
-            ._m23(m23)
-            ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION | PROPERTY_ORTHONORMAL));
+        // return dest
+        dest[3][0] = this[0][0] * tx + this[1][0] * ty + this[3][0];
+        dest[3][1] = this[0][1] * tx + this[1][1] * ty + this[3][1];
+        dest[3][2] = this[0][2] * tx + this[1][2] * ty + this[3][2];
+        dest[3][3] = this[0][3] * tx + this[1][3] * ty + this[3][3];
+        dest[0][0] = this[0][0] * w;
+        dest[0][1] = this[0][1] * w;
+        dest[0][2] = this[0][2] * w;
+        dest[0][3] = this[0][3] * w;
+        dest[1][0] = this[1][0] * h;
+        dest[1][1] = this[1][1] * h;
+        dest[1][2] = this[1][2] * h;
+        dest[1][3] = this[1][3] * h;
+        dest[2][0] = this[2][0];
+        dest[2][1] = this[2][1];
+        dest[2][2] = this[2][2];
+        dest[2][3] = this[2][3];
+        return dest;
+        // ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION | PROPERTY_ORTHONORMAL));
     }
+
 
     /**
      * Apply a symmetric perspective projection frustum transformation for a right-handed coordinate system
@@ -7827,20 +7249,25 @@ export class Matrix4 {
      *            or whether to use OpenGL's NDC z range of <code>[-1..+1]</code> when <code>false</code>
      * @return dest
      */
-    public perspective(fovy: number, aspect: number, zNear: number, zFar: number, zZeroToOne: boolean, dest: Matrix4): Matrix4 {
-        if ((properties & PROPERTY_IDENTITY) != 0)
+    public perspective(fovy: number, aspect: number, zNear: number, zFar: number, zZeroToOne: boolean, dest?: Matrix4): Matrix4;
+    public perspective(fovy: number, aspect: number, zNear: number, zFar: number, dest?: Matrix4): Matrix4;
+    public perspective(fovy: number, aspect: number, zNear: number, zFar: number, zZeroToOne?: boolean | Matrix4, dest?: Matrix4): Matrix4 {
+        dest = dest ?? (zZeroToOne instanceof Matrix4 ? zZeroToOne : this);
+        zZeroToOne = (typeof zZeroToOne === "boolean") ? zZeroToOne : false;
+
+        if (this.PROPERTY_IDENTITY)
             return dest.setPerspective(fovy, aspect, zNear, zFar, zZeroToOne);
-        return perspectiveGeneric(fovy, aspect, zNear, zFar, zZeroToOne, dest);
+        return this.perspectiveGeneric(fovy, aspect, zNear, zFar, zZeroToOne, dest);
     }
     private perspectiveGeneric(fovy: number, aspect: number, zNear: number, zFar: number, zZeroToOne: boolean, dest: Matrix4): Matrix4 {
         const h = Math.tan(fovy * 0.5);
         // calculate right matrix elements
         const rm00 = 1.0 / (h * aspect);
         const rm11 = 1.0 / h;
-        const rm22;
-        const rm32;
-        const farInf = zFar > 0 && Double.isInfinite(zFar);
-        const nearInf = zNear > 0 && Double.isInfinite(zNear);
+        let rm22;
+        let rm32;
+        const farInf = zFar > 0 && !isFinite(zFar);
+        const nearInf = zNear > 0 && !isFinite(zNear);
         if (farInf) {
             // See: "Infinite Projection Matrix" (http://www.terathon.com/gdc07_lengyel.pdf)
             const e = 1E-6;
@@ -7855,38 +7282,28 @@ export class Matrix4 {
             rm32 = (zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar);
         }
         // perform optimized matrix multiplication
-        const nm20 = m20 * rm22 - m30;
-        const nm21 = m21 * rm22 - m31;
-        const nm22 = m22 * rm22 - m32;
-        const nm23 = m23 * rm22 - m33;
-        dest._m00(m00 * rm00)
-            ._m01(m01 * rm00)
-            ._m02(m02 * rm00)
-            ._m03(m03 * rm00)
-            ._m10(m10 * rm11)
-            ._m11(m11 * rm11)
-            ._m12(m12 * rm11)
-            ._m13(m13 * rm11)
-            ._m30(m20 * rm32)
-            ._m31(m21 * rm32)
-            ._m32(m22 * rm32)
-            ._m33(m23 * rm32)
-            ._m20(nm20)
-            ._m21(nm21)
-            ._m22(nm22)
-            ._m23(nm23)
-            ._properties(properties & ~(PROPERTY_AFFINE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION | PROPERTY_ORTHONORMAL));
+        const nm20 = this[2][0] * rm22 - this[3][0];
+        const nm21 = this[2][1] * rm22 - this[3][1];
+        const nm22 = this[2][2] * rm22 - this[3][2];
+        const nm23 = this[2][3] * rm22 - this[3][3];
+        dest[0][0] = this[0][0] * rm00;
+        dest[0][1] = this[0][1] * rm00;
+        dest[0][2] = this[0][2] * rm00;
+        dest[0][3] = this[0][3] * rm00;
+        dest[1][0] = this[1][0] * rm11;
+        dest[1][1] = this[1][1] * rm11;
+        dest[1][2] = this[1][2] * rm11;
+        dest[1][3] = this[1][3] * rm11;
+        dest[3][0] = this[2][0] * rm32;
+        dest[3][1] = this[2][1] * rm32;
+        dest[3][2] = this[2][2] * rm32;
+        dest[3][3] = this[2][3] * rm32;
+        dest[2][0] = nm20;
+        dest[2][1] = nm21;
+        dest[2][2] = nm22;
+        dest[2][3] = nm23;
+        // ._properties(properties & ~(PROPERTY_AFFINE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION | PROPERTY_ORTHONORMAL));
         return dest;
-    }
-
-    public perspective(fovy: number, aspect: number, zNear: number, zFar: number, dest: Matrix4): Matrix4 {
-        return perspective(fovy, aspect, zNear, zFar, false, dest);
-    }
-    public perspective(fovy: number, aspect: number, zNear: number, zFar: number, zZeroToOne: boolean): Matrix4 {
-        return perspective(fovy, aspect, zNear, zFar, zZeroToOne, this);
-    }
-    public perspective(fovy: number, aspect: number, zNear: number, zFar: number): Matrix4 {
-        return perspective(fovy, aspect, zNear, zFar, this);
     }
 
     /**
@@ -7922,24 +7339,29 @@ export class Matrix4 {
      *            or whether to use OpenGL's NDC z range of <code>[-1..+1]</code> when <code>false</code>
      * @return dest
      */
-    public perspectiveRect(width: number, height: number, zNear: number, zFar: number, zZeroToOne: boolean, dest: Matrix4): Matrix4 {
-        if ((properties & PROPERTY_IDENTITY) != 0)
+    public perspectiveRect(width: number, height: number, zNear: number, zFar: number, zZeroToOne: boolean, dest?: Matrix4): Matrix4;
+    public perspectiveRect(width: number, height: number, zNear: number, zFar: number, dest?: Matrix4): Matrix4;
+    public perspectiveRect(width: number, height: number, zNear: number, zFar: number, zZeroToOne?: boolean | Matrix4, dest?: Matrix4): Matrix4 {
+        dest = dest ?? (zZeroToOne instanceof Matrix4 ? zZeroToOne : this);
+        zZeroToOne = (typeof zZeroToOne === "boolean") ? zZeroToOne : false;
+
+        if (this.PROPERTY_IDENTITY)
             return dest.setPerspectiveRect(width, height, zNear, zFar, zZeroToOne);
-        return perspectiveRectGeneric(width, height, zNear, zFar, zZeroToOne, dest);
+        return this.perspectiveRectGeneric(width, height, zNear, zFar, zZeroToOne, dest);
     }
     private perspectiveRectGeneric(width: number, height: number, zNear: number, zFar: number, zZeroToOne: boolean, dest: Matrix4): Matrix4 {
         const rm00 = (zNear + zNear) / width;
         const rm11 = (zNear + zNear) / height;
-        const rm22, rm32;
-        const farInf = zFar > 0 && Double.isInfinite(zFar);
-        const nearInf = zNear > 0 && Double.isInfinite(zNear);
+        let rm22, rm32;
+        const farInf = zFar > 0 && !isFinite(zFar);
+        const nearInf = zNear > 0 && !isFinite(zNear);
         if (farInf) {
             // See: "Infinite Projection Matrix" (http://www.terathon.com/gdc07_lengyel.pdf)
-            const e = 1E-6f;
+            const e = 1E-6;
             rm22 = e - 1.0;
             rm32 = (e - (zZeroToOne ? 1.0 : 2.0)) * zNear;
         } else if (nearInf) {
-            const e = 1E-6f;
+            const e = 1E-6;
             rm22 = (zZeroToOne ? 0.0 : 1.0) - e;
             rm32 = ((zZeroToOne ? 1.0 : 2.0) - e) * zFar;
         } else {
@@ -7947,37 +7369,28 @@ export class Matrix4 {
             rm32 = (zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar);
         }
         // perform optimized matrix multiplication
-        const nm20 = m20 * rm22 - m30;
-        const nm21 = m21 * rm22 - m31;
-        const nm22 = m22 * rm22 - m32;
-        const nm23 = m23 * rm22 - m33;
-        dest._m00(m00 * rm00)
-            ._m01(m01 * rm00)
-            ._m02(m02 * rm00)
-            ._m03(m03 * rm00)
-            ._m10(m10 * rm11)
-            ._m11(m11 * rm11)
-            ._m12(m12 * rm11)
-            ._m13(m13 * rm11)
-            ._m30(m20 * rm32)
-            ._m31(m21 * rm32)
-            ._m32(m22 * rm32)
-            ._m33(m23 * rm32)
-            ._m20(nm20)
-            ._m21(nm21)
-            ._m22(nm22)
-            ._m23(nm23)
-            ._properties(properties & ~(PROPERTY_AFFINE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION | PROPERTY_ORTHONORMAL));
+        const nm20 = this[2][0] * rm22 - this[3][0];
+        const nm21 = this[2][1] * rm22 - this[3][1];
+        const nm22 = this[2][2] * rm22 - this[3][2];
+        const nm23 = this[2][3] * rm22 - this[3][3];
+        dest[0][0] = this[0][0] * rm00;
+        dest[0][1] = this[0][1] * rm00;
+        dest[0][2] = this[0][2] * rm00;
+        dest[0][3] = this[0][3] * rm00;
+        dest[1][0] = this[1][0] * rm11;
+        dest[1][1] = this[1][1] * rm11;
+        dest[1][2] = this[1][2] * rm11;
+        dest[1][3] = this[1][3] * rm11;
+        dest[3][0] = this[2][0] * rm32;
+        dest[3][1] = this[2][1] * rm32;
+        dest[3][2] = this[2][2] * rm32;
+        dest[3][3] = this[2][3] * rm32;
+        dest[2][0] = nm20;
+        dest[2][1] = nm21;
+        dest[2][2] = nm22;
+        dest[2][3] = nm23;
+        // ._properties(properties & ~(PROPERTY_AFFINE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION | PROPERTY_ORTHONORMAL));
         return dest;
-    }
-    public perspectiveRect(width: number, height: number, zNear: number, zFar: number, dest: Matrix4): Matrix4 {
-        return perspectiveRect(width, height, zNear, zFar, false, dest);
-    }
-    public perspectiveRect(width: number, height: number, zNear: number, zFar: number, zZeroToOne: boolean): Matrix4 {
-        return perspectiveRect(width, height, zNear, zFar, zZeroToOne, this);
-    }
-    public perspectiveRect(width: number, height: number, zNear: number, zFar: number): Matrix4 {
-        return perspectiveRect(width, height, zNear, zFar, this);
     }
 
     /**
@@ -8022,10 +7435,15 @@ export class Matrix4 {
      *            or whether to use OpenGL's NDC z range of <code>[-1..+1]</code> when <code>false</code>
      * @return dest
      */
-    public perspectiveOffCenter(fovy: number, offAngleX: number, offAngleY: number, aspect: number, zNear: number, zFar: number, zZeroToOne: boolean, dest: Matrix4): Matrix4 {
-        if ((properties & PROPERTY_IDENTITY) != 0)
+    public perspectiveOffCenter(fovy: number, offAngleX: number, offAngleY: number, aspect: number, zNear: number, zFar: number, zZeroToOne: boolean, dest?: Matrix4): Matrix4;
+    public perspectiveOffCenter(fovy: number, offAngleX: number, offAngleY: number, aspect: number, zNear: number, zFar: number, dest?: Matrix4): Matrix4;
+    public perspectiveOffCenter(fovy: number, offAngleX: number, offAngleY: number, aspect: number, zNear: number, zFar: number, zZeroToOne?: boolean | Matrix4, dest?: Matrix4): Matrix4 {
+        dest = dest ?? (zZeroToOne instanceof Matrix4 ? zZeroToOne : this);
+        zZeroToOne = (typeof zZeroToOne === "boolean") ? zZeroToOne : false;
+
+        if (this.PROPERTY_IDENTITY)
             return dest.setPerspectiveOffCenter(fovy, offAngleX, offAngleY, aspect, zNear, zFar, zZeroToOne);
-        return perspectiveOffCenterGeneric(fovy, offAngleX, offAngleY, aspect, zNear, zFar, zZeroToOne, dest);
+        return this.perspectiveOffCenterGeneric(fovy, offAngleX, offAngleY, aspect, zNear, zFar, zZeroToOne, dest);
     }
     private perspectiveOffCenterGeneric(fovy: number, offAngleX: number, offAngleY: number, aspect: number, zNear: number, zFar: number, zZeroToOne: boolean, dest: Matrix4): Matrix4 {
         const h = Math.tan(fovy * 0.5);
@@ -8037,10 +7455,10 @@ export class Matrix4 {
         const offX = Math.tan(offAngleX), offY = Math.tan(offAngleY);
         const rm20 = offX * xScale;
         const rm21 = offY * yScale;
-        const rm22;
-        const rm32;
-        const farInf = zFar > 0 && Double.isInfinite(zFar);
-        const nearInf = zNear > 0 && Double.isInfinite(zNear);
+        let rm22;
+        let rm32;
+        const farInf = zFar > 0 && !isFinite(zFar);
+        const nearInf = zNear > 0 && !isFinite(zNear);
         if (farInf) {
             // See: "Infinite Projection Matrix" (http://www.terathon.com/gdc07_lengyel.pdf)
             const e = 1E-6;
@@ -8055,38 +7473,29 @@ export class Matrix4 {
             rm32 = (zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar);
         }
         // perform optimized matrix multiplication
-        const nm20 = m00 * rm20 + m10 * rm21 + m20 * rm22 - m30;
-        const nm21 = m01 * rm20 + m11 * rm21 + m21 * rm22 - m31;
-        const nm22 = m02 * rm20 + m12 * rm21 + m22 * rm22 - m32;
-        const nm23 = m03 * rm20 + m13 * rm21 + m23 * rm22 - m33;
-        dest._m00(m00 * rm00)
-            ._m01(m01 * rm00)
-            ._m02(m02 * rm00)
-            ._m03(m03 * rm00)
-            ._m10(m10 * rm11)
-            ._m11(m11 * rm11)
-            ._m12(m12 * rm11)
-            ._m13(m13 * rm11)
-            ._m30(m20 * rm32)
-            ._m31(m21 * rm32)
-            ._m32(m22 * rm32)
-            ._m33(m23 * rm32)
-            ._m20(nm20)
-            ._m21(nm21)
-            ._m22(nm22)
-            ._m23(nm23)
-            ._properties(properties & ~(PROPERTY_AFFINE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION
-                | PROPERTY_ORTHONORMAL | (rm20 == 0.0 && rm21 == 0.0 ? 0 : PROPERTY_PERSPECTIVE)));
+        const nm20 = this[0][0] * rm20 + this[1][0] * rm21 + this[2][0] * rm22 - this[3][0];
+        const nm21 = this[0][1] * rm20 + this[1][1] * rm21 + this[2][1] * rm22 - this[3][1];
+        const nm22 = this[0][2] * rm20 + this[1][2] * rm21 + this[2][2] * rm22 - this[3][2];
+        const nm23 = this[0][3] * rm20 + this[1][3] * rm21 + this[2][3] * rm22 - this[3][3];
+        dest[0][0] = this[0][0] * rm00;
+        dest[0][1] = this[0][1] * rm00;
+        dest[0][2] = this[0][2] * rm00;
+        dest[0][3] = this[0][3] * rm00;
+        dest[1][0] = this[1][0] * rm11;
+        dest[1][1] = this[1][1] * rm11;
+        dest[1][2] = this[1][2] * rm11;
+        dest[1][3] = this[1][3] * rm11;
+        dest[3][0] = this[2][0] * rm32;
+        dest[3][1] = this[2][1] * rm32;
+        dest[3][2] = this[2][2] * rm32;
+        dest[3][3] = this[2][3] * rm32;
+        dest[2][0] = nm20;
+        dest[2][1] = nm21;
+        dest[2][2] = nm22;
+        dest[2][3] = nm23;
+        // ._properties(properties & ~(PROPERTY_AFFINE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION
+        //     | PROPERTY_ORTHONORMAL | (rm20 == 0.0 && rm21 == 0.0 ? 0 : PROPERTY_PERSPECTIVE)));
         return dest;
-    }
-    public perspectiveOffCenter(fovy: number, offAngleX: number, offAngleY: number, aspect: number, zNear: number, zFar: number, dest: Matrix4): Matrix4 {
-        return perspectiveOffCenter(fovy, offAngleX, offAngleY, aspect, zNear, zFar, false, dest);
-    }
-    public perspectiveOffCenter(fovy: number, offAngleX: number, offAngleY: number, aspect: number, zNear: number, zFar: number, zZeroToOne: boolean): Matrix4 {
-        return perspectiveOffCenter(fovy, offAngleX, offAngleY, aspect, zNear, zFar, zZeroToOne, this);
-    }
-    public perspectiveOffCenter(fovy: number, offAngleX: number, offAngleY: number, aspect: number, zNear: number, zFar: number): Matrix4 {
-        return perspectiveOffCenter(fovy, offAngleX, offAngleY, aspect, zNear, zFar, this);
     }
 
     /**
@@ -8115,20 +7524,21 @@ export class Matrix4 {
      *            or whether to use OpenGL's NDC z range of <code>[-1..+1]</code> when <code>false</code>
      * @return this
      */
-    public setPerspective(fovy: number, aspect: number, zNear: number, zFar: number, zZeroToOne: boolean): Matrix4 {
+    public setPerspective(fovy: number, aspect: number, zNear: number, zFar: number, zZeroToOne?: boolean): Matrix4 {
+        zZeroToOne = zZeroToOne ?? false;
         const h = Math.tan(fovy * 0.5);
-        _m00(1.0 / (h * aspect)).
-            _m01(0.0).
-            _m02(0.0).
-            _m03(0.0).
-            _m10(0.0).
-            _m11(1.0 / h).
-            _m12(0.0).
-            _m13(0.0).
-            _m20(0.0).
-            _m21(0.0);
-        const farInf = zFar > 0 && Double.isInfinite(zFar);
-        const nearInf = zNear > 0 && Double.isInfinite(zNear);
+        this[0][0] = 1 / (h * aspect);
+        this[0][1] = 0;
+        this[0][2] = 0;
+        this[0][3] = 0;
+        this[1][0] = 0;
+        this[1][1] = 1 / h;
+        this[1][2] = 0;
+        this[1][3] = 0;
+        this[2][0] = 0;
+        this[2][1] = 0;
+        const farInf = zFar > 0 && !isFinite(zFar);
+        const nearInf = zNear > 0 && !isFinite(zNear);
         if (farInf) {
             // See: "Infinite Projection Matrix" (http://www.terathon.com/gdc07_lengyel.pdf)
             const e = 1E-6;
@@ -8142,15 +7552,12 @@ export class Matrix4 {
             _m22((zZeroToOne ? zFar : zFar + zNear) / (zNear - zFar)).
                 _m32((zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar));
         }
-        _m23(-1.0).
-            _m30(0.0).
-            _m31(0.0).
-            _m33(0.0).
-            properties = PROPERTY_PERSPECTIVE;
+        this[2][3] = -1;
+        this[3][0] = 0;
+        this[3][1] = 0;
+        this[3][3] = 0;
+        // properties = PROPERTY_PERSPECTIVE;
         return this;
-    }
-    public setPerspective(fovy: number, aspect: number, zNear: number, zFar: number): Matrix4 {
-        return setPerspective(fovy, aspect, zNear, zFar, false);
     }
 
     /**
@@ -8179,31 +7586,29 @@ export class Matrix4 {
      *            or whether to use OpenGL's NDC z range of <code>[-1..+1]</code> when <code>false</code>
      * @return this
      */
-    public setPerspectiveRect(width: number, height: number, zNear: number, zFar: number, zZeroToOne: boolean): Matrix4 {
+    public setPerspectiveRect(width: number, height: number, zNear: number, zFar: number, zZeroToOne?: boolean): Matrix4 {
+        zZeroToOne = zZeroToOne ?? false;
         this.zero();
-        this._m00((zNear + zNear) / width);
-        this._m11((zNear + zNear) / height);
-        const farInf = zFar > 0 && Double.isInfinite(zFar);
-        const nearInf = zNear > 0 && Double.isInfinite(zNear);
+        this[0][0] = (zNear + zNear) / width;
+        this[1][1] = (zNear + zNear) / height;
+        const farInf = zFar > 0 && !isFinite(zFar);
+        const nearInf = zNear > 0 && !isFinite(zNear);
         if (farInf) {
             // See: "Infinite Projection Matrix" (http://www.terathon.com/gdc07_lengyel.pdf)
             const e = 1E-6;
-            this._m22(e - 1.0);
-            this._m32((e - (zZeroToOne ? 1.0 : 2.0)) * zNear);
+            this[2][2] = (e - 1.0);
+            this[3][2] = ((e - (zZeroToOne ? 1.0 : 2.0)) * zNear);
         } else if (nearInf) {
             const e = 1E-6;
-            this._m22((zZeroToOne ? 0.0 : 1.0) - e);
-            this._m32(((zZeroToOne ? 1.0 : 2.0) - e) * zFar);
+            this[2][2] = ((zZeroToOne ? 0.0 : 1.0) - e);
+            this[3][2] = (((zZeroToOne ? 1.0 : 2.0) - e) * zFar);
         } else {
-            this._m22((zZeroToOne ? zFar : zFar + zNear) / (zNear - zFar));
-            this._m32((zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar));
+            this[2][2] = ((zZeroToOne ? zFar : zFar + zNear) / (zNear - zFar));
+            this[3][2] = ((zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar));
         }
-        this._m23(-1.0);
-        properties = PROPERTY_PERSPECTIVE;
+        this[2][3] = (-1.0);
+        // properties = PROPERTY_PERSPECTIVE;
         return this;
-    }
-    public setPerspectiveRect(width: number, height: number, zNear: number, zFar: number): Matrix4 {
-        return setPerspectiveRect(width, height, zNear, zFar, false);
     }
 
     /**
@@ -8242,40 +7647,37 @@ export class Matrix4 {
      * @return this
      */
     public setPerspectiveOffCenter(fovy: number, offAngleX: number, offAngleY: number,
-        aspect: number, zNear: number, zFar: number, zZeroToOne: boolean) {
+        aspect: number, zNear: number, zFar: number, zZeroToOne?: boolean) {
+        zZeroToOne = zZeroToOne ?? false;
         this.zero();
         const h = Math.tan(fovy * 0.5);
         const xScale = 1.0 / (h * aspect), yScale = 1.0 / h;
-        _m00(xScale).
-            _m11(yScale);
+        this[0][0] = xScale;
+        this[1][1] = yScale;
         const offX = Math.tan(offAngleX), offY = Math.tan(offAngleY);
-        _m20(offX * xScale).
-            _m21(offY * yScale);
-        const farInf = zFar > 0 && Double.isInfinite(zFar);
-        const nearInf = zNear > 0 && Double.isInfinite(zNear);
+        this[2][0] = offX * xScale;
+        this[2][1] = offY * yScale;
+        const farInf = zFar > 0 && !isFinite(zFar);
+        const nearInf = zNear > 0 && !isFinite(zNear);
         if (farInf) {
             // See: "Infinite Projection Matrix" (http://www.terathon.com/gdc07_lengyel.pdf)
             const e = 1E-6;
-            _m22(e - 1.0).
-                _m32((e - (zZeroToOne ? 1.0 : 2.0)) * zNear);
+            this[2][2] = (e - 1.0)
+            this[3][2] = (e - (zZeroToOne ? 1.0 : 2.0)) * zNear
         } else if (nearInf) {
             const e = 1E-6;
-            _m22((zZeroToOne ? 0.0 : 1.0) - e).
-                _m32(((zZeroToOne ? 1.0 : 2.0) - e) * zFar);
+            this[2][2] = ((zZeroToOne ? 0.0 : 1.0) - e)
+            this[3][2] = ((zZeroToOne ? 1.0 : 2.0) - e) * zFar
         } else {
-            _m22((zZeroToOne ? zFar : zFar + zNear) / (zNear - zFar)).
-                _m32((zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar));
+            this[2][2] = (zZeroToOne ? zFar : zFar + zNear) / (zNear - zFar)
+            this[3][2] = (zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar)
         }
-        _m23(-1.0).
-            _m30(0.0).
-            _m31(0.0).
-            _m33(0.0).
-            properties = offAngleX == 0.0 && offAngleY == 0.0 ? PROPERTY_PERSPECTIVE : 0;
+        this[2][3] = -1;
+        this[3][0] = 0;
+        this[3][1] = 0;
+        this[3][3] = 0;
+        // properties = offAngleX == 0.0 && offAngleY == 0.0 ? PROPERTY_PERSPECTIVE : 0;
         return this;
-    }
-    public setPerspectiveOffCenter(fovy: number, offAngleX: number, offAngleY: number,
-        aspect: number, zNear: number, zFar: number) {
-        return setPerspectiveOffCenter(fovy, offAngleX, offAngleY, aspect, zNear, zFar, false);
     }
 
     /**
@@ -8311,20 +7713,25 @@ export class Matrix4 {
      *            will hold the result
      * @return dest
      */
-    public perspectiveLH(fovy: number, aspect: number, zNear: number, zFar: number, zZeroToOne: boolean, dest: Matrix4): Matrix4 {
-        if ((properties & PROPERTY_IDENTITY) != 0)
+    public perspectiveLH(fovy: number, aspect: number, zNear: number, zFar: number, zZeroToOne: boolean, dest?: Matrix4): Matrix4;
+    public perspectiveLH(fovy: number, aspect: number, zNear: number, zFar: number, dest?: Matrix4): Matrix4;
+    public perspectiveLH(fovy: number, aspect: number, zNear: number, zFar: number, zZeroToOne?: boolean | Matrix4, dest?: Matrix4): Matrix4 {
+        dest = dest ?? (zZeroToOne instanceof Matrix4 ? zZeroToOne : this);
+        zZeroToOne = (typeof zZeroToOne === "boolean") ? zZeroToOne : false;
+
+        if (this.PROPERTY_IDENTITY)
             return dest.setPerspectiveLH(fovy, aspect, zNear, zFar, zZeroToOne);
-        return perspectiveLHGeneric(fovy, aspect, zNear, zFar, zZeroToOne, dest);
+        return this.perspectiveLHGeneric(fovy, aspect, zNear, zFar, zZeroToOne, dest);
     }
     private perspectiveLHGeneric(fovy: number, aspect: number, zNear: number, zFar: number, zZeroToOne: boolean, dest: Matrix4): Matrix4 {
         const h = Math.tan(fovy * 0.5);
         // calculate right matrix elements
         const rm00 = 1.0 / (h * aspect);
         const rm11 = 1.0 / h;
-        const rm22;
-        const rm32;
-        const farInf = zFar > 0 && Double.isInfinite(zFar);
-        const nearInf = zNear > 0 && Double.isInfinite(zNear);
+        let rm22;
+        let rm32;
+        const farInf = zFar > 0 && !isFinite(zFar);
+        const nearInf = zNear > 0 && !isFinite(zNear);
         if (farInf) {
             // See: "Infinite Projection Matrix" (http://www.terathon.com/gdc07_lengyel.pdf)
             const e = 1E-6;
@@ -8339,37 +7746,28 @@ export class Matrix4 {
             rm32 = (zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar);
         }
         // perform optimized matrix multiplication
-        const nm20 = m20 * rm22 + m30;
-        const nm21 = m21 * rm22 + m31;
-        const nm22 = m22 * rm22 + m32;
-        const nm23 = m23 * rm22 + m33;
-        dest._m00(m00 * rm00)
-            ._m01(m01 * rm00)
-            ._m02(m02 * rm00)
-            ._m03(m03 * rm00)
-            ._m10(m10 * rm11)
-            ._m11(m11 * rm11)
-            ._m12(m12 * rm11)
-            ._m13(m13 * rm11)
-            ._m30(m20 * rm32)
-            ._m31(m21 * rm32)
-            ._m32(m22 * rm32)
-            ._m33(m23 * rm32)
-            ._m20(nm20)
-            ._m21(nm21)
-            ._m22(nm22)
-            ._m23(nm23)
-            ._properties(properties & ~(PROPERTY_AFFINE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION | PROPERTY_ORTHONORMAL));
+        const nm20 = this[2][0] * rm22 + this[3][0];
+        const nm21 = this[2][1] * rm22 + this[3][1];
+        const nm22 = this[2][2] * rm22 + this[3][2];
+        const nm23 = this[2][3] * rm22 + this[3][3];
+        dest[0][0] = this[0][0] * rm00;
+        dest[0][1] = this[0][1] * rm00;
+        dest[0][2] = this[0][2] * rm00;
+        dest[0][3] = this[0][3] * rm00;
+        dest[1][0] = this[1][0] * rm11;
+        dest[1][1] = this[1][1] * rm11;
+        dest[1][2] = this[1][2] * rm11;
+        dest[1][3] = this[1][3] * rm11;
+        dest[3][0] = this[2][0] * rm32;
+        dest[3][1] = this[2][1] * rm32;
+        dest[3][2] = this[2][2] * rm32;
+        dest[3][3] = this[2][3] * rm32;
+        dest[2][0] = nm20;
+        dest[2][1] = nm21;
+        dest[2][2] = nm22;
+        dest[2][3] = nm23;
+        // ._properties(properties & ~(PROPERTY_AFFINE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION | PROPERTY_ORTHONORMAL));
         return dest;
-    }
-    public perspectiveLH(fovy: number, aspect: number, zNear: number, zFar: number, zZeroToOne: boolean): Matrix4 {
-        return perspectiveLH(fovy, aspect, zNear, zFar, zZeroToOne, this);
-    }
-    public perspectiveLH(fovy: number, aspect: number, zNear: number, zFar: number, dest: Matrix4): Matrix4 {
-        return perspectiveLH(fovy, aspect, zNear, zFar, false, dest);
-    }
-    public perspectiveLH(fovy: number, aspect: number, zNear: number, zFar: number): Matrix4 {
-        return perspectiveLH(fovy, aspect, zNear, zFar, false, this);
     }
 
     /**
@@ -8398,43 +7796,40 @@ export class Matrix4 {
      *            or whether to use OpenGL's NDC z range of <code>[-1..+1]</code> when <code>false</code>
      * @return this
      */
-    public setPerspectiveLH(fovy: number, aspect: number, zNear: number, zFar: number, zZeroToOne: boolean): Matrix4 {
+    public setPerspectiveLH(fovy: number, aspect: number, zNear: number, zFar: number, zZeroToOne?: boolean): Matrix4 {
+        zZeroToOne = zZeroToOne ?? false;
         const h = Math.tan(fovy * 0.5);
-        _m00(1.0 / (h * aspect)).
-            _m01(0.0).
-            _m02(0.0).
-            _m03(0.0).
-            _m10(0.0).
-            _m11(1.0 / h).
-            _m12(0.0).
-            _m13(0.0).
-            _m20(0.0).
-            _m21(0.0);
-        const farInf = zFar > 0 && Double.isInfinite(zFar);
-        const nearInf = zNear > 0 && Double.isInfinite(zNear);
+        this[0][0] = 1 / (h * aspect);
+        this[0][1] = 0;
+        this[0][2] = 0;
+        this[0][3] = 0;
+        this[1][0] = 0;
+        this[1][1] = 1 / h;
+        this[1][2] = 0;
+        this[1][3] = 0;
+        this[2][0] = 0;
+        this[2][1] = 0;
+        const farInf = zFar > 0 && !isFinite(zFar);
+        const nearInf = zNear > 0 && !isFinite(zNear);
         if (farInf) {
             // See: "Infinite Projection Matrix" (http://www.terathon.com/gdc07_lengyel.pdf)
             const e = 1E-6;
-            _m22(1.0 - e).
-                _m32((e - (zZeroToOne ? 1.0 : 2.0)) * zNear);
+            this[2][2] = (1.0 - e)
+            this[3][2] = ((e - (zZeroToOne ? 1.0 : 2.0)) * zNear);
         } else if (nearInf) {
             const e = 1E-6;
-            _m22((zZeroToOne ? 0.0 : 1.0) - e).
-                _m32(((zZeroToOne ? 1.0 : 2.0) - e) * zFar);
+            this[2][2] = ((zZeroToOne ? 0.0 : 1.0) - e)
+            this[3][2] = (((zZeroToOne ? 1.0 : 2.0) - e) * zFar);
         } else {
-            _m22((zZeroToOne ? zFar : zFar + zNear) / (zFar - zNear)).
-                _m32((zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar));
+            this[2][2] = ((zZeroToOne ? zFar : zFar + zNear) / (zFar - zNear))
+            this[3][2] = ((zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar));
         }
-        _m23(1.0).
-            _m30(0.0).
-            _m31(0.0).
-            _m33(0.0).
-            properties = PROPERTY_PERSPECTIVE;
+        this[2][3] = (1.0)
+        this[3][0] = (0.0)
+        this[3][1] = (0.0)
+        this[3][3] = (0.0)
+        // properties = PROPERTY_PERSPECTIVE;
         return this;
-    }
-
-    public setPerspectiveLH(fovy: number, aspect: number, zNear: number, zFar: number): Matrix4 {
-        return setPerspectiveLH(fovy, aspect, zNear, zFar, false);
     }
 
     /**
@@ -8476,10 +7871,15 @@ export class Matrix4 {
      *            will hold the result
      * @return dest
      */
-    public frustum(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number, zZeroToOne: boolean, dest: Matrix4): Matrix4 {
-        if ((properties & PROPERTY_IDENTITY) != 0)
+    public frustum(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number, zZeroToOne: boolean, dest?: Matrix4): Matrix4;
+    public frustum(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number, dest?: Matrix4): Matrix4;
+    public frustum(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number, zZeroToOne?: boolean | Matrix4, dest?: Matrix4): Matrix4 {
+        dest = dest ?? (zZeroToOne instanceof Matrix4 ? zZeroToOne : this);
+        zZeroToOne = (typeof zZeroToOne === "boolean") ? zZeroToOne : false;
+
+        if (this.PROPERTY_IDENTITY)
             return dest.setFrustum(left, right, bottom, top, zNear, zFar, zZeroToOne);
-        return frustumGeneric(left, right, bottom, top, zNear, zFar, zZeroToOne, dest);
+        return this.frustumGeneric(left, right, bottom, top, zNear, zFar, zZeroToOne, dest);
     }
     private frustumGeneric(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number, zZeroToOne: boolean, dest: Matrix4): Matrix4 {
         // calculate right matrix elements
@@ -8487,10 +7887,10 @@ export class Matrix4 {
         const rm11 = (zNear + zNear) / (top - bottom);
         const rm20 = (right + left) / (right - left);
         const rm21 = (top + bottom) / (top - bottom);
-        const rm22;
-        const rm32;
-        const farInf = zFar > 0 && Double.isInfinite(zFar);
-        const nearInf = zNear > 0 && Double.isInfinite(zNear);
+        let rm22;
+        let rm32;
+        const farInf = zFar > 0 && !isFinite(zFar);
+        const nearInf = zNear > 0 && !isFinite(zNear);
         if (farInf) {
             // See: "Infinite Projection Matrix" (http://www.terathon.com/gdc07_lengyel.pdf)
             const e = 1E-6;
@@ -8505,37 +7905,28 @@ export class Matrix4 {
             rm32 = (zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar);
         }
         // perform optimized matrix multiplication
-        const nm20 = m00 * rm20 + m10 * rm21 + m20 * rm22 - m30;
-        const nm21 = m01 * rm20 + m11 * rm21 + m21 * rm22 - m31;
-        const nm22 = m02 * rm20 + m12 * rm21 + m22 * rm22 - m32;
-        const nm23 = m03 * rm20 + m13 * rm21 + m23 * rm22 - m33;
-        dest._m00(m00 * rm00)
-            ._m01(m01 * rm00)
-            ._m02(m02 * rm00)
-            ._m03(m03 * rm00)
-            ._m10(m10 * rm11)
-            ._m11(m11 * rm11)
-            ._m12(m12 * rm11)
-            ._m13(m13 * rm11)
-            ._m30(m20 * rm32)
-            ._m31(m21 * rm32)
-            ._m32(m22 * rm32)
-            ._m33(m23 * rm32)
-            ._m20(nm20)
-            ._m21(nm21)
-            ._m22(nm22)
-            ._m23(nm23)
-            ._properties(0);
+        const nm20 = this[0][0] * rm20 + this[1][0] * rm21 + this[2][0] * rm22 - this[3][0];
+        const nm21 = this[0][1] * rm20 + this[1][1] * rm21 + this[2][1] * rm22 - this[3][1];
+        const nm22 = this[0][2] * rm20 + this[1][2] * rm21 + this[2][2] * rm22 - this[3][2];
+        const nm23 = this[0][3] * rm20 + this[1][3] * rm21 + this[2][3] * rm22 - this[3][3];
+        dest[0][0] = this[0][0] * rm00;
+        dest[0][1] = this[0][1] * rm00;
+        dest[0][2] = this[0][2] * rm00;
+        dest[0][3] = this[0][3] * rm00;
+        dest[1][0] = this[1][0] * rm11;
+        dest[1][1] = this[1][1] * rm11;
+        dest[1][2] = this[1][2] * rm11;
+        dest[1][3] = this[1][3] * rm11;
+        dest[3][0] = this[2][0] * rm32;
+        dest[3][1] = this[2][1] * rm32;
+        dest[3][2] = this[2][2] * rm32;
+        dest[3][3] = this[2][3] * rm32;
+        dest[2][0] = nm20;
+        dest[2][1] = nm21;
+        dest[2][2] = nm22;
+        dest[2][3] = nm23;
+        // ._properties(0);
         return dest;
-    }
-    public frustum(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number, dest: Matrix4): Matrix4 {
-        return frustum(left, right, bottom, top, zNear, zFar, false, dest);
-    }
-    public frustum(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number, zZeroToOne: boolean): Matrix4 {
-        return frustum(left, right, bottom, top, zNear, zFar, zZeroToOne, this);
-    }
-    public frustum(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number): Matrix4 {
-        return frustum(left, right, bottom, top, zNear, zFar, false, this);
     }
 
     /**
@@ -8570,35 +7961,33 @@ export class Matrix4 {
      *            or whether to use OpenGL's NDC z range of <code>[-1..+1]</code> when <code>false</code>
      * @return this
      */
-    public setFrustum(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number, zZeroToOne: boolean): Matrix4 {
-        if ((properties & PROPERTY_IDENTITY) == 0)
-            _identity();
-        _m00((zNear + zNear) / (right - left)).
-            _m11((zNear + zNear) / (top - bottom)).
-            _m20((right + left) / (right - left)).
-            _m21((top + bottom) / (top - bottom));
-        const farInf = zFar > 0 && Double.isInfinite(zFar);
-        const nearInf = zNear > 0 && Double.isInfinite(zNear);
+    public setFrustum(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number, zZeroToOne?: boolean): Matrix4 {
+        zZeroToOne = zZeroToOne ?? false;
+        if (!this.PROPERTY_IDENTITY)
+            this.identity();
+        this[0][0] = (zNear + zNear) / (right - left);
+        this[1][1] = (zNear + zNear) / (top - bottom);
+        this[2][0] = (right + left) / (right - left);
+        this[2][1] = (top + bottom) / (top - bottom);
+        const farInf = zFar > 0 && !isFinite(zFar);
+        const nearInf = zNear > 0 && !isFinite(zNear);
         if (farInf) {
             // See: "Infinite Projection Matrix" (http://www.terathon.com/gdc07_lengyel.pdf)
             const e = 1E-6;
-            _m22(e - 1.0).
-                _m32((e - (zZeroToOne ? 1.0 : 2.0)) * zNear);
+            this[2][2] = (e - 1.0);
+            this[3][2] = ((e - (zZeroToOne ? 1.0 : 2.0)) * zNear);
         } else if (nearInf) {
             const e = 1E-6;
-            _m22((zZeroToOne ? 0.0 : 1.0) - e).
-                _m32(((zZeroToOne ? 1.0 : 2.0) - e) * zFar);
+            this[2][2] = ((zZeroToOne ? 0.0 : 1.0) - e);
+            this[3][2] = (((zZeroToOne ? 1.0 : 2.0) - e) * zFar);
         } else {
-            _m22((zZeroToOne ? zFar : zFar + zNear) / (zNear - zFar)).
-                _m32((zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar));
+            this[2][2] = ((zZeroToOne ? zFar : zFar + zNear) / (zNear - zFar));
+            this[3][2] = ((zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar));
         }
-        _m23(-1.0).
-            _m33(0.0).
-            properties = this.m20 == 0.0 && this.m21 == 0.0 ? PROPERTY_PERSPECTIVE : 0;
+        this[2][3] = (-1.0)
+        this[3][3] = (0.0)
+        // properties = this.m20 == 0.0 && this.m21 == 0.0 ? PROPERTY_PERSPECTIVE : 0;
         return this;
-    }
-    public setFrustum(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number): Matrix4 {
-        return setFrustum(left, right, bottom, top, zNear, zFar, false);
     }
 
     /**
@@ -8640,10 +8029,15 @@ export class Matrix4 {
      *            will hold the result
      * @return dest
      */
-    public frustumLH(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number, zZeroToOne: boolean, dest: Matrix4): Matrix4 {
-        if ((properties & PROPERTY_IDENTITY) != 0)
+    public frustumLH(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number, zZeroToOne: boolean, dest?: Matrix4): Matrix4
+    public frustumLH(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number, dest: Matrix4): Matrix4;
+    public frustumLH(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number, zZeroToOne?: boolean | Matrix4, dest?: Matrix4): Matrix4 {
+        dest = dest ?? (zZeroToOne instanceof Matrix4 ? zZeroToOne : this);
+        zZeroToOne = (typeof zZeroToOne === "boolean") ? zZeroToOne : false;
+
+        if (this.PROPERTY_IDENTITY)
             return dest.setFrustumLH(left, right, bottom, top, zNear, zFar, zZeroToOne);
-        return frustumLHGeneric(left, right, bottom, top, zNear, zFar, zZeroToOne, dest);
+        return this.frustumLHGeneric(left, right, bottom, top, zNear, zFar, zZeroToOne, dest);
     }
     private frustumLHGeneric(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number, zZeroToOne: boolean, dest: Matrix4): Matrix4 {
         // calculate right matrix elements
@@ -8651,10 +8045,10 @@ export class Matrix4 {
         const rm11 = (zNear + zNear) / (top - bottom);
         const rm20 = (right + left) / (right - left);
         const rm21 = (top + bottom) / (top - bottom);
-        const rm22;
-        const rm32;
-        const farInf = zFar > 0 && Double.isInfinite(zFar);
-        const nearInf = zNear > 0 && Double.isInfinite(zNear);
+        let rm22;
+        let rm32;
+        const farInf = zFar > 0 && !isFinite(zFar);
+        const nearInf = zNear > 0 && !isFinite(zNear);
         if (farInf) {
             // See: "Infinite Projection Matrix" (http://www.terathon.com/gdc07_lengyel.pdf)
             const e = 1E-6;
@@ -8669,37 +8063,28 @@ export class Matrix4 {
             rm32 = (zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar);
         }
         // perform optimized matrix multiplication
-        const nm20 = m00 * rm20 + m10 * rm21 + m20 * rm22 + m30;
-        const nm21 = m01 * rm20 + m11 * rm21 + m21 * rm22 + m31;
-        const nm22 = m02 * rm20 + m12 * rm21 + m22 * rm22 + m32;
-        const nm23 = m03 * rm20 + m13 * rm21 + m23 * rm22 + m33;
-        dest._m00(m00 * rm00)
-            ._m01(m01 * rm00)
-            ._m02(m02 * rm00)
-            ._m03(m03 * rm00)
-            ._m10(m10 * rm11)
-            ._m11(m11 * rm11)
-            ._m12(m12 * rm11)
-            ._m13(m13 * rm11)
-            ._m30(m20 * rm32)
-            ._m31(m21 * rm32)
-            ._m32(m22 * rm32)
-            ._m33(m23 * rm32)
-            ._m20(nm20)
-            ._m21(nm21)
-            ._m22(nm22)
-            ._m23(nm23)
-            ._properties(0);
+        const nm20 = this[0][0] * rm20 + this[1][0] * rm21 + this[2][0] * rm22 + this[3][0];
+        const nm21 = this[0][1] * rm20 + this[1][1] * rm21 + this[2][1] * rm22 + this[3][1];
+        const nm22 = this[0][2] * rm20 + this[1][2] * rm21 + this[2][2] * rm22 + this[3][2];
+        const nm23 = this[0][3] * rm20 + this[1][3] * rm21 + this[2][3] * rm22 + this[3][3];
+        dest[0][0] = this[0][0] * rm00;
+        dest[0][1] = this[0][1] * rm00;
+        dest[0][2] = this[0][2] * rm00;
+        dest[0][3] = this[0][3] * rm00;
+        dest[1][0] = this[1][0] * rm11;
+        dest[1][1] = this[1][1] * rm11;
+        dest[1][2] = this[1][2] * rm11;
+        dest[1][3] = this[1][3] * rm11;
+        dest[3][0] = this[2][0] * rm32;
+        dest[3][1] = this[2][1] * rm32;
+        dest[3][2] = this[2][2] * rm32;
+        dest[3][3] = this[2][3] * rm32;
+        dest[2][0] = nm20;
+        dest[2][1] = nm21;
+        dest[2][2] = nm22;
+        dest[2][3] = nm23;
+        // ._properties(0);
         return dest;
-    }
-    public frustumLH(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number, zZeroToOne: boolean): Matrix4 {
-        return frustumLH(left, right, bottom, top, zNear, zFar, zZeroToOne, this);
-    }
-    public frustumLH(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number, dest: Matrix4): Matrix4 {
-        return frustumLH(left, right, bottom, top, zNear, zFar, false, dest);
-    }
-    public frustumLH(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number): Matrix4 {
-        return frustumLH(left, right, bottom, top, zNear, zFar, false, this);
     }
 
     /**
@@ -8734,35 +8119,33 @@ export class Matrix4 {
      *            or whether to use OpenGL's NDC z range of <code>[-1..+1]</code> when <code>false</code>
      * @return this
      */
-    public setFrustumLH(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number, zZeroToOne: boolean): Matrix4 {
-        if ((properties & PROPERTY_IDENTITY) == 0)
-            _identity();
-        _m00((zNear + zNear) / (right - left)).
-            _m11((zNear + zNear) / (top - bottom)).
-            _m20((right + left) / (right - left)).
-            _m21((top + bottom) / (top - bottom));
-        const farInf = zFar > 0 && Double.isInfinite(zFar);
-        const nearInf = zNear > 0 && Double.isInfinite(zNear);
+    public setFrustumLH(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number, zZeroToOne?: boolean): Matrix4 {
+        zZeroToOne = zZeroToOne ?? false;
+        if (!this.PROPERTY_IDENTITY)
+            this.identity();
+        this[0][0] = (zNear + zNear) / (right - left);
+        this[1][1] = (zNear + zNear) / (top - bottom);
+        this[2][0] = (right + left) / (right - left);
+        this[2][1] = (top + bottom) / (top - bottom);
+        const farInf = zFar > 0 && !isFinite(zFar);
+        const nearInf = zNear > 0 && !isFinite(zNear);
         if (farInf) {
             // See: "Infinite Projection Matrix" (http://www.terathon.com/gdc07_lengyel.pdf)
             const e = 1E-6;
-            _m22(1.0 - e).
-                _m32((e - (zZeroToOne ? 1.0 : 2.0)) * zNear);
+            this[2][2] = (1.0 - e)
+            this[3][2] = ((e - (zZeroToOne ? 1.0 : 2.0)) * zNear);
         } else if (nearInf) {
             const e = 1E-6;
-            _m22((zZeroToOne ? 0.0 : 1.0) - e).
-                _m32(((zZeroToOne ? 1.0 : 2.0) - e) * zFar);
+            this[2][2] = ((zZeroToOne ? 0.0 : 1.0) - e)
+            this[3][2] = (((zZeroToOne ? 1.0 : 2.0) - e) * zFar);
         } else {
-            _m22((zZeroToOne ? zFar : zFar + zNear) / (zFar - zNear)).
-                _m32((zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar));
+            this[2][2] = ((zZeroToOne ? zFar : zFar + zNear) / (zFar - zNear))
+            this[3][2] = ((zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar));
         }
-        _m23(1.0).
-            _m33(0.0).
-            properties = this.m20 == 0.0 && this.m21 == 0.0 ? PROPERTY_PERSPECTIVE : 0;
+        this[2][3] = (1.0);
+        this[3][3] = (0.0);
+        // properties = this.m20 == 0.0 && this.m21 == 0.0 ? PROPERTY_PERSPECTIVE : 0;
         return this;
-    }
-    public setFrustumLH(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number): Matrix4 {
-        return setFrustumLH(left, right, bottom, top, zNear, zFar, false);
     }
 
     /**
@@ -8793,143 +8176,144 @@ export class Matrix4 {
      *          the distance to the far plane
      * @return this
      */
-    public setFromIntrinsic(alphaX: number, alphaY: number, gamma: number, u: number0, v: number0, imgWidth: number, imgHeight: number, near: number, far: number): Matrix4 {
+    public setFromIntrinsic(alphaX: number, alphaY: number, gamma: number, u0: number, v0: number, imgWidth: number, imgHeight: number, near: number, far: number): Matrix4 {
         const l00 = 2.0 / imgWidth;
         const l11 = 2.0 / imgHeight;
         const l22 = 2.0 / (near - far);
-        this.m00 = l00 * alphaX;
-        this.m01 = 0.0;
-        this.m02 = 0.0;
-        this.m03 = 0.0;
-        this.m10 = l00 * gamma;
-        this.m11 = l11 * alphaY;
-        this.m12 = 0.0;
-        this.m13 = 0.0;
-        this.m20 = l00 * u0 - 1.0;
-        this.m21 = l11 * v0 - 1.0;
-        this.m22 = l22 * -(near + far) + (far + near) / (near - far);
-        this.m23 = -1.0;
-        this.m30 = 0.0;
-        this.m31 = 0.0;
-        this.m32 = l22 * -near * far;
-        this.m33 = 0.0;
-        this.properties = PROPERTY_PERSPECTIVE;
+        this[0][0] = l00 * alphaX;
+        this[0][1] = 0.0;
+        this[0][2] = 0.0;
+        this[0][3] = 0.0;
+        this[1][0] = l00 * gamma;
+        this[1][1] = l11 * alphaY;
+        this[1][2] = 0.0;
+        this[1][3] = 0.0;
+        this[2][0] = l00 * u0 - 1.0;
+        this[2][1] = l11 * v0 - 1.0;
+        this[2][2] = l22 * -(near + far) + (far + near) / (near - far);
+        this[2][3] = -1.0;
+        this[3][0] = 0.0;
+        this[3][1] = 0.0;
+        this[3][2] = l22 * -near * far;
+        this[3][3] = 0.0;
+        // this.properties = PROPERTY_PERSPECTIVE;
         return this;
     }
 
-    public frustumPlane(plane: number, dest: Vector4): Vector4 {
-        switch (plane) {
-            case PLANE_NX:
-                dest.set(m03 + m00, m13 + m10, m23 + m20, m33 + m30).normalize3();
-                break;
-            case PLANE_PX:
-                dest.set(m03 - m00, m13 - m10, m23 - m20, m33 - m30).normalize3();
-                break;
-            case PLANE_NY:
-                dest.set(m03 + m01, m13 + m11, m23 + m21, m33 + m31).normalize3();
-                break;
-            case PLANE_PY:
-                dest.set(m03 - m01, m13 - m11, m23 - m21, m33 - m31).normalize3();
-                break;
-            case PLANE_NZ:
-                dest.set(m03 + m02, m13 + m12, m23 + m22, m33 + m32).normalize3();
-                break;
-            case PLANE_PZ:
-                dest.set(m03 - m02, m13 - m12, m23 - m22, m33 - m32).normalize3();
-                break;
-            default:
-                throw new IllegalArgumentException("dest"); //$NON-NLS-1$
-        }
-        return dest;
-    }
+    // TODO: missing case ENUM defs for PLANE_{} and CORNER_{}
 
-    public frustumCorner(corner: number, dest: Vector3): Vector3 {
-        const d1, d2, d3;
-        const n1x, n1y, n1z, n2x, n2y, n2z, n3x, n3y, n3z;
-        switch (corner) {
-            case CORNER_NXNYNZ: // left, bottom, near
-                n1x = m03 + m00; n1y = m13 + m10; n1z = m23 + m20; d1 = m33 + m30; // left
-                n2x = m03 + m01; n2y = m13 + m11; n2z = m23 + m21; d2 = m33 + m31; // bottom
-                n3x = m03 + m02; n3y = m13 + m12; n3z = m23 + m22; d3 = m33 + m32; // near
-                break;
-            case CORNER_PXNYNZ: // right, bottom, near
-                n1x = m03 - m00; n1y = m13 - m10; n1z = m23 - m20; d1 = m33 - m30; // right
-                n2x = m03 + m01; n2y = m13 + m11; n2z = m23 + m21; d2 = m33 + m31; // bottom
-                n3x = m03 + m02; n3y = m13 + m12; n3z = m23 + m22; d3 = m33 + m32; // near
-                break;
-            case CORNER_PXPYNZ: // right, top, near
-                n1x = m03 - m00; n1y = m13 - m10; n1z = m23 - m20; d1 = m33 - m30; // right
-                n2x = m03 - m01; n2y = m13 - m11; n2z = m23 - m21; d2 = m33 - m31; // top
-                n3x = m03 + m02; n3y = m13 + m12; n3z = m23 + m22; d3 = m33 + m32; // near
-                break;
-            case CORNER_NXPYNZ: // left, top, near
-                n1x = m03 + m00; n1y = m13 + m10; n1z = m23 + m20; d1 = m33 + m30; // left
-                n2x = m03 - m01; n2y = m13 - m11; n2z = m23 - m21; d2 = m33 - m31; // top
-                n3x = m03 + m02; n3y = m13 + m12; n3z = m23 + m22; d3 = m33 + m32; // near
-                break;
-            case CORNER_PXNYPZ: // right, bottom, far
-                n1x = m03 - m00; n1y = m13 - m10; n1z = m23 - m20; d1 = m33 - m30; // right
-                n2x = m03 + m01; n2y = m13 + m11; n2z = m23 + m21; d2 = m33 + m31; // bottom
-                n3x = m03 - m02; n3y = m13 - m12; n3z = m23 - m22; d3 = m33 - m32; // far
-                break;
-            case CORNER_NXNYPZ: // left, bottom, far
-                n1x = m03 + m00; n1y = m13 + m10; n1z = m23 + m20; d1 = m33 + m30; // left
-                n2x = m03 + m01; n2y = m13 + m11; n2z = m23 + m21; d2 = m33 + m31; // bottom
-                n3x = m03 - m02; n3y = m13 - m12; n3z = m23 - m22; d3 = m33 - m32; // far
-                break;
-            case CORNER_NXPYPZ: // left, top, far
-                n1x = m03 + m00; n1y = m13 + m10; n1z = m23 + m20; d1 = m33 + m30; // left
-                n2x = m03 - m01; n2y = m13 - m11; n2z = m23 - m21; d2 = m33 - m31; // top
-                n3x = m03 - m02; n3y = m13 - m12; n3z = m23 - m22; d3 = m33 - m32; // far
-                break;
-            case CORNER_PXPYPZ: // right, top, far
-                n1x = m03 - m00; n1y = m13 - m10; n1z = m23 - m20; d1 = m33 - m30; // right
-                n2x = m03 - m01; n2y = m13 - m11; n2z = m23 - m21; d2 = m33 - m31; // top
-                n3x = m03 - m02; n3y = m13 - m12; n3z = m23 - m22; d3 = m33 - m32; // far
-                break;
-            default:
-                throw new IllegalArgumentException("corner"); //$NON-NLS-1$
-        }
-        const c23x, c23y, c23z;
-        c23x = n2y * n3z - n2z * n3y;
-        c23y = n2z * n3x - n2x * n3z;
-        c23z = n2x * n3y - n2y * n3x;
-        const c31x, c31y, c31z;
-        c31x = n3y * n1z - n3z * n1y;
-        c31y = n3z * n1x - n3x * n1z;
-        c31z = n3x * n1y - n3y * n1x;
-        const c12x, c12y, c12z;
-        c12x = n1y * n2z - n1z * n2y;
-        c12y = n1z * n2x - n1x * n2z;
-        c12z = n1x * n2y - n1y * n2x;
-        const invDot = 1.0 / (n1x * c23x + n1y * c23y + n1z * c23z);
-        dest.x = (-c23x * d1 - c31x * d2 - c12x * d3) * invDot;
-        dest.y = (-c23y * d1 - c31y * d2 - c12y * d3) * invDot;
-        dest.z = (-c23z * d1 - c31z * d2 - c12z * d3) * invDot;
-        return dest;
-    }
+    // public frustumPlane(plane: number, dest: Vector4): Vector4 {
+    //     switch (plane) {
+    //         case PLANE_NX:
+    //             dest.set(this[0][3] + this[0][0], this[1][3] + this[1][0], this[2][3] + this[2][0], this[3][3] + this[3][0]).normalize3();
+    //             break;
+    //         case PLANE_PX:
+    //             dest.set(this[0][3] - this[0][0], this[1][3] - this[1][0], this[2][3] - this[2][0], this[3][3] - this[3][0]).normalize3();
+    //             break;
+    //         case PLANE_NY:
+    //             dest.set(this[0][3] + this[0][1], this[1][3] + this[1][1], this[2][3] + this[2][1], this[3][3] + this[3][1]).normalize3();
+    //             break;
+    //         case PLANE_PY:
+    //             dest.set(this[0][3] - this[0][1], this[1][3] - this[1][1], this[2][3] - this[2][1], this[3][3] - this[3][1]).normalize3();
+    //             break;
+    //         case PLANE_NZ:
+    //             dest.set(this[0][3] + this[0][2], this[1][3] + this[1][2], this[2][3] + this[2][2], this[3][3] + this[3][2]).normalize3();
+    //             break;
+    //         case PLANE_PZ:
+    //             dest.set(this[0][3] - this[0][2], this[1][3] - this[1][2], this[2][3] - this[2][2], this[3][3] - this[3][2]).normalize3();
+    //             break;
+    //         default:
+    //             throw new IllegalArgumentException("dest"); //$NON-NLS-1$
+    //     }
+    //     return dest;
+    // }
+
+    // public frustumCorner(corner: number, dest: Vector3): Vector3 {
+    //     let d1, d2, d3;
+    //     let n1x, n1y, n1z, n2x, n2y, n2z, n3x, n3y, n3z;
+    //     switch (corner) {
+    //         case CORNER_NXNYNZ: // left, bottom, near
+    //             n1x = this[0][3] + this[0][0]; n1y = this[1][3] + this[1][0]; n1z = this[2][3] + this[2][0]; d1 = this[3][3] + this[3][0]; // left
+    //             n2x = this[0][3] + this[0][1]; n2y = this[1][3] + this[1][1]; n2z = this[2][3] + this[2][1]; d2 = this[3][3] + this[3][1]; // bottom
+    //             n3x = this[0][3] + this[0][2]; n3y = this[1][3] + this[1][2]; n3z = this[2][3] + this[2][2]; d3 = this[3][3] + this[3][2]; // near
+    //             break;
+    //         case CORNER_PXNYNZ: // right, bottom, near
+    //             n1x = this[0][3] - this[0][0]; n1y = this[1][3] - this[1][0]; n1z = this[2][3] - this[2][0]; d1 = this[3][3] - this[3][0]; // right
+    //             n2x = this[0][3] + this[0][1]; n2y = this[1][3] + this[1][1]; n2z = this[2][3] + this[2][1]; d2 = this[3][3] + this[3][1]; // bottom
+    //             n3x = this[0][3] + this[0][2]; n3y = this[1][3] + this[1][2]; n3z = this[2][3] + this[2][2]; d3 = this[3][3] + this[3][2]; // near
+    //             break;
+    //         case CORNER_PXPYNZ: // right, top, near
+    //             n1x = this[0][3] - this[0][0]; n1y = this[1][3] - this[1][0]; n1z = this[2][3] - this[2][0]; d1 = this[3][3] - this[3][0]; // right
+    //             n2x = this[0][3] - this[0][1]; n2y = this[1][3] - this[1][1]; n2z = this[2][3] - this[2][1]; d2 = this[3][3] - this[3][1]; // top
+    //             n3x = this[0][3] + this[0][2]; n3y = this[1][3] + this[1][2]; n3z = this[2][3] + this[2][2]; d3 = this[3][3] + this[3][2]; // near
+    //             break;
+    //         case CORNER_NXPYNZ: // left, top, near
+    //             n1x = this[0][3] + this[0][0]; n1y = this[1][3] + this[1][0]; n1z = this[2][3] + this[2][0]; d1 = this[3][3] + this[3][0]; // left
+    //             n2x = this[0][3] - this[0][1]; n2y = this[1][3] - this[1][1]; n2z = this[2][3] - this[2][1]; d2 = this[3][3] - this[3][1]; // top
+    //             n3x = this[0][3] + this[0][2]; n3y = this[1][3] + this[1][2]; n3z = this[2][3] + this[2][2]; d3 = this[3][3] + this[3][2]; // near
+    //             break;
+    //         case CORNER_PXNYPZ: // right, bottom, far
+    //             n1x = this[0][3] - this[0][0]; n1y = this[1][3] - this[1][0]; n1z = this[2][3] - this[2][0]; d1 = this[3][3] - this[3][0]; // right
+    //             n2x = this[0][3] + this[0][1]; n2y = this[1][3] + this[1][1]; n2z = this[2][3] + this[2][1]; d2 = this[3][3] + this[3][1]; // bottom
+    //             n3x = this[0][3] - this[0][2]; n3y = this[1][3] - this[1][2]; n3z = this[2][3] - this[2][2]; d3 = this[3][3] - this[3][2]; // far
+    //             break;
+    //         case CORNER_NXNYPZ: // left, bottom, far
+    //             n1x = this[0][3] + this[0][0]; n1y = this[1][3] + this[1][0]; n1z = this[2][3] + this[2][0]; d1 = this[3][3] + this[3][0]; // left
+    //             n2x = this[0][3] + this[0][1]; n2y = this[1][3] + this[1][1]; n2z = this[2][3] + this[2][1]; d2 = this[3][3] + this[3][1]; // bottom
+    //             n3x = this[0][3] - this[0][2]; n3y = this[1][3] - this[1][2]; n3z = this[2][3] - this[2][2]; d3 = this[3][3] - this[3][2]; // far
+    //             break;
+    //         case CORNER_NXPYPZ: // left, top, far
+    //             n1x = this[0][3] + this[0][0]; n1y = this[1][3] + this[1][0]; n1z = this[2][3] + this[2][0]; d1 = this[3][3] + this[3][0]; // left
+    //             n2x = this[0][3] - this[0][1]; n2y = this[1][3] - this[1][1]; n2z = this[2][3] - this[2][1]; d2 = this[3][3] - this[3][1]; // top
+    //             n3x = this[0][3] - this[0][2]; n3y = this[1][3] - this[1][2]; n3z = this[2][3] - this[2][2]; d3 = this[3][3] - this[3][2]; // far
+    //             break;
+    //         case CORNER_PXPYPZ: // right, top, far
+    //             n1x = this[0][3] - this[0][0]; n1y = this[1][3] - this[1][0]; n1z = this[2][3] - this[2][0]; d1 = this[3][3] - this[3][0]; // right
+    //             n2x = this[0][3] - this[0][1]; n2y = this[1][3] - this[1][1]; n2z = this[2][3] - this[2][1]; d2 = this[3][3] - this[3][1]; // top
+    //             n3x = this[0][3] - this[0][2]; n3y = this[1][3] - this[1][2]; n3z = this[2][3] - this[2][2]; d3 = this[3][3] - this[3][2]; // far
+    //             break;
+    //         default:
+    //             throw new IllegalArgumentException("corner"); //$NON-NLS-1$
+    //     }
+    //     const c23x, c23y, c23z;
+    //     c23x = n2y * n3z - n2z * n3y;
+    //     c23y = n2z * n3x - n2x * n3z;
+    //     c23z = n2x * n3y - n2y * n3x;
+    //     const c31x, c31y, c31z;
+    //     c31x = n3y * n1z - n3z * n1y;
+    //     c31y = n3z * n1x - n3x * n1z;
+    //     c31z = n3x * n1y - n3y * n1x;
+    //     const c12x, c12y, c12z;
+    //     c12x = n1y * n2z - n1z * n2y;
+    //     c12y = n1z * n2x - n1x * n2z;
+    //     c12z = n1x * n2y - n1y * n2x;
+    //     const invDot = 1.0 / (n1x * c23x + n1y * c23y + n1z * c23z);
+    //     dest.x = (-c23x * d1 - c31x * d2 - c12x * d3) * invDot;
+    //     dest.y = (-c23y * d1 - c31y * d2 - c12y * d3) * invDot;
+    //     dest.z = (-c23z * d1 - c31z * d2 - c12z * d3) * invDot;
+    //     return dest;
+    // }
 
     public perspectiveOrigin(dest: Vector3): Vector3 {
         /*
          * Simply compute the intersection point of the left, right and top frustum plane.
          */
-        const d1, d2, d3;
-        const n1x, n1y, n1z, n2x, n2y, n2z, n3x, n3y, n3z;
-        n1x = m03 + m00; n1y = m13 + m10; n1z = m23 + m20; d1 = m33 + m30; // left
-        n2x = m03 - m00; n2y = m13 - m10; n2z = m23 - m20; d2 = m33 - m30; // right
-        n3x = m03 - m01; n3y = m13 - m11; n3z = m23 - m21; d3 = m33 - m31; // top
-        const c23x, c23y, c23z;
-        c23x = n2y * n3z - n2z * n3y;
-        c23y = n2z * n3x - n2x * n3z;
-        c23z = n2x * n3y - n2y * n3x;
-        const c31x, c31y, c31z;
-        c31x = n3y * n1z - n3z * n1y;
-        c31y = n3z * n1x - n3x * n1z;
-        c31z = n3x * n1y - n3y * n1x;
-        const c12x, c12y, c12z;
-        c12x = n1y * n2z - n1z * n2y;
-        c12y = n1z * n2x - n1x * n2z;
-        c12z = n1x * n2y - n1y * n2x;
+        const n1x = this[0][3] + this[0][0], n1y = this[1][3] + this[1][0], n1z = this[2][3] + this[2][0], d1 = this[3][3] + this[3][0]; // left
+        const n2x = this[0][3] - this[0][0], n2y = this[1][3] - this[1][0], n2z = this[2][3] - this[2][0], d2 = this[3][3] - this[3][0]; // right
+        const n3x = this[0][3] - this[0][1], n3y = this[1][3] - this[1][1], n3z = this[2][3] - this[2][1], d3 = this[3][3] - this[3][1]; // top
+
+        const c23x = n2y * n3z - n2z * n3y;
+        const c23y = n2z * n3x - n2x * n3z;
+        const c23z = n2x * n3y - n2y * n3x;
+
+        const c31x = n3y * n1z - n3z * n1y;
+        const c31y = n3z * n1x - n3x * n1z;
+        const c31z = n3x * n1y - n3y * n1x;
+
+        const c12x = n1y * n2z - n1z * n2y;
+        const c12y = n1z * n2x - n1x * n2z;
+        const c12z = n1x * n2y - n1y * n2x;
+
         const invDot = 1.0 / (n1x * c23x + n1y * c23y + n1z * c23z);
         dest.x = (-c23x * d1 - c31x * d2 - c12x * d3) * invDot;
         dest.y = (-c23y * d1 - c31y * d2 - c12y * d3) * invDot;
@@ -8938,10 +8322,10 @@ export class Matrix4 {
     }
 
     public perspectiveInvOrigin(dest: Vector3): Vector3 {
-        const invW = 1.0 / m23;
-        dest.x = m20 * invW;
-        dest.y = m21 * invW;
-        dest.z = m22 * invW;
+        const invW = 1.0 / this[2][3];
+        dest.x = this[2][0] * invW;
+        dest.y = this[2][1] * invW;
+        dest.z = this[2][2] * invW;
         return dest;
     }
 
@@ -8949,20 +8333,19 @@ export class Matrix4 {
         /*
          * Compute the angle between the bottom and top frustum plane normals.
          */
-        const n1x, n1y, n1z, n2x, n2y, n2z;
-        n1x = m03 + m01; n1y = m13 + m11; n1z = m23 + m21; // bottom
-        n2x = m01 - m03; n2y = m11 - m13; n2z = m21 - m23; // top
+        const n1x = this[0][3] + this[0][1]; const n1y = this[1][3] + this[1][1]; const n1z = this[2][3] + this[2][1]; // bottom
+        const n2x = this[0][1] - this[0][3]; const n2y = this[1][1] - this[1][3]; const n2z = this[2][1] - this[2][3]; // top
         const n1len = Math.sqrt(n1x * n1x + n1y * n1y + n1z * n1z);
         const n2len = Math.sqrt(n2x * n2x + n2y * n2y + n2z * n2z);
         return Math.acos((n1x * n2x + n1y * n2y + n1z * n2z) / (n1len * n2len));
     }
 
     public perspectiveNear(): number {
-        return m32 / (m23 + m22);
+        return this[3][2] / (this[2][3] + this[2][2]);
     }
 
     public perspectiveFar(): number {
-        return m32 / (m22 - m23);
+        return this[3][2] / (this[2][2] - this[2][3]);
     }
 
     public frustumRayDir(x: number, y: number, dest: Vector3): Vector3 {
@@ -8973,9 +8356,9 @@ export class Matrix4 {
          * The code below uses a condense form of doing all this making use 
          * of some mathematical identities to simplify the overall expression.
          */
-        const a = m10 * m23, b = m13 * m21, c = m10 * m21, d = m11 * m23, e = m13 * m20, f = m11 * m20;
-        const g = m03 * m20, h = m01 * m23, i = m01 * m20, j = m03 * m21, k = m00 * m23, l = m00 * m21;
-        const m = m00 * m13, n = m03 * m11, o = m00 * m11, p = m01 * m13, q = m03 * m10, r = m01 * m10;
+        const a = this[1][0] * this[2][3], b = this[1][3] * this[2][1], c = this[1][0] * this[2][1], d = this[1][1] * this[2][3], e = this[1][3] * this[2][0], f = this[1][1] * this[2][0];
+        const g = this[0][3] * this[2][0], h = this[0][1] * this[2][3], i = this[0][1] * this[2][0], j = this[0][3] * this[2][1], k = this[0][0] * this[2][3], l = this[0][0] * this[2][1];
+        const m = this[0][0] * this[1][3], n = this[0][3] * this[1][1], o = this[0][0] * this[1][1], p = this[0][1] * this[1][3], q = this[0][3] * this[1][0], r = this[0][1] * this[1][0];
 
         const m1x = (d + e + f - a - b - c) * (1.0 - y) + (a - b - c + d - e + f) * y;
         const m1y = (j + k + l - g - h - i) * (1.0 - y) + (g - h - i + j - k + l) * y;
@@ -8991,42 +8374,51 @@ export class Matrix4 {
     }
 
     public positiveZ(dir: Vector3): Vector3 {
-        if ((properties & PROPERTY_ORTHONORMAL) != 0)
-            return normalizedPositiveZ(dir);
-        return positiveZGeneric(dir);
+        if (this.PROPERTY_ORTHONORMAL)
+            return this.normalizedPositiveZ(dir);
+        return this.positiveZGeneric(dir);
     }
     private positiveZGeneric(dir: Vector3): Vector3 {
-        return dir.set(m10 * m21 - m11 * m20, m20 * m01 - m21 * m00, m00 * m11 - m01 * m10).normalize();
+        return dir.set(
+            this[1][0] * this[2][1] - this[1][1] * this[2][0],
+            this[2][0] * this[0][1] - this[2][1] * this[0][0],
+            this[0][0] * this[1][1] - this[0][1] * this[1][0]).normalize();
     }
 
     public normalizedPositiveZ(dir: Vector3): Vector3 {
-        return dir.set(m02, m12, m22);
+        return dir.set(this[0][2], this[1][2], this[2][2]);
     }
 
     public positiveX(dir: Vector3): Vector3 {
-        if ((properties & PROPERTY_ORTHONORMAL) != 0)
-            return normalizedPositiveX(dir);
-        return positiveXGeneric(dir);
+        if (this.PROPERTY_ORTHONORMAL)
+            return this.normalizedPositiveX(dir);
+        return this.positiveXGeneric(dir);
     }
     private positiveXGeneric(dir: Vector3): Vector3 {
-        return dir.set(m11 * m22 - m12 * m21, m02 * m21 - m01 * m22, m01 * m12 - m02 * m11).normalize();
+        return dir.set(
+            this[1][1] * this[2][2] - this[1][2] * this[2][1],
+            this[0][2] * this[2][1] - this[0][1] * this[2][2],
+            this[0][1] * this[1][2] - this[0][2] * this[1][1]).normalize();
     }
 
     public normalizedPositiveX(dir: Vector3): Vector3 {
-        return dir.set(m00, m10, m20);
+        return dir.set(this[0][0], this[1][0], this[2][0]);
     }
 
     public positiveY(dir: Vector3): Vector3 {
-        if ((properties & PROPERTY_ORTHONORMAL) != 0)
-            return normalizedPositiveY(dir);
-        return positiveYGeneric(dir);
+        if (this.PROPERTY_ORTHONORMAL)
+            return this.normalizedPositiveY(dir);
+        return this.positiveYGeneric(dir);
     }
     private positiveYGeneric(dir: Vector3): Vector3 {
-        return dir.set(m12 * m20 - m10 * m22, m00 * m22 - m02 * m20, m02 * m10 - m00 * m12).normalize();
+        return dir.set(
+            this[1][2] * this[2][0] - this[1][0] * this[2][2],
+            this[0][0] * this[2][2] - this[0][2] * this[2][0],
+            this[0][2] * this[1][0] - this[0][0] * this[1][2]).normalize();
     }
 
     public normalizedPositiveY(dir: Vector3): Vector3 {
-        return dir.set(m01, m11, m21);
+        return dir.set(this[0][1], this[1][1], this[2][1]);
     }
 
     public originAffine(dest: Vector3): Vector3 {
@@ -9043,9 +8435,9 @@ export class Matrix4 {
     }
 
     public origin(dest: Vector3): Vector3 {
-        if ((properties & PROPERTY_AFFINE) != 0)
-            return originAffine(dest);
-        return originGeneric(dest);
+        if (this.PROPERTY_AFFINE)
+            return this.originAffine(dest);
+        return this.originGeneric(dest);
     }
     private originGeneric(dest: Vector3): Vector3 {
         const a = this[0][0] * this[1][1] - this[0][1] * this[1][0];
@@ -9062,10 +8454,10 @@ export class Matrix4 {
         const l = this[2][2] * this[3][3] - this[2][3] * this[3][2];
         const det = a * l - b * k + c * j + d * i - e * h + f * g;
         const invDet = 1.0 / det;
-        const nm30 = (-m10 * j + m11 * h - m12 * g) * invDet;
-        const nm31 = (m00 * j - m01 * h + m02 * g) * invDet;
-        const nm32 = (-m30 * d + m31 * b - m32 * a) * invDet;
-        const nm33 = det / (m20 * d - m21 * b + m22 * a);
+        const nm30 = (-this[1][0] * j + this[1][1] * h - this[1][2] * g) * invDet;
+        const nm31 = (+this[0][0] * j - this[0][1] * h + this[0][2] * g) * invDet;
+        const nm32 = (-this[3][0] * d + this[3][1] * b - this[3][2] * a) * invDet;
+        const nm33 = det / (this[2][0] * d - this[2][1] * b + this[2][2] * a);
         const x = nm30 * nm33;
         const y = nm31 * nm33;
         const z = nm32 * nm33;
@@ -9098,11 +8490,11 @@ export class Matrix4 {
      * @return this
      */
     public shadow(light: Vector4, a: number, b: number, c: number, d: number): Matrix4 {
-        return shadow(light.x(), light.y(), light.z(), light.w(), a, b, c, d, this);
+        return shadow(light.x, light.y, light.z, light.w, a, b, c, d, this);
     }
 
     public shadow(light: Vector4, a: number, b: number, c: number, d: number, dest: Matrix4): Matrix4 {
-        return shadow(light.x(), light.y(), light.z(), light.w(), a, b, c, d, dest);
+        return shadow(light.x, light.y, light.z, light.w, a, b, c, d, dest);
     }
 
     /**
@@ -9142,7 +8534,7 @@ export class Matrix4 {
 
     public shadow(lightX: number, lightY: number, lightZ: number, lightW: number, a: number, b: number, c: number, d: number, dest: Matrix4): Matrix4 {
         // normalize plane
-        const invPlaneLen = Math.invsqrt(a * a + b * b + c * c);
+        const invPlaneLen = 1 / Math.sqrt(a * a + b * b + c * c);
         const an = a * invPlaneLen;
         const bn = b * invPlaneLen;
         const cn = c * invPlaneLen;
@@ -9169,45 +8561,35 @@ export class Matrix4 {
         const rm33 = dot - dn * lightW;
 
         // matrix multiplication
-        const nm00 = m00 * rm00 + m10 * rm01 + m20 * rm02 + m30 * rm03;
-        const nm01 = m01 * rm00 + m11 * rm01 + m21 * rm02 + m31 * rm03;
-        const nm02 = m02 * rm00 + m12 * rm01 + m22 * rm02 + m32 * rm03;
-        const nm03 = m03 * rm00 + m13 * rm01 + m23 * rm02 + m33 * rm03;
-        const nm10 = m00 * rm10 + m10 * rm11 + m20 * rm12 + m30 * rm13;
-        const nm11 = m01 * rm10 + m11 * rm11 + m21 * rm12 + m31 * rm13;
-        const nm12 = m02 * rm10 + m12 * rm11 + m22 * rm12 + m32 * rm13;
-        const nm13 = m03 * rm10 + m13 * rm11 + m23 * rm12 + m33 * rm13;
-        const nm20 = m00 * rm20 + m10 * rm21 + m20 * rm22 + m30 * rm23;
-        const nm21 = m01 * rm20 + m11 * rm21 + m21 * rm22 + m31 * rm23;
-        const nm22 = m02 * rm20 + m12 * rm21 + m22 * rm22 + m32 * rm23;
-        const nm23 = m03 * rm20 + m13 * rm21 + m23 * rm22 + m33 * rm23;
-        dest._m30(m00 * rm30 + m10 * rm31 + m20 * rm32 + m30 * rm33)
-            ._m31(m01 * rm30 + m11 * rm31 + m21 * rm32 + m31 * rm33)
-            ._m32(m02 * rm30 + m12 * rm31 + m22 * rm32 + m32 * rm33)
-            ._m33(m03 * rm30 + m13 * rm31 + m23 * rm32 + m33 * rm33)
-            ._m00(nm00)
-            ._m01(nm01)
-            ._m02(nm02)
-            ._m03(nm03)
-            ._m10(nm10)
-            ._m11(nm11)
-            ._m12(nm12)
-            ._m13(nm13)
-            ._m20(nm20)
-            ._m21(nm21)
-            ._m22(nm22)
-            ._m23(nm23)
-            ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION | PROPERTY_ORTHONORMAL));
-        return dest;
+        return dest.set(
+            this[0][0] * rm00 + this[1][0] * rm01 + this[2][0] * rm02 + this[3][0] * rm03,
+            this[0][1] * rm00 + this[1][1] * rm01 + this[2][1] * rm02 + this[3][1] * rm03,
+            this[0][2] * rm00 + this[1][2] * rm01 + this[2][2] * rm02 + this[3][2] * rm03,
+            this[0][3] * rm00 + this[1][3] * rm01 + this[2][3] * rm02 + this[3][3] * rm03,
+            this[0][0] * rm10 + this[1][0] * rm11 + this[2][0] * rm12 + this[3][0] * rm13,
+            this[0][1] * rm10 + this[1][1] * rm11 + this[2][1] * rm12 + this[3][1] * rm13,
+            this[0][2] * rm10 + this[1][2] * rm11 + this[2][2] * rm12 + this[3][2] * rm13,
+            this[0][3] * rm10 + this[1][3] * rm11 + this[2][3] * rm12 + this[3][3] * rm13,
+            this[0][0] * rm20 + this[1][0] * rm21 + this[2][0] * rm22 + this[3][0] * rm23,
+            this[0][1] * rm20 + this[1][1] * rm21 + this[2][1] * rm22 + this[3][1] * rm23,
+            this[0][2] * rm20 + this[1][2] * rm21 + this[2][2] * rm22 + this[3][2] * rm23,
+            this[0][3] * rm20 + this[1][3] * rm21 + this[2][3] * rm22 + this[3][3] * rm23,
+            this[0][0] * rm30 + this[1][0] * rm31 + this[2][0] * rm32 + this[3][0] * rm33,
+            this[0][1] * rm30 + this[1][1] * rm31 + this[2][1] * rm32 + this[3][1] * rm33,
+            this[0][2] * rm30 + this[1][2] * rm31 + this[2][2] * rm32 + this[3][2] * rm33,
+            this[0][3] * rm30 + this[1][3] * rm31 + this[2][3] * rm32 + this[3][3] * rm33,
+        )
+        //     ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION | PROPERTY_ORTHONORMAL));
+        // return dest;
     }
 
     public shadow(light: Vector4, planeTransform: Matrix4, dest: Matrix4): Matrix4 {
         // compute plane equation by transforming (y = 0)
-        const a = planeTransform.m10();
-        const b = planeTransform.m11();
-        const c = planeTransform.m12();
-        const d = -a * planeTransform.m30() - b * planeTransform.m31() - c * planeTransform.m32();
-        return shadow(light.x(), light.y(), light.z(), light.w(), a, b, c, d, dest);
+        const a = planeTransform[1][0];
+        const b = planeTransform[1][1];
+        const c = planeTransform[1][2];
+        const d = -a * planeTransform[3][0] - b * planeTransform[3][1] - c * planeTransform[3][2];
+        return shadow(light.x, light.y, light.z, light.w, a, b, c, d, dest);
     }
 
     /**
@@ -9235,10 +8617,10 @@ export class Matrix4 {
 
     public shadow(lightX: number, lightY: number, lightZ: number, lightW: number, planeTransform: Matrix4, dest: Matrix4): Matrix4 {
         // compute plane equation by transforming (y = 0)
-        const a = planeTransform.m10();
-        const b = planeTransform.m11();
-        const c = planeTransform.m12();
-        const d = -a * planeTransform.m30() - b * planeTransform.m31() - c * planeTransform.m32();
+        const a = planeTransform[1][0];
+        const b = planeTransform[1][1];
+        const c = planeTransform[1][2];
+        const d = -a * planeTransform[3][0] - b * planeTransform[3][1] - c * planeTransform[3][2];
         return shadow(lightX, lightY, lightZ, lightW, a, b, c, d, dest);
     }
 
@@ -9287,46 +8669,46 @@ export class Matrix4 {
      * @return this
      */
     public billboardCylindrical(objPos: Vector3, targetPos: Vector3, up: Vector3): Matrix4 {
-        const dirX = targetPos.x() - objPos.x();
-        const dirY = targetPos.y() - objPos.y();
-        const dirZ = targetPos.z() - objPos.z();
+        let dirX = targetPos.x - objPos.x;
+        let dirY = targetPos.y - objPos.y;
+        let dirZ = targetPos.z - objPos.z;
         // left = up x dir
-        const leftX = up.y() * dirZ - up.z() * dirY;
-        const leftY = up.z() * dirX - up.x() * dirZ;
-        const leftZ = up.x() * dirY - up.y() * dirX;
+        let leftX = up.y * dirZ - up.z * dirY;
+        let leftY = up.z * dirX - up.x * dirZ;
+        let leftZ = up.x * dirY - up.y * dirX;
         // normalize left
-        const invLeftLen = Math.invsqrt(leftX * leftX + leftY * leftY + leftZ * leftZ);
+        const invLeftLen = 1 / Math.sqrt(leftX * leftX + leftY * leftY + leftZ * leftZ);
         leftX *= invLeftLen;
         leftY *= invLeftLen;
         leftZ *= invLeftLen;
         // recompute dir by constraining rotation around 'up'
         // dir = left x up
-        dirX = leftY * up.z() - leftZ * up.y();
-        dirY = leftZ * up.x() - leftX * up.z();
-        dirZ = leftX * up.y() - leftY * up.x();
+        dirX = leftY * up.z - leftZ * up.y;
+        dirY = leftZ * up.x - leftX * up.z;
+        dirZ = leftX * up.y - leftY * up.x;
         // normalize dir
-        const invDirLen = Math.invsqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
+        const invDirLen = 1 / Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
         dirX *= invDirLen;
         dirY *= invDirLen;
         dirZ *= invDirLen;
         // set matrix elements
-        _m00(leftX).
-            _m01(leftY).
-            _m02(leftZ).
-            _m03(0.0).
-            _m10(up.x()).
-            _m11(up.y()).
-            _m12(up.z()).
-            _m13(0.0).
-            _m20(dirX).
-            _m21(dirY).
-            _m22(dirZ).
-            _m23(0.0).
-            _m30(objPos.x()).
-            _m31(objPos.y()).
-            _m32(objPos.z()).
-            _m33(1.0).
-            properties = PROPERTY_AFFINE | PROPERTY_ORTHONORMAL;
+        this[0][0] = leftX;
+        this[0][1] = leftY;
+        this[0][2] = leftZ;
+        this[0][3] = 0.0;
+        this[1][0] = up.x;
+        this[1][1] = up.y;
+        this[1][2] = up.z;
+        this[1][3] = 0.0;
+        this[2][0] = dirX;
+        this[2][1] = dirY;
+        this[2][2] = dirZ;
+        this[2][3] = 0.0;
+        this[3][0] = objPos.x;
+        this[3][1] = objPos.y;
+        this[3][2] = objPos.z;
+        this[3][3] = 1.0;
+        // properties = PROPERTY_AFFINE | PROPERTY_ORTHONORMAL;
         return this;
     }
 
@@ -9351,20 +8733,20 @@ export class Matrix4 {
      * @return this
      */
     public billboardSpherical(objPos: Vector3, targetPos: Vector3, up: Vector3): Matrix4 {
-        const dirX = targetPos.x() - objPos.x();
-        const dirY = targetPos.y() - objPos.y();
-        const dirZ = targetPos.z() - objPos.z();
+        let dirX = targetPos.x - objPos.x;
+        let dirY = targetPos.y - objPos.y;
+        let dirZ = targetPos.z - objPos.z;
         // normalize dir
-        const invDirLen = Math.invsqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
+        const invDirLen = 1 / Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
         dirX *= invDirLen;
         dirY *= invDirLen;
         dirZ *= invDirLen;
         // left = up x dir
-        const leftX = up.y() * dirZ - up.z() * dirY;
-        const leftY = up.z() * dirX - up.x() * dirZ;
-        const leftZ = up.x() * dirY - up.y() * dirX;
+        let leftX = up.y * dirZ - up.z * dirY;
+        let leftY = up.z * dirX - up.x * dirZ;
+        let leftZ = up.x * dirY - up.y * dirX;
         // normalize left
-        const invLeftLen = Math.invsqrt(leftX * leftX + leftY * leftY + leftZ * leftZ);
+        const invLeftLen = 1 / Math.sqrt(leftX * leftX + leftY * leftY + leftZ * leftZ);
         leftX *= invLeftLen;
         leftY *= invLeftLen;
         leftZ *= invLeftLen;
@@ -9373,23 +8755,23 @@ export class Matrix4 {
         const upY = dirZ * leftX - dirX * leftZ;
         const upZ = dirX * leftY - dirY * leftX;
         // set matrix elements
-        _m00(leftX).
-            _m01(leftY).
-            _m02(leftZ).
-            _m03(0.0).
-            _m10(upX).
-            _m11(upY).
-            _m12(upZ).
-            _m13(0.0).
-            _m20(dirX).
-            _m21(dirY).
-            _m22(dirZ).
-            _m23(0.0).
-            _m30(objPos.x()).
-            _m31(objPos.y()).
-            _m32(objPos.z()).
-            _m33(1.0).
-            properties = PROPERTY_AFFINE | PROPERTY_ORTHONORMAL;
+        this[0][0] = leftX;
+        this[0][1] = leftY;
+        this[0][2] = leftZ;
+        this[0][3] = 0.0;
+        this[1][0] = upX;
+        this[1][1] = upY;
+        this[1][2] = upZ;
+        this[1][3] = 0.0;
+        this[2][0] = dirX;
+        this[2][1] = dirY;
+        this[2][2] = dirZ;
+        this[2][3] = 0.0;
+        this[3][0] = objPos.x;
+        this[3][1] = objPos.y;
+        this[3][2] = objPos.z;
+        this[3][3] = 1.0;
+        // properties = PROPERTY_AFFINE | PROPERTY_ORTHONORMAL;
         return this;
     }
 
@@ -9412,13 +8794,13 @@ export class Matrix4 {
      * @return this
      */
     public billboardSpherical(objPos: Vector3, targetPos: Vector3): Matrix4 {
-        const toDirX = targetPos.x() - objPos.x();
-        const toDirY = targetPos.y() - objPos.y();
-        const toDirZ = targetPos.z() - objPos.z();
-        const x = -toDirY;
-        const y = toDirX;
-        const w = Math.sqrt(toDirX * toDirX + toDirY * toDirY + toDirZ * toDirZ) + toDirZ;
-        const invNorm = Math.invsqrt(x * x + y * y + w * w);
+        const toDirX = targetPos.x - objPos.x;
+        const toDirY = targetPos.y - objPos.y;
+        const toDirZ = targetPos.z - objPos.z;
+        let x = -toDirY;
+        let y = toDirX;
+        let w = Math.sqrt(toDirX * toDirX + toDirY * toDirY + toDirZ * toDirZ) + toDirZ;
+        const invNorm = 1 / Math.sqrt(x * x + y * y + w * w);
         x *= invNorm;
         y *= invNorm;
         w *= invNorm;
@@ -9427,23 +8809,23 @@ export class Matrix4 {
         const q01 = (x + x) * y;
         const q03 = (x + x) * w;
         const q13 = (y + y) * w;
-        _m00(1.0 - q11).
-            _m01(q01).
-            _m02(-q13).
-            _m03(0.0).
-            _m10(q01).
-            _m11(1.0 - q00).
-            _m12(q03).
-            _m13(0.0).
-            _m20(q13).
-            _m21(-q03).
-            _m22(1.0 - q11 - q00).
-            _m23(0.0).
-            _m30(objPos.x()).
-            _m31(objPos.y()).
-            _m32(objPos.z()).
-            _m33(1.0).
-            properties = PROPERTY_AFFINE | PROPERTY_ORTHONORMAL;
+        this[0][0] = 1.0 - q11;
+        this[0][1] = q01;
+        this[0][2] = -q13;
+        this[0][3] = 0.0;
+        this[1][0] = q01;
+        this[1][1] = 1.0 - q00;
+        this[1][2] = q03;
+        this[1][3] = 0.0;
+        this[2][0] = q13;
+        this[2][1] = -q03;
+        this[2][2] = 1.0 - q11 - q00;
+        this[2][3] = 0.0;
+        this[3][0] = objPos.x;
+        this[3][1] = objPos.y;
+        this[3][2] = objPos.z;
+        this[3][3] = 1.0;
+        // properties = PROPERTY_AFFINE | PROPERTY_ORTHONORMAL;
         return this;
     }
 
@@ -9486,130 +8868,94 @@ export class Matrix4 {
     //     return result;
     // }
 
-    public equals(obj: Object): boolean {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (!(obj instanceof Matrix4d))
-            return false;
+    // public equals(obj: Object): boolean {
+    //     if (this == obj)
+    //         return true;
+    //     if (obj == null)
+    //         return false;
+    //     if (!(obj instanceof Matrix4d))
+    //         return false;
 
-        if (Double.doubleToLongBits(m00) != Double.doubleToLongBits(other.m00))
-            return false;
-        if (Double.doubleToLongBits(m01) != Double.doubleToLongBits(other.m01))
-            return false;
-        if (Double.doubleToLongBits(m02) != Double.doubleToLongBits(other.m02))
-            return false;
-        if (Double.doubleToLongBits(m03) != Double.doubleToLongBits(other.m03))
-            return false;
-        if (Double.doubleToLongBits(m10) != Double.doubleToLongBits(other.m10))
-            return false;
-        if (Double.doubleToLongBits(m11) != Double.doubleToLongBits(other.m11))
-            return false;
-        if (Double.doubleToLongBits(m12) != Double.doubleToLongBits(other.m12))
-            return false;
-        if (Double.doubleToLongBits(m13) != Double.doubleToLongBits(other.m13))
-            return false;
-        if (Double.doubleToLongBits(m20) != Double.doubleToLongBits(other.m20))
-            return false;
-        if (Double.doubleToLongBits(m21) != Double.doubleToLongBits(other.m21))
-            return false;
-        if (Double.doubleToLongBits(m22) != Double.doubleToLongBits(other.m22))
-            return false;
-        if (Double.doubleToLongBits(m23) != Double.doubleToLongBits(other.m23))
-            return false;
-        if (Double.doubleToLongBits(m30) != Double.doubleToLongBits(other.m30))
-            return false;
-        if (Double.doubleToLongBits(m31) != Double.doubleToLongBits(other.m31))
-            return false;
-        if (Double.doubleToLongBits(m32) != Double.doubleToLongBits(other.m32))
-            return false;
-        if (Double.doubleToLongBits(m33) != Double.doubleToLongBits(other.m33))
-            return false;
-        return true;
-    }
+    //     if (Double.doubleToLongBits(m00) != Double.doubleToLongBits(other.m00))
+    //         return false;
+    //     if (Double.doubleToLongBits(m01) != Double.doubleToLongBits(other.m01))
+    //         return false;
+    //     if (Double.doubleToLongBits(m02) != Double.doubleToLongBits(other.m02))
+    //         return false;
+    //     if (Double.doubleToLongBits(m03) != Double.doubleToLongBits(other.m03))
+    //         return false;
+    //     if (Double.doubleToLongBits(m10) != Double.doubleToLongBits(other.m10))
+    //         return false;
+    //     if (Double.doubleToLongBits(m11) != Double.doubleToLongBits(other.m11))
+    //         return false;
+    //     if (Double.doubleToLongBits(m12) != Double.doubleToLongBits(other.m12))
+    //         return false;
+    //     if (Double.doubleToLongBits(m13) != Double.doubleToLongBits(other.m13))
+    //         return false;
+    //     if (Double.doubleToLongBits(m20) != Double.doubleToLongBits(other.m20))
+    //         return false;
+    //     if (Double.doubleToLongBits(m21) != Double.doubleToLongBits(other.m21))
+    //         return false;
+    //     if (Double.doubleToLongBits(m22) != Double.doubleToLongBits(other.m22))
+    //         return false;
+    //     if (Double.doubleToLongBits(m23) != Double.doubleToLongBits(other.m23))
+    //         return false;
+    //     if (Double.doubleToLongBits(m30) != Double.doubleToLongBits(other.m30))
+    //         return false;
+    //     if (Double.doubleToLongBits(m31) != Double.doubleToLongBits(other.m31))
+    //         return false;
+    //     if (Double.doubleToLongBits(m32) != Double.doubleToLongBits(other.m32))
+    //         return false;
+    //     if (Double.doubleToLongBits(m33) != Double.doubleToLongBits(other.m33))
+    //         return false;
+    //     return true;
+    // }
 
-    public equals(m: Matrix4, delta: number): boolean {
+    public equals(m: any | Matrix4, delta: number): boolean {
         if (this == m)
             return true;
         if (m == null)
             return false;
-        if (!(m instanceof Matrix4d))
+        if (!(m instanceof Matrix4))
             return false;
-        if (!Runtime.equals(m00, m.m00(), delta))
-            return false;
-        if (!Runtime.equals(m01, m.m01(), delta))
-            return false;
-        if (!Runtime.equals(m02, m.m02(), delta))
-            return false;
-        if (!Runtime.equals(m03, m.m03(), delta))
-            return false;
-        if (!Runtime.equals(m10, m.m10(), delta))
-            return false;
-        if (!Runtime.equals(m11, m.m11(), delta))
-            return false;
-        if (!Runtime.equals(m12, m.m12(), delta))
-            return false;
-        if (!Runtime.equals(m13, m.m13(), delta))
-            return false;
-        if (!Runtime.equals(m20, m.m20(), delta))
-            return false;
-        if (!Runtime.equals(m21, m.m21(), delta))
-            return false;
-        if (!Runtime.equals(m22, m.m22(), delta))
-            return false;
-        if (!Runtime.equals(m23, m.m23(), delta))
-            return false;
-        if (!Runtime.equals(m30, m.m30(), delta))
-            return false;
-        if (!Runtime.equals(m31, m.m31(), delta))
-            return false;
-        if (!Runtime.equals(m32, m.m32(), delta))
-            return false;
-        if (!Runtime.equals(m33, m.m33(), delta))
-            return false;
+        if (Math.abs(this[0][0] - m[0][0]) < delta) return false;
+        if (Math.abs(this[0][1] - m[0][1]) < delta) return false;
+        if (Math.abs(this[0][2] - m[0][2]) < delta) return false;
+        if (Math.abs(this[0][3] - m[0][3]) < delta) return false;
+        if (Math.abs(this[1][0] - m[1][0]) < delta) return false;
+        if (Math.abs(this[1][1] - m[1][1]) < delta) return false;
+        if (Math.abs(this[1][2] - m[1][2]) < delta) return false;
+        if (Math.abs(this[1][3] - m[1][3]) < delta) return false;
+        if (Math.abs(this[2][0] - m[2][0]) < delta) return false;
+        if (Math.abs(this[2][1] - m[2][1]) < delta) return false;
+        if (Math.abs(this[2][2] - m[2][2]) < delta) return false;
+        if (Math.abs(this[2][3] - m[2][3]) < delta) return false;
+        if (Math.abs(this[3][0] - m[3][0]) < delta) return false;
+        if (Math.abs(this[3][1] - m[3][1]) < delta) return false;
+        if (Math.abs(this[3][2] - m[3][2]) < delta) return false;
+        if (Math.abs(this[3][3] - m[3][3]) < delta) return false;
         return true;
     }
 
-    public pick(x: number, y: number, width: number, height: number, viewport: int[], dest: Matrix4): Matrix4 {
+    public pick(x: number, y: number, width: number, height: number, viewport: number[], dest?: Matrix4): Matrix4 {
+        dest = dest ?? this;
         const sx = viewport[2] / width;
         const sy = viewport[3] / height;
         const tx = (viewport[2] + 2.0 * (viewport[0] - x)) / width;
         const ty = (viewport[3] + 2.0 * (viewport[1] - y)) / height;
-        dest._m30(m00 * tx + m10 * ty + m30)
-            ._m31(m01 * tx + m11 * ty + m31)
-            ._m32(m02 * tx + m12 * ty + m32)
-            ._m33(m03 * tx + m13 * ty + m33)
-            ._m00(m00 * sx)
-            ._m01(m01 * sx)
-            ._m02(m02 * sx)
-            ._m03(m03 * sx)
-            ._m10(m10 * sy)
-            ._m11(m11 * sy)
-            ._m12(m12 * sy)
-            ._m13(m13 * sy)
-            ._properties(0);
+        dest[3][0] = this[0][0] * tx + this[1][0] * ty + this[3][0];
+        dest[3][1] = this[0][1] * tx + this[1][1] * ty + this[3][1];
+        dest[3][2] = this[0][2] * tx + this[1][2] * ty + this[3][2];
+        dest[3][3] = this[0][3] * tx + this[1][3] * ty + this[3][3];
+        dest[0][0] = this[0][0] * sx;
+        dest[0][1] = this[0][1] * sx;
+        dest[0][2] = this[0][2] * sx;
+        dest[0][3] = this[0][3] * sx;
+        dest[1][0] = this[1][0] * sy;
+        dest[1][1] = this[1][1] * sy;
+        dest[1][2] = this[1][2] * sy;
+        dest[1][3] = this[1][3] * sy;
         return dest;
-    }
-
-    /**
-     * Apply a picking transformation to this matrix using the given window coordinates <code>(x, y)</code> as the pick center
-     * and the given <code>(width, height)</code> as the size of the picking region in window coordinates.
-     * 
-     * @param x
-     *          the x coordinate of the picking region center in window coordinates
-     * @param y
-     *          the y coordinate of the picking region center in window coordinates
-     * @param width
-     *          the width of the picking region in window coordinates
-     * @param height
-     *          the height of the picking region in window coordinates
-     * @param viewport
-     *          the viewport described by <code>[x, y, width, height]</code>
-     * @return this
-     */
-    public pick(x: number, y: number, width: number, height: number, viewport: int[]): Matrix4 {
-        return pick(x, y, width, height, viewport, this);
     }
 
     public isAffine(): boolean {
@@ -9645,47 +8991,47 @@ export class Matrix4 {
     }
 
     public arcball(radius: number, centerX: number, centerY: number, centerZ: number, angleX: number, angleY: number, dest: Matrix4): Matrix4 {
-        const m30 = m20 * -radius + this.m30;
-        const m31 = m21 * -radius + this.m31;
-        const m32 = m22 * -radius + this.m32;
-        const m33 = m23 * -radius + this.m33;
-        const sin = Math.sin(angleX);
-        const cos = Math.cosFromSin(sin, angleX);
-        const nm10 = m10 * cos + m20 * sin;
-        const nm11 = m11 * cos + m21 * sin;
-        const nm12 = m12 * cos + m22 * sin;
-        const nm13 = m13 * cos + m23 * sin;
-        const m20 = this.m20 * cos - m10 * sin;
-        const m21 = this.m21 * cos - m11 * sin;
-        const m22 = this.m22 * cos - m12 * sin;
-        const m23 = this.m23 * cos - m13 * sin;
+        const m30 = this[2][0] * -radius + this[3][0];
+        const m31 = this[2][1] * -radius + this[3][1];
+        const m32 = this[2][2] * -radius + this[3][2];
+        const m33 = this[2][3] * -radius + this[3][3];
+        let sin = Math.sin(angleX);
+        let cos = Math.cos(angleX);
+        const nm10 = this[1][0] * cos + this[2][0] * sin;
+        const nm11 = this[1][1] * cos + this[2][1] * sin;
+        const nm12 = this[1][2] * cos + this[2][2] * sin;
+        const nm13 = this[1][3] * cos + this[2][3] * sin;
+        const m20 = this[2][0] * cos - this[1][0] * sin;
+        const m21 = this[2][1] * cos - this[1][1] * sin;
+        const m22 = this[2][2] * cos - this[1][2] * sin;
+        const m23 = this[2][3] * cos - this[1][3] * sin;
         sin = Math.sin(angleY);
-        cos = Math.cosFromSin(sin, angleY);
-        const nm00 = m00 * cos - m20 * sin;
-        const nm01 = m01 * cos - m21 * sin;
-        const nm02 = m02 * cos - m22 * sin;
-        const nm03 = m03 * cos - m23 * sin;
-        const nm20 = m00 * sin + m20 * cos;
-        const nm21 = m01 * sin + m21 * cos;
-        const nm22 = m02 * sin + m22 * cos;
-        const nm23 = m03 * sin + m23 * cos;
-        dest._m30(-nm00 * centerX - nm10 * centerY - nm20 * centerZ + m30)
-            ._m31(-nm01 * centerX - nm11 * centerY - nm21 * centerZ + m31)
-            ._m32(-nm02 * centerX - nm12 * centerY - nm22 * centerZ + m32)
-            ._m33(-nm03 * centerX - nm13 * centerY - nm23 * centerZ + m33)
-            ._m20(nm20)
-            ._m21(nm21)
-            ._m22(nm22)
-            ._m23(nm23)
-            ._m10(nm10)
-            ._m11(nm11)
-            ._m12(nm12)
-            ._m13(nm13)
-            ._m00(nm00)
-            ._m01(nm01)
-            ._m02(nm02)
-            ._m03(nm03)
-            ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
+        cos = Math.cos(angleY);
+        const nm00 = this[0][0] * cos - m20 * sin;
+        const nm01 = this[0][1] * cos - m21 * sin;
+        const nm02 = this[0][2] * cos - m22 * sin;
+        const nm03 = this[0][3] * cos - m23 * sin;
+        const nm20 = this[0][0] * sin + m20 * cos;
+        const nm21 = this[0][1] * sin + m21 * cos;
+        const nm22 = this[0][2] * sin + m22 * cos;
+        const nm23 = this[0][3] * sin + m23 * cos;
+        dest[3][0] = -nm00 * centerX - nm10 * centerY - nm20 * centerZ + m30;
+        dest[3][1] = -nm01 * centerX - nm11 * centerY - nm21 * centerZ + m31;
+        dest[3][2] = -nm02 * centerX - nm12 * centerY - nm22 * centerZ + m32;
+        dest[3][3] = -nm03 * centerX - nm13 * centerY - nm23 * centerZ + m33;
+        dest[2][0] = nm20;
+        dest[2][1] = nm21;
+        dest[2][2] = nm22;
+        dest[2][3] = nm23;
+        dest[1][0] = nm10;
+        dest[1][1] = nm11;
+        dest[1][2] = nm12;
+        dest[1][3] = nm13;
+        dest[0][0] = nm00;
+        dest[0][1] = nm01;
+        dest[0][2] = nm02;
+        dest[0][3] = nm03;
+        // ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
         return dest;
     }
 
@@ -9706,14 +9052,14 @@ export class Matrix4 {
      * @return dest
      */
     public arcball(radius: number, center: Vector3, angleX: number, angleY: number, dest: Matrix4): Matrix4 {
-        return arcball(radius, center.x(), center.y(), center.z(), angleX, angleY, dest);
+        return arcball(radius, center.x, center.y, center.z, angleX, angleY, dest);
     }
     public arcball(radius: number, centerX: number, centerY: number, centerZ: number, angleX: number, angleY: number): Matrix4 {
         return arcball(radius, centerX, centerY, centerZ, angleX, angleY, this);
     }
 
     public arcball(radius: number, center: Vector3, angleX: number, angleY: number): Matrix4 {
-        return arcball(radius, center.x(), center.y(), center.z(), angleX, angleY, this);
+        return arcball(radius, center.x, center.y, center.z, angleX, angleY, this);
     }
 
     /**
@@ -9732,20 +9078,20 @@ export class Matrix4 {
      * @return this
      */
     public frustumAabb(min: Vector3, max: Vector3): Matrix4 {
-        const minX = Double.POSITIVE_INFINITY;
-        const minY = Double.POSITIVE_INFINITY;
-        const minZ = Double.POSITIVE_INFINITY;
-        const maxX = Double.NEGATIVE_INFINITY;
-        const maxY = Double.NEGATIVE_INFINITY;
-        const maxZ = Double.NEGATIVE_INFINITY;
+        let minX = Infinity;
+        let minY = Infinity;
+        let minZ = Infinity;
+        let maxX = -Infinity;
+        let maxY = -Infinity;
+        let maxZ = -Infinity;
         for (let t: number = 0; t < 8; t++) {
             const x = ((t & 1) << 1) - 1.0;
             const y = (((t >>> 1) & 1) << 1) - 1.0;
             const z = (((t >>> 2) & 1) << 1) - 1.0;
-            const invW = 1.0 / (m03 * x + m13 * y + m23 * z + m33);
-            const nx = (m00 * x + m10 * y + m20 * z + m30) * invW;
-            const ny = (m01 * x + m11 * y + m21 * z + m31) * invW;
-            const nz = (m02 * x + m12 * y + m22 * z + m32) * invW;
+            const invW = 1.0 / (this[0][3] * x + this[1][3] * y + this[2][3] * z + this[3][3]);
+            const nx = (this[0][0] * x + this[1][0] * y + this[2][0] * z + this[3][0]) * invW;
+            const ny = (this[0][1] * x + this[1][1] * y + this[2][1] * z + this[3][1]) * invW;
+            const nz = (this[0][2] * x + this[1][2] * y + this[2][2] * z + this[3][2]) * invW;
             minX = minX < nx ? minX : nx;
             minY = minY < ny ? minY : ny;
             minZ = minZ < nz ? minZ : nz;
@@ -9764,12 +9110,12 @@ export class Matrix4 {
 
     public projectedGridRange(projector: Matrix4, sLower: number, sUpper: number, dest: Matrix4): Matrix4 {
         // Compute intersection with frustum edges and plane
-        let minX = Double.POSITIVE_INFINITY, minY = Double.POSITIVE_INFINITY;
-        let maxX = Double.NEGATIVE_INFINITY, maxY = Double.NEGATIVE_INFINITY;
-        const intersection = false;
+        let minX = Infinity, minY = Infinity;
+        let maxX = -Infinity, maxY = -Infinity;
+        let intersection = false;
         for (let t: number = 0; t < 3 * 4; t++) {
-            const c0X, c0Y, c0Z;
-            const c1X, c1Y, c1Z;
+            let c0X, c0Y, c0Z;
+            let c1X, c1Y, c1Z;
             if (t < 4) {
                 // all x edges
                 c0X = -1; c1X = +1;
@@ -9787,14 +9133,14 @@ export class Matrix4 {
                 c0Y = c1Y = (((t >>> 1) & 1) << 1) - 1.0;
             }
             // unproject corners
-            let invW = 1.0 / (m03 * c0X + m13 * c0Y + m23 * c0Z + m33);
-            const p0x = (m00 * c0X + m10 * c0Y + m20 * c0Z + m30) * invW;
-            const p0y = (m01 * c0X + m11 * c0Y + m21 * c0Z + m31) * invW;
-            const p0z = (m02 * c0X + m12 * c0Y + m22 * c0Z + m32) * invW;
-            invW = 1.0 / (m03 * c1X + m13 * c1Y + m23 * c1Z + m33);
-            const p1x = (m00 * c1X + m10 * c1Y + m20 * c1Z + m30) * invW;
-            const p1y = (m01 * c1X + m11 * c1Y + m21 * c1Z + m31) * invW;
-            const p1z = (m02 * c1X + m12 * c1Y + m22 * c1Z + m32) * invW;
+            let invW = 1.0 / (this[0][3] * c0X + this[1][3] * c0Y + this[2][3] * c0Z + this[3][3]);
+            const p0x = (this[0][0] * c0X + this[1][0] * c0Y + this[2][0] * c0Z + this[3][0]) * invW;
+            const p0y = (this[0][1] * c0X + this[1][1] * c0Y + this[2][1] * c0Z + this[3][1]) * invW;
+            const p0z = (this[0][2] * c0X + this[1][2] * c0Y + this[2][2] * c0Z + this[3][2]) * invW;
+            invW = 1.0 / (this[0][3] * c1X + this[1][3] * c1Y + this[2][3] * c1Z + this[3][3]);
+            const p1x = (this[0][0] * c1X + this[1][0] * c1Y + this[2][0] * c1Z + this[3][0]) * invW;
+            const p1y = (this[0][1] * c1X + this[1][1] * c1Y + this[2][1] * c1Z + this[3][1]) * invW;
+            const p1z = (this[0][2] * c1X + this[1][2] * c1Y + this[2][2] * c1Z + this[3][2]) * invW;
             const dirX = p1x - p0x;
             const dirY = p1y - p0y;
             const dirZ = p1z - p0z;
@@ -9807,9 +9153,9 @@ export class Matrix4 {
                     // project with projector matrix
                     const ix = p0x + isectT * dirX;
                     const iz = p0z + isectT * dirZ;
-                    invW = 1.0 / (projector.m03() * ix + projector.m23() * iz + projector.m33());
-                    const px = (projector.m00() * ix + projector.m20() * iz + projector.m30()) * invW;
-                    const py = (projector.m01() * ix + projector.m21() * iz + projector.m31()) * invW;
+                    invW = 1.0 / (projector[0][3] * ix + projector[2][3] * iz + projector[3][3]);
+                    const px = (projector[0][0] * ix + projector[2][0] * iz + projector[3][0]) * invW;
+                    const py = (projector[0][1] * ix + projector[2][1] * iz + projector[3][1]) * invW;
                     minX = minX < px ? minX : px;
                     minY = minY < py ? minY : py;
                     maxX = maxX > px ? maxX : px;
@@ -9820,50 +9166,50 @@ export class Matrix4 {
         if (!intersection)
             return null; // <- projected grid is not visible
         dest.set(maxX - minX, 0, 0, 0, 0, maxY - minY, 0, 0, 0, 0, 1, 0, minX, minY, 0, 1)
-            ._properties(PROPERTY_AFFINE);
+        // ._properties(PROPERTY_AFFINE);
         return dest;
     }
 
     public perspectiveFrustumSlice(near: number, far: number, dest: Matrix4): Matrix4 {
-        const invOldNear = (m23 + m22) / m32;
+        const invOldNear = (this[2][3] + this[2][2]) / this[3][2];
         const invNearFar = 1.0 / (near - far);
-        dest._m00(m00 * invOldNear * near)
-            ._m01(m01)
-            ._m02(m02)
-            ._m03(m03)
-            ._m10(m10)
-            ._m11(m11 * invOldNear * near)
-            ._m12(m12)
-            ._m13(m13)
-            ._m20(m20)
-            ._m21(m21)
-            ._m22((far + near) * invNearFar)
-            ._m23(m23)
-            ._m30(m30)
-            ._m31(m31)
-            ._m32((far + far) * near * invNearFar)
-            ._m33(m33)
-            ._properties(properties & ~(PROPERTY_IDENTITY | PROPERTY_TRANSLATION | PROPERTY_ORTHONORMAL));
+        dest[0][0] = this[0][0] * invOldNear * near;
+        dest[0][1] = this[0][1];
+        dest[0][2] = this[0][2];
+        dest[0][3] = this[0][3];
+        dest[1][0] = this[1][0];
+        dest[1][1] = this[1][1] * invOldNear * near;
+        dest[1][2] = this[1][2];
+        dest[1][3] = this[1][3];
+        dest[2][0] = this[2][0];
+        dest[2][1] = this[2][1];
+        dest[2][2] = (far + near) * invNearFar;
+        dest[2][3] = this[2][3];
+        dest[3][0] = this[3][0];
+        dest[3][1] = this[3][1];
+        dest[3][2] = (far + far) * near * invNearFar;
+        dest[3][3] = this[3][3];
+        // ._properties(properties & ~(PROPERTY_IDENTITY | PROPERTY_TRANSLATION | PROPERTY_ORTHONORMAL));
         return dest;
     }
 
     public orthoCrop(view: Matrix4, dest: Matrix4): Matrix4 {
         // determine min/max world z and min/max orthographically view-projected x/y
-        let minX = Double.POSITIVE_INFINITY, maxX = Double.NEGATIVE_INFINITY;
-        let minY = Double.POSITIVE_INFINITY, maxY = Double.NEGATIVE_INFINITY;
-        let minZ = Double.POSITIVE_INFINITY, maxZ = Double.NEGATIVE_INFINITY;
+        let minX = Infinity, maxX = -Infinity;
+        let minY = Infinity, maxY = -Infinity;
+        let minZ = Infinity, maxZ = -Infinity;
         for (let t: number = 0; t < 8; t++) {
             const x = ((t & 1) << 1) - 1.0;
             const y = (((t >>> 1) & 1) << 1) - 1.0;
             const z = (((t >>> 2) & 1) << 1) - 1.0;
-            let invW = 1.0 / (m03 * x + m13 * y + m23 * z + m33);
-            const wx = (m00 * x + m10 * y + m20 * z + m30) * invW;
-            const wy = (m01 * x + m11 * y + m21 * z + m31) * invW;
-            const wz = (m02 * x + m12 * y + m22 * z + m32) * invW;
-            invW = 1.0 / (view.m03() * wx + view.m13() * wy + view.m23() * wz + view.m33());
-            const vx = view.m00() * wx + view.m10() * wy + view.m20() * wz + view.m30();
-            const vy = view.m01() * wx + view.m11() * wy + view.m21() * wz + view.m31();
-            const vz = (view.m02() * wx + view.m12() * wy + view.m22() * wz + view.m32()) * invW;
+            let invW = 1.0 / (this[0][3] * x + this[1][3] * y + this[2][3] * z + this[3][3]);
+            const wx = (this[0][0] * x + this[1][0] * y + this[2][0] * z + this[3][0]) * invW;
+            const wy = (this[0][1] * x + this[1][1] * y + this[2][1] * z + this[3][1]) * invW;
+            const wz = (this[0][2] * x + this[1][2] * y + this[2][2] * z + this[3][2]) * invW;
+            invW = 1.0 / (view[0][3] * wx + view[1][3] * wy + view[2][3] * wz + view[3][3]);
+            const vx = view[0][0] * wx + view[1][0] * wy + view[2][0] * wz + view[3][0];
+            const vy = view[0][1] * wx + view[1][1] * wy + view[2][1] * wz + view[3][1];
+            const vz = (view[0][2] * wx + view[1][2] * wy + view[2][2] * wz + view[3][2]) * invW;
             minX = minX < vx ? minX : vx;
             maxX = maxX > vx ? maxX : vx;
             minY = minY < vy ? minY : vy;
@@ -9941,12 +9287,16 @@ export class Matrix4 {
     }
     public transformAab(min: Vector3, max: Vector3, outMin: Vector3, outMax: Vector3): Matrix4
     public transformAab(minX: number, minY: number, minZ: number, maxX: number, maxY: number, maxZ: number, outMin: Vector3, outMax: Vector3): Matrix4;
-    public transformAab(minX: number, minY: number, minZ: number, maxX: number, maxY?: number, maxZ?: number, outMin?: Vector3, outMax?: Vector3): Matrix4 {
-        outMin = outMin ?? minZ;
-        outMax = outMax ?? maxX;
+    public transformAab(minX: number | Vector3, minY: number | Vector3, minZ: number | Vector3, maxX: number | Vector3,
+        maxY?: number, maxZ?: number, outMin?: Vector3, outMax?: Vector3): Matrix4 {
+        outMin = outMin ?? minZ as Vector3; minZ = minZ as number;
+        outMax = outMax ?? maxX as Vector3; maxX = maxX as number;
 
-        if (minX instanceof Vector3 && minY instanceof Vector3) {
+        if (minY instanceof Vector3) {
             maxZ = minY.z, maxY = minY.y, maxX = minY.x;
+            minY = 0;
+        }
+        if (minX instanceof Vector3) {
             minZ = minX.z, minY = minX.y, minX = minX.x;
         }
 
@@ -10029,7 +9379,7 @@ export class Matrix4 {
      * @return dest
      */
     public rotateTowards(direction: Vector3, up: Vector3, dest?: Matrix4): Matrix4 {
-        return rotateTowards(direction.x(), direction.y(), direction.z(), up.x(), up.y(), up.z(), dest);
+        return rotateTowards(direction.x, direction.y, direction.z, up.x, up.y, up.z, dest);
     }
 
     /**
@@ -10069,7 +9419,7 @@ export class Matrix4 {
     public rotateTowards(dirX: number, dirY: number, dirZ: number, upX: number, upY: number, upZ: number, dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         // Normalize direction
-        const invDirLength = Math.invsqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
+        const invDirLength = 1 / Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
         const ndirX = dirX * invDirLength;
         const ndirY = dirY * invDirLength;
         const ndirZ = dirZ * invDirLength;
@@ -10079,7 +9429,7 @@ export class Matrix4 {
         leftY = upZ * ndirX - upX * ndirZ;
         leftZ = upX * ndirY - upY * ndirX;
         // normalize left
-        const invLeftLength = Math.invsqrt(leftX * leftX + leftY * leftY + leftZ * leftZ);
+        const invLeftLength = 1 / Math.sqrt(leftX * leftX + leftY * leftY + leftZ * leftZ);
         leftX *= invLeftLength;
         leftY *= invLeftLength;
         leftZ *= invLeftLength;
@@ -10096,31 +9446,31 @@ export class Matrix4 {
         const rm20 = ndirX;
         const rm21 = ndirY;
         const rm22 = ndirZ;
-        const nm00 = m00 * rm00 + m10 * rm01 + m20 * rm02;
-        const nm01 = m01 * rm00 + m11 * rm01 + m21 * rm02;
-        const nm02 = m02 * rm00 + m12 * rm01 + m22 * rm02;
-        const nm03 = m03 * rm00 + m13 * rm01 + m23 * rm02;
-        const nm10 = m00 * rm10 + m10 * rm11 + m20 * rm12;
-        const nm11 = m01 * rm10 + m11 * rm11 + m21 * rm12;
-        const nm12 = m02 * rm10 + m12 * rm11 + m22 * rm12;
-        const nm13 = m03 * rm10 + m13 * rm11 + m23 * rm12;
-        dest._m30(m30)
-            ._m31(m31)
-            ._m32(m32)
-            ._m33(m33)
-            ._m20(m00 * rm20 + m10 * rm21 + m20 * rm22)
-            ._m21(m01 * rm20 + m11 * rm21 + m21 * rm22)
-            ._m22(m02 * rm20 + m12 * rm21 + m22 * rm22)
-            ._m23(m03 * rm20 + m13 * rm21 + m23 * rm22)
-            ._m00(nm00)
-            ._m01(nm01)
-            ._m02(nm02)
-            ._m03(nm03)
-            ._m10(nm10)
-            ._m11(nm11)
-            ._m12(nm12)
-            ._m13(nm13)
-            ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
+        const nm00 = this[0][0] * rm00 + this[1][0] * rm01 + this[2][0] * rm02;
+        const nm01 = this[0][1] * rm00 + this[1][1] * rm01 + this[2][1] * rm02;
+        const nm02 = this[0][2] * rm00 + this[1][2] * rm01 + this[2][2] * rm02;
+        const nm03 = this[0][3] * rm00 + this[1][3] * rm01 + this[2][3] * rm02;
+        const nm10 = this[0][0] * rm10 + this[1][0] * rm11 + this[2][0] * rm12;
+        const nm11 = this[0][1] * rm10 + this[1][1] * rm11 + this[2][1] * rm12;
+        const nm12 = this[0][2] * rm10 + this[1][2] * rm11 + this[2][2] * rm12;
+        const nm13 = this[0][3] * rm10 + this[1][3] * rm11 + this[2][3] * rm12;
+        dest[3][0] = (this[3][0])
+        dest[3][1] = (this[3][1])
+        dest[3][2] = (this[3][2])
+        dest[3][3] = (this[3][3])
+        dest[2][0] = (this[0][0] * rm20 + this[1][0] * rm21 + this[2][0] * rm22)
+        dest[2][1] = (this[0][1] * rm20 + this[1][1] * rm21 + this[2][1] * rm22)
+        dest[2][2] = (this[0][2] * rm20 + this[1][2] * rm21 + this[2][2] * rm22)
+        dest[2][3] = (this[0][3] * rm20 + this[1][3] * rm21 + this[2][3] * rm22)
+        dest[0][0] = (nm00)
+        dest[0][1] = (nm01)
+        dest[0][2] = (nm02)
+        dest[0][3] = (nm03)
+        dest[1][0] = (nm10)
+        dest[1][1] = (nm11)
+        dest[1][2] = (nm12)
+        dest[1][3] = (nm13)
+        // ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
         return dest;
     }
 
@@ -10173,10 +9523,13 @@ export class Matrix4 {
     public rotationTowards(dirX: number | Vector3, dirY: number | Vector3, dirZ?: number, upX?: number, upY?: number, upZ?: number): Matrix4 {
         if (dirY instanceof Vector3) {
             upZ = dirY.z, upY = dirY.y, upX = dirY.x;
+            dirY = 0;
+        }
+        if (dirX instanceof Vector3) {
             dirZ = dirX.z, dirY = dirX.y, dirX = dirX.x;
         }
         // Normalize direction
-        const invDirLength = Math.invsqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
+        const invDirLength = 1 / Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
         const ndirX = dirX * invDirLength;
         const ndirY = dirY * invDirLength;
         const ndirZ = dirZ * invDirLength;
@@ -10186,7 +9539,7 @@ export class Matrix4 {
         leftY = upZ * ndirX - upX * ndirZ;
         leftZ = upX * ndirY - upY * ndirX;
         // normalize left
-        const invLeftLength = Math.invsqrt(leftX * leftX + leftY * leftY + leftZ * leftZ);
+        const invLeftLength = 1 / Math.sqrt(leftX * leftX + leftY * leftY + leftZ * leftZ);
         leftX *= invLeftLength;
         leftY *= invLeftLength;
         leftZ *= invLeftLength;
@@ -10194,8 +9547,8 @@ export class Matrix4 {
         const upnX = ndirY * leftZ - ndirZ * leftY;
         const upnY = ndirZ * leftX - ndirX * leftZ;
         const upnZ = ndirX * leftY - ndirY * leftX;
-        if ((properties & PROPERTY_IDENTITY) == 0)
-            this._identity();
+        if (!this.PROPERTY_IDENTITY)
+            this.identity();
         this[0][0] = leftX;
         this[0][1] = leftY;
         this[0][2] = leftZ;
@@ -10205,7 +9558,7 @@ export class Matrix4 {
         this[2][0] = ndirX;
         this[2][1] = ndirY;
         this[2][2] = ndirZ;
-        properties = PROPERTY_AFFINE | PROPERTY_ORTHONORMAL;
+        // properties = PROPERTY_AFFINE | PROPERTY_ORTHONORMAL;
         return this;
     }
 
@@ -10259,13 +9612,18 @@ export class Matrix4 {
      * @return this
      */
     public translationRotateTowards(posX: number, posY: number, posZ: number, dirX: number, dirY: number, dirZ: number, upX: number, upY: number, upZ: number): Matrix4;
-    public translationRotateTowards(posX: number | Vector3, posY: number | Vector3, posZ: number | Vector3, dirX: number, dirY: number, dirZ: number, upX: number, upY: number, upZ: number): Matrix4 {
+    public translationRotateTowards(posX: number | Vector3, posY: number | Vector3, posZ: number | Vector3,
+        dirX?: number, dirY?: number, dirZ?: number, upX?: number, upY?: number, upZ?: number): Matrix4 {
         if (posZ instanceof Vector3) {
             upZ = posZ.z, upY = posZ.y, upX = posZ.x;
+            posZ = 0;
+        }
+        if (posY instanceof Vector3) {
             dirZ = posY.z, dirY = posY.y, dirX = posY.x;
+            posY = 0;
+        }
+        if (posX instanceof Vector3) {
             posZ = posX.z, posY = posX.y, posX = posX.x;
-        } else {
-            posX = posX as number;
         }
 
         // Normalize direction
@@ -10274,7 +9632,7 @@ export class Matrix4 {
         const ndirY = dirY * invDirLength;
         const ndirZ = dirZ * invDirLength;
         // left = up x direction
-        const leftX, leftY, leftZ;
+        let leftX, leftY, leftZ;
         leftX = upY * ndirZ - upZ * ndirY;
         leftY = upZ * ndirX - upX * ndirZ;
         leftZ = upX * ndirY - upY * ndirX;
@@ -10303,7 +9661,7 @@ export class Matrix4 {
         this[3][1] = posY;
         this[3][2] = posZ;
         this[3][3] = 1.0;
-        properties = PROPERTY_AFFINE | PROPERTY_ORTHONORMAL;
+        // properties = PROPERTY_AFFINE | PROPERTY_ORTHONORMAL;
         return this;
     }
 
@@ -10350,13 +9708,15 @@ export class Matrix4 {
         const i = this[1][2] * this[2][1], j = this[1][2] * this[2][0], k = this[1][2] * this[0][1], l = this[1][2] * this[0][0];
         const m = this[2][0] * this[0][2], n = this[2][0] * this[0][1], o = this[2][1] * this[0][2], p = this[2][1] * this[0][0];
         const q = this[2][2] * this[0][1], r = this[2][2] * this[0][0];
-        const s = 1.0 / (m00 * m11 - m01 * m10) * m22 + (m02 * m10 - m00 * m12) * m21 + (m01 * m12 - m02 * m11) * m20;
+        const s = 1.0 / (this[0][0] * this[1][1] - this[0][1] * this[1][0]) * this[2][2] +
+            (this[0][2] * this[1][0] - this[0][0] * this[1][2]) * this[2][1] + (this[0][1] * this[1][2] - this[0][2] * this[1][1]) * this[2][0];
+
         const nm00 = (e - i) * s, nm01 = (o - q) * s, nm02 = (k - g) * s;
         const nm10 = (j - a) * s, nm11 = (r - m) * s, nm12 = (c - l) * s;
         const nm20 = (b - f) * s, nm21 = (n - p) * s, nm22 = (h - d) * s;
-        corner.x = -nm00 - nm10 - nm20 + (a * m31 - b * m32 + f * m32 - e * m30 + i * m30 - j * m31) * s;
-        corner.y = -nm01 - nm11 - nm21 + (m * m31 - n * m32 + p * m32 - o * m30 + q * m30 - r * m31) * s;
-        corner.z = -nm02 - nm12 - nm22 + (g * m30 - k * m30 + l * m31 - c * m31 + d * m32 - h * m32) * s;
+        corner.x = -nm00 - nm10 - nm20 + (a * this[3][1] - b * this[3][2] + f * this[3][2] - e * this[3][0] + i * this[3][0] - j * this[3][1]) * s;
+        corner.y = -nm01 - nm11 - nm21 + (m * this[3][1] - n * this[3][2] + p * this[3][2] - o * this[3][0] + q * this[3][0] - r * this[3][1]) * s;
+        corner.z = -nm02 - nm12 - nm22 + (g * this[3][0] - k * this[3][0] + l * this[3][1] - c * this[3][1] + d * this[3][2] - h * this[3][2]) * s;
         xDir.x = 2.0 * nm00; xDir.y = 2.0 * nm01; xDir.z = 2.0 * nm02;
         yDir.x = 2.0 * nm10; yDir.y = 2.0 * nm11; yDir.z = 2.0 * nm12;
         zDir.x = 2.0 * nm20; zDir.y = 2.0 * nm21; zDir.z = 2.0 * nm22;
@@ -10462,7 +9822,7 @@ export class Matrix4 {
             this[2][3],                                   // 2 3
             this[3][0], this[3][1], this[3][2], this[3][3],
         )
-        dest._properties(properties & PROPERTY_AFFINE);
+        // dest._properties(properties & PROPERTY_AFFINE);
         return dest;
     }
 
@@ -10501,16 +9861,17 @@ export class Matrix4 {
     public static projViewFromRectangle(
         eye: Vector3, p: Vector3, x: Vector3, y: Vector3, nearFarDist: number, zeroToOne: boolean,
         projDest: Matrix4, viewDest: Matrix4): void {
-        const zx = y.y * x.z - y.z * x.y, zy = y.z * x.x - y.x * x.z, zz = y.x * x.y - y.y * x.x;
-        const zd = zx * (p.x - eye.x) + zy * (p.y - eye.y) + zz * (p.z - eye.z);
-        const zs = zd >= 0 ? 1 : -1; zx *= zs; zy *= zs; zz *= zs; zd *= zs;
+        let zx = y.y * x.z - y.z * x.y, zy = y.z * x.x - y.x * x.z, zz = y.x * x.y - y.y * x.x;
+        let zd = zx * (p.x - eye.x) + zy * (p.y - eye.y) + zz * (p.z - eye.z);
+        const zs = zd >= 0 ? 1 : -1;
+        zx *= zs; zy *= zs; zz *= zs; zd *= zs;
         viewDest.setLookAt(eye.x, eye.y, eye.z, eye.x + zx, eye.y + zy, eye.z + zz, y.x, y.y, y.z);
-        const px = viewDest[0][0] * p.x + viewDest[1][0] * p.y + viewDest[2][0] * p.z + viewDest.m30;
-        const py = viewDest[0][1] * p.x + viewDest[1][1] * p.y + viewDest[2][1] * p.z + viewDest.m31;
+        const px = viewDest[0][0] * p.x + viewDest[1][0] * p.y + viewDest[2][0] * p.z + viewDest[3][0];
+        const py = viewDest[0][1] * p.x + viewDest[1][1] * p.y + viewDest[2][1] * p.z + viewDest[3][1];
         const tx = viewDest[0][0] * x.x + viewDest[1][0] * x.y + viewDest[2][0] * x.z;
         const ty = viewDest[0][1] * y.x + viewDest[1][1] * y.y + viewDest[2][1] * y.z;
         const len = Math.sqrt(zx * zx + zy * zy + zz * zz);
-        const near = zd / len, far;
+        let near = zd / len, far;
         isFinite
         if (!isFinite(nearFarDist) && nearFarDist < 0.0) {
             far = near;
@@ -10564,9 +9925,12 @@ export class Matrix4 {
      * @return dest
      */
     public withLookAtUp(upX: number, upY: number, upZ: number, dest?: Matrix4): Matrix4;
-    public withLookAtUp(upX: number, upY?: number | Matrix4, upZ?: number, dest?: Matrix4): Matrix4 {
+    public withLookAtUp(upX: number | Vector3, upY?: number | Matrix4, upZ?: number, dest?: Matrix4): Matrix4 {
         dest = dest ?? (upY instanceof Matrix4 ? upY : this);
-
+        upY = upY as number;
+        if (upX instanceof Vector3) {
+            upZ = upX.z, upY = upX.y, upX = upX.x;
+        }
 
         const y =
             (upY * this[2][1] - upZ * this[1][1]) * this[0][2] +
@@ -10574,11 +9938,11 @@ export class Matrix4 {
             (upX * this[1][1] - upY * this[0][1]) * this[2][2];
 
         let x = upX * this[0][1] + upY * this[1][1] + upZ * this[2][1];
-        if (!PROPERTY_ORTHONORMAL) {
-            x *= Math.sqrt(m01 * m01 + m11 * m11 + m21 * m21);
+        if (!this.PROPERTY_ORTHONORMAL) {
+            x *= Math.sqrt(this[0][1] * this[0][1] + this[1][1] * this[1][1] + this[2][1] * this[2][1]);
         }
 
-        const invsqrt = Math.invsqrt(y * y + x * x);
+        const invsqrt = 1 / Math.sqrt(y * y + x * x);
         const c = x * invsqrt, s = y * invsqrt;
         return dest.set(
             c * this[0][0] - s * this[0][1], s * this[0][0] + c * this[0][1], this[0][2], this[0][3],
