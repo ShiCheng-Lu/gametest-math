@@ -23,6 +23,7 @@
  */
 
 // TODO: translate invertPerspectiveView
+// TODO: translate rotate for Quaternions
 
 class AxisAngle4 {
     angle: number
@@ -1762,37 +1763,27 @@ export class Matrix4 {
         return dest.set(x, y as number, z, w).mulTranspose(this);
     }
 
-    public transformProject(v: Vector4, dest?: Vector4): Vector4 {
-        return v.mulProject(this, dest);
-    }
+    public transformProject(v: Vector4, dest?: Vector4): Vector4;
+    public transformProject(x: number, y: number, z: number, w: number, dest?: Vector4): Vector4;
+    public transformProject(v: Vector3, dest?: Vector3): Vector3;
+    public transformProject(v: Vector4, dest: Vector3): Vector3;
+    public transformProject(x: number, y: number, z: number, w: number, dest?: Vector3): Vector3;
+    public transformProject(x: number | Vector3 | Vector4, y?: number | Vector3 | Vector4, z?: number, w?: number, dest?: Vector3 | Vector4): Vector3 | Vector4 {
+        dest = dest ?? (typeof y !== "number" ? y : new Vector4());
+        if (x instanceof Vector3) {
+            z = x.z, y = x.y, x = x.x; 
+        }
+        if (x instanceof Vector4) {
+            w = x.w, z = x.z, y = x.y, x = x.x;
+        } else {
+            y = y as number;
+        }
 
-    public transformProject(x: number, y: number, z: number, w: number, dest?: Vector4): Vector4 {
-        dest = dest ?? new Vector4();
-        return dest.set(x, y, z).mulProject(this);
-    }
-
-    public transformProject(v: Vector3, dest?: Vector3): Vector3 {
-        return v.mulProject(this, dest);
-    }
-
-    public transformProject(x: number, y: number, z: number, dest?: Vector3): Vector3 {
-        dest = dest ?? new Vector3();
-        return dest.set(x, y, z).mulProject(this);
-    }
-
-    public transformProject(v: Vector4, dest: Vector3): Vector3 {
-        return v.mulProject(this, dest);
-    }
-
-    public transformProject(x: number, y: number, z: number, w: number, dest?: Vector3): Vector3 {
-        dest = dest ?? new Vector3();
-        return dest.set(x, y, z).mulProject(this, w, dest);
-    }
-
-    public transformProject(x: number, y: number, z: number, w: number, dest?: Vector3 | Vector4): Vector3 | Vector4 {
-        dest = dest ?? new Vector4();
-
-        return dest;
+        if (dest instanceof Vector3) {
+            return dest.set(x, y, z).mulProject(this, w);
+        } else {
+            return dest.set(x, y, z).mulProject(this);
+        }
     }
 
     public transformPosition(v: Vector3, dest?: Vector3): Vector3
@@ -2116,6 +2107,35 @@ export class Matrix4 {
     }
 
     /**
+     * Apply a rotation transformation, rotating the given radians about the specified axis and store the result in <code>dest</code>.
+     * <p>
+     * When used with a right-handed coordinate system, the produced rotation will rotate a vector 
+     * counter-clockwise around the rotation axis, when viewing along the negative axis direction towards the origin.
+     * When used with a left-handed coordinate system, the rotation is clockwise.
+     * <p>
+     * If <code>M</code> is <code>this</code> matrix and <code>A</code> the rotation matrix obtained from the given angle and axis,
+     * then the new matrix will be <code>M * A</code>. So when transforming a
+     * vector <code>v</code> with the new matrix by using <code>M * A * v</code>,
+     * the axis-angle rotation will be applied first!
+     * <p>
+     * In order to set the matrix to a rotation transformation without post-multiplying,
+     * use {@link #rotation(double, Vector3dc)}.
+     * <p>
+     * Reference: <a href="http://en.wikipedia.org/wiki/Rotation_matrix#Axis_and_angle">http://en.wikipedia.org</a>
+     * 
+     * @see #rotate(double, double, double, double)
+     * @see #rotation(double, Vector3dc)
+     * 
+     * @param angle
+     *          the angle in radians
+     * @param axis
+     *          the rotation axis (needs to be {@link Vector3d#normalize() normalized})
+     * @param dest
+     *          will hold the result
+     * @return dest
+     */
+    public rotate(angle: number, axis: Vector3, dest?: Matrix4): Matrix4;
+    /**
      * Apply rotation to this matrix by rotating the given amount of radians
      * about the given axis specified as x, y and z components.
      * <p>
@@ -2143,7 +2163,15 @@ export class Matrix4 {
      *            the z component of the axis
      * @return this
      */
-    public rotate(ang: number, x: number, y: number, z: number, dest?: Matrix4): Matrix4 {
+    public rotate(ang: number, x: number, y: number, z: number, dest?: Matrix4): Matrix4;
+    public rotate(ang: number, x: number | Vector3, y?: number | Matrix4, z?: number, dest?: Matrix4): Matrix4 {
+        dest = dest ?? (y instanceof Matrix4 ? y : this);
+        if (x instanceof Vector3) {
+            z = x.z, y = x.y, x = x.x;
+        } else {
+            y = y as number;
+        }
+
         if (this.PROPERTY_IDENTITY)
             return dest.rotation(ang, x, y, z);
         else if (this.PROPERTY_TRANSLATION)
@@ -4305,79 +4333,52 @@ export class Matrix4 {
      *          will hold the result
      * @return dest
      */
-    public rotate(quat: Quaternion, dest?: Matrix4): Matrix4 {
-        if (this.PROPERTY_IDENTITY)
-            return dest.rotation(quat);
-        else if (this.PROPERTY_TRANSLATION)
-            return this.rotateTranslation(quat, dest);
-        else if (this.PROPERTY_AFFINE)
-            return this.rotateAffine(quat, dest);
-        return this.rotateGeneric(quat, dest);
-    }
-    private rotateGeneric(quat: Quaternion, dest?: Matrix4): Matrix4 {
-        dest = dest ?? this;
-        const w2 = quat.w * quat.w, x2 = quat.x * quat.x;
-        const y2 = quat.y * quat.y, z2 = quat.z * quat.z;
-        const zw = quat.z * quat.w, dzw = zw + zw, xy = quat.x * quat.y, dxy = xy + xy;
-        const xz = quat.x * quat.z, dxz = xz + xz, yw = quat.y * quat.w, dyw = yw + yw;
-        const yz = quat.y * quat.z, dyz = yz + yz, xw = quat.x * quat.w, dxw = xw + xw;
-        const rm00 = w2 + x2 - z2 - y2;
-        const rm01 = dxy + dzw;
-        const rm02 = dxz - dyw;
-        const rm10 = -dzw + dxy;
-        const rm11 = y2 - z2 + w2 - x2;
-        const rm12 = dyz + dxw;
-        const rm20 = dyw + dxz;
-        const rm21 = dyz - dxw;
-        const rm22 = z2 - y2 - x2 + w2;
-        return dest.set(
-            this[0][0] * rm00 + this[1][0] * rm01 + this[2][0] * rm02,
-            this[0][1] * rm00 + this[1][1] * rm01 + this[2][1] * rm02,
-            this[0][2] * rm00 + this[1][2] * rm01 + this[2][2] * rm02,
-            this[0][3] * rm00 + this[1][3] * rm01 + this[2][3] * rm02,
-            this[0][0] * rm10 + this[1][0] * rm11 + this[2][0] * rm12,
-            this[0][1] * rm10 + this[1][1] * rm11 + this[2][1] * rm12,
-            this[0][2] * rm10 + this[1][2] * rm11 + this[2][2] * rm12,
-            this[0][3] * rm10 + this[1][3] * rm11 + this[2][3] * rm12,
-            this[0][0] * rm20 + this[1][0] * rm21 + this[2][0] * rm22,
-            this[0][1] * rm20 + this[1][1] * rm21 + this[2][1] * rm22,
-            this[0][2] * rm20 + this[1][2] * rm21 + this[2][2] * rm22,
-            this[0][3] * rm20 + this[1][3] * rm21 + this[2][3] * rm22,
-            this[3][0],
-            this[3][1],
-            this[3][2],
-            this[3][3],
-        );
-        //     ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
-        // return dest;
-    }
-
-    /**
-     * Apply the rotation - and possibly scaling - transformation of the given {@link Quaterniondc} to this matrix.
-     * <p>
-     * When used with a right-handed coordinate system, the produced rotation will rotate a vector 
-     * counter-clockwise around the rotation axis, when viewing along the negative axis direction towards the origin.
-     * When used with a left-handed coordinate system, the rotation is clockwise.
-     * <p>
-     * If <code>M</code> is <code>this</code> matrix and <code>Q</code> the rotation matrix obtained from the given quaternion,
-     * then the new matrix will be <code>M * Q</code>. So when transforming a
-     * vector <code>v</code> with the new matrix by using <code>M * Q * v</code>,
-     * the quaternion rotation will be applied first!
-     * <p>
-     * In order to set the matrix to a rotation transformation without post-multiplying,
-     * use {@link #rotation(Quaternion)}.
-     * <p>
-     * Reference: <a href="http://en.wikipedia.org/wiki/Rotation_matrix#Quaternion">http://en.wikipedia.org</a>
-     * 
-     * @see #rotation(Quaternion)
-     * 
-     * @param quat
-     *          the {@link Quaternion}
-     * @return this
-     */
-    public rotate(quat: Quaternion): Matrix4 {
-        return rotate(quat, this);
-    }
+    // public rotate(quat: Quaternion, dest?: Matrix4): Matrix4 {
+    //     if (this.PROPERTY_IDENTITY)
+    //         return dest.rotation(quat);
+    //     else if (this.PROPERTY_TRANSLATION)
+    //         return this.rotateTranslation(quat, dest);
+    //     else if (this.PROPERTY_AFFINE)
+    //         return this.rotateAffine(quat, dest);
+    //     return this.rotateGeneric(quat, dest);
+    // }
+    // private rotateGeneric(quat: Quaternion, dest?: Matrix4): Matrix4 {
+    //     dest = dest ?? this;
+    //     const w2 = quat.w * quat.w, x2 = quat.x * quat.x;
+    //     const y2 = quat.y * quat.y, z2 = quat.z * quat.z;
+    //     const zw = quat.z * quat.w, dzw = zw + zw, xy = quat.x * quat.y, dxy = xy + xy;
+    //     const xz = quat.x * quat.z, dxz = xz + xz, yw = quat.y * quat.w, dyw = yw + yw;
+    //     const yz = quat.y * quat.z, dyz = yz + yz, xw = quat.x * quat.w, dxw = xw + xw;
+    //     const rm00 = w2 + x2 - z2 - y2;
+    //     const rm01 = dxy + dzw;
+    //     const rm02 = dxz - dyw;
+    //     const rm10 = -dzw + dxy;
+    //     const rm11 = y2 - z2 + w2 - x2;
+    //     const rm12 = dyz + dxw;
+    //     const rm20 = dyw + dxz;
+    //     const rm21 = dyz - dxw;
+    //     const rm22 = z2 - y2 - x2 + w2;
+    //     return dest.set(
+    //         this[0][0] * rm00 + this[1][0] * rm01 + this[2][0] * rm02,
+    //         this[0][1] * rm00 + this[1][1] * rm01 + this[2][1] * rm02,
+    //         this[0][2] * rm00 + this[1][2] * rm01 + this[2][2] * rm02,
+    //         this[0][3] * rm00 + this[1][3] * rm01 + this[2][3] * rm02,
+    //         this[0][0] * rm10 + this[1][0] * rm11 + this[2][0] * rm12,
+    //         this[0][1] * rm10 + this[1][1] * rm11 + this[2][1] * rm12,
+    //         this[0][2] * rm10 + this[1][2] * rm11 + this[2][2] * rm12,
+    //         this[0][3] * rm10 + this[1][3] * rm11 + this[2][3] * rm12,
+    //         this[0][0] * rm20 + this[1][0] * rm21 + this[2][0] * rm22,
+    //         this[0][1] * rm20 + this[1][1] * rm21 + this[2][1] * rm22,
+    //         this[0][2] * rm20 + this[1][2] * rm21 + this[2][2] * rm22,
+    //         this[0][3] * rm20 + this[1][3] * rm21 + this[2][3] * rm22,
+    //         this[3][0],
+    //         this[3][1],
+    //         this[3][2],
+    //         this[3][3],
+    //     );
+    //     //     ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
+    //     // return dest;
+    // }
 
     /**
      * Apply the rotation - and possibly scaling - transformation of the given {@link Quaterniondc} to this {@link #isAffine() affine} matrix and store
@@ -4407,43 +4408,43 @@ export class Matrix4 {
      *          will hold the result
      * @return dest
      */
-    public rotateAffine(quat: Quaternion, dest?: Matrix4): Matrix4 {
-        dest = dest ?? this;
-        const w2 = quat.w * quat.w, x2 = quat.x * quat.x;
-        const y2 = quat.y * quat.y, z2 = quat.z * quat.z;
-        const zw = quat.z * quat.w, dzw = zw + zw, xy = quat.x * quat.y, dxy = xy + xy;
-        const xz = quat.x * quat.z, dxz = xz + xz, yw = quat.y * quat.w, dyw = yw + yw;
-        const yz = quat.y * quat.z, dyz = yz + yz, xw = quat.x * quat.w, dxw = xw + xw;
-        const rm00 = w2 + x2 - z2 - y2;
-        const rm01 = dxy + dzw;
-        const rm02 = dxz - dyw;
-        const rm10 = -dzw + dxy;
-        const rm11 = y2 - z2 + w2 - x2;
-        const rm12 = dyz + dxw;
-        const rm20 = dyw + dxz;
-        const rm21 = dyz - dxw;
-        const rm22 = z2 - y2 - x2 + w2;
-        return dest.set(
-            this[0][0] * rm00 + this[1][0] * rm01 + this[2][0] * rm02,
-            this[0][1] * rm00 + this[1][1] * rm01 + this[2][1] * rm02,
-            this[0][2] * rm00 + this[1][2] * rm01 + this[2][2] * rm02,
-            0.0,
-            this[0][0] * rm10 + this[1][0] * rm11 + this[2][0] * rm12,
-            this[0][1] * rm10 + this[1][1] * rm11 + this[2][1] * rm12,
-            this[0][2] * rm10 + this[1][2] * rm11 + this[2][2] * rm12,
-            0.0,
-            this[0][0] * rm20 + this[1][0] * rm21 + this[2][0] * rm22,
-            this[0][1] * rm20 + this[1][1] * rm21 + this[2][1] * rm22,
-            this[0][2] * rm20 + this[1][2] * rm21 + this[2][2] * rm22,
-            0.0,
-            this[3][0],
-            this[3][1],
-            this[3][2],
-            this[3][3],
-        );
-        //     ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
-        // return dest;
-    }
+    // public rotateAffine(quat: Quaternion, dest?: Matrix4): Matrix4 {
+    //     dest = dest ?? this;
+    //     const w2 = quat.w * quat.w, x2 = quat.x * quat.x;
+    //     const y2 = quat.y * quat.y, z2 = quat.z * quat.z;
+    //     const zw = quat.z * quat.w, dzw = zw + zw, xy = quat.x * quat.y, dxy = xy + xy;
+    //     const xz = quat.x * quat.z, dxz = xz + xz, yw = quat.y * quat.w, dyw = yw + yw;
+    //     const yz = quat.y * quat.z, dyz = yz + yz, xw = quat.x * quat.w, dxw = xw + xw;
+    //     const rm00 = w2 + x2 - z2 - y2;
+    //     const rm01 = dxy + dzw;
+    //     const rm02 = dxz - dyw;
+    //     const rm10 = -dzw + dxy;
+    //     const rm11 = y2 - z2 + w2 - x2;
+    //     const rm12 = dyz + dxw;
+    //     const rm20 = dyw + dxz;
+    //     const rm21 = dyz - dxw;
+    //     const rm22 = z2 - y2 - x2 + w2;
+    //     return dest.set(
+    //         this[0][0] * rm00 + this[1][0] * rm01 + this[2][0] * rm02,
+    //         this[0][1] * rm00 + this[1][1] * rm01 + this[2][1] * rm02,
+    //         this[0][2] * rm00 + this[1][2] * rm01 + this[2][2] * rm02,
+    //         0.0,
+    //         this[0][0] * rm10 + this[1][0] * rm11 + this[2][0] * rm12,
+    //         this[0][1] * rm10 + this[1][1] * rm11 + this[2][1] * rm12,
+    //         this[0][2] * rm10 + this[1][2] * rm11 + this[2][2] * rm12,
+    //         0.0,
+    //         this[0][0] * rm20 + this[1][0] * rm21 + this[2][0] * rm22,
+    //         this[0][1] * rm20 + this[1][1] * rm21 + this[2][1] * rm22,
+    //         this[0][2] * rm20 + this[1][2] * rm21 + this[2][2] * rm22,
+    //         0.0,
+    //         this[3][0],
+    //         this[3][1],
+    //         this[3][2],
+    //         this[3][3],
+    //     );
+    //     //     ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
+    //     // return dest;
+    // }
 
     /**
      * Apply the rotation - and possibly scaling - transformation of the given {@link Quaterniondc} to this matrix, which is assumed to only contain a translation, and store
@@ -4473,40 +4474,40 @@ export class Matrix4 {
      *          will hold the result
      * @return dest
      */
-    public rotateTranslation(quat: Quaternion, dest: Matrix4): Matrix4 {
-        const w2 = quat.w * quat.w, x2 = quat.x * quat.x;
-        const y2 = quat.y * quat.y, z2 = quat.z * quat.z;
-        const zw = quat.z * quat.w, dzw = zw + zw, xy = quat.x * quat.y, dxy = xy + xy;
-        const xz = quat.x * quat.z, dxz = xz + xz, yw = quat.y * quat.w, dyw = yw + yw;
-        const yz = quat.y * quat.z, dyz = yz + yz, xw = quat.x * quat.w, dxw = xw + xw;
-        const rm00 = w2 + x2 - z2 - y2;
-        const rm01 = dxy + dzw;
-        const rm02 = dxz - dyw;
-        const rm10 = -dzw + dxy;
-        const rm11 = y2 - z2 + w2 - x2;
-        const rm12 = dyz + dxw;
-        const rm20 = dyw + dxz;
-        const rm21 = dyz - dxw;
-        const rm22 = z2 - y2 - x2 + w2;
-        dest[2][0] = rm20;
-        dest[2][1] = rm21;
-        dest[2][2] = rm22;
-        dest[2][3] = 0.0;
-        dest[0][0] = rm00;
-        dest[0][1] = rm01;
-        dest[0][2] = rm02;
-        dest[0][3] = 0.0;
-        dest[1][0] = rm10;
-        dest[1][1] = rm11;
-        dest[1][2] = rm12;
-        dest[1][3] = 0.0;
-        dest[3][0] = this[3][0];
-        dest[3][1] = this[3][1];
-        dest[3][2] = this[3][2];
-        dest[3][3] = 1.0;
-        // ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
-        return dest;
-    }
+    // public rotateTranslation(quat: Quaternion, dest: Matrix4): Matrix4 {
+    //     const w2 = quat.w * quat.w, x2 = quat.x * quat.x;
+    //     const y2 = quat.y * quat.y, z2 = quat.z * quat.z;
+    //     const zw = quat.z * quat.w, dzw = zw + zw, xy = quat.x * quat.y, dxy = xy + xy;
+    //     const xz = quat.x * quat.z, dxz = xz + xz, yw = quat.y * quat.w, dyw = yw + yw;
+    //     const yz = quat.y * quat.z, dyz = yz + yz, xw = quat.x * quat.w, dxw = xw + xw;
+    //     const rm00 = w2 + x2 - z2 - y2;
+    //     const rm01 = dxy + dzw;
+    //     const rm02 = dxz - dyw;
+    //     const rm10 = -dzw + dxy;
+    //     const rm11 = y2 - z2 + w2 - x2;
+    //     const rm12 = dyz + dxw;
+    //     const rm20 = dyw + dxz;
+    //     const rm21 = dyz - dxw;
+    //     const rm22 = z2 - y2 - x2 + w2;
+    //     dest[2][0] = rm20;
+    //     dest[2][1] = rm21;
+    //     dest[2][2] = rm22;
+    //     dest[2][3] = 0.0;
+    //     dest[0][0] = rm00;
+    //     dest[0][1] = rm01;
+    //     dest[0][2] = rm02;
+    //     dest[0][3] = 0.0;
+    //     dest[1][0] = rm10;
+    //     dest[1][1] = rm11;
+    //     dest[1][2] = rm12;
+    //     dest[1][3] = 0.0;
+    //     dest[3][0] = this[3][0];
+    //     dest[3][1] = this[3][1];
+    //     dest[3][2] = this[3][2];
+    //     dest[3][3] = 1.0;
+    //     // ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
+    //     return dest;
+    // }
 
     /**
      * Pre-multiply the rotation - and possibly scaling - transformation of the given {@link Quaterniondc} to this matrix and store
@@ -4534,43 +4535,43 @@ export class Matrix4 {
      *          will hold the result
      * @return dest
      */
-    public rotateLocal(quat: Quaternion, dest?: Matrix4): Matrix4 {
-        dest = dest ?? this;
-        const w2 = quat.w * quat.w, x2 = quat.x * quat.x;
-        const y2 = quat.y * quat.y, z2 = quat.z * quat.z;
-        const zw = quat.z * quat.w, dzw = zw + zw, xy = quat.x * quat.y, dxy = xy + xy;
-        const xz = quat.x * quat.z, dxz = xz + xz, yw = quat.y * quat.w, dyw = yw + yw;
-        const yz = quat.y * quat.z, dyz = yz + yz, xw = quat.x * quat.w, dxw = xw + xw;
-        const lm00 = w2 + x2 - z2 - y2;
-        const lm01 = dxy + dzw;
-        const lm02 = dxz - dyw;
-        const lm10 = -dzw + dxy;
-        const lm11 = y2 - z2 + w2 - x2;
-        const lm12 = dyz + dxw;
-        const lm20 = dyw + dxz;
-        const lm21 = dyz - dxw;
-        const lm22 = z2 - y2 - x2 + w2;
-        return dest.set(
-            lm00 * this[0][0] + lm10 * this[0][1] + lm20 * this[0][2],
-            lm01 * this[0][0] + lm11 * this[0][1] + lm21 * this[0][2],
-            lm02 * this[0][0] + lm12 * this[0][1] + lm22 * this[0][2],
-            this[0][3],
-            lm00 * this[1][0] + lm10 * this[1][1] + lm20 * this[1][2],
-            lm01 * this[1][0] + lm11 * this[1][1] + lm21 * this[1][2],
-            lm02 * this[1][0] + lm12 * this[1][1] + lm22 * this[1][2],
-            this[1][3],
-            lm00 * this[2][0] + lm10 * this[2][1] + lm20 * this[2][2],
-            lm01 * this[2][0] + lm11 * this[2][1] + lm21 * this[2][2],
-            lm02 * this[2][0] + lm12 * this[2][1] + lm22 * this[2][2],
-            this[2][3],
-            lm00 * this[3][0] + lm10 * this[3][1] + lm20 * this[3][2],
-            lm01 * this[3][0] + lm11 * this[3][1] + lm21 * this[3][2],
-            lm02 * this[3][0] + lm12 * this[3][1] + lm22 * this[3][2],
-            this[3][3],
-        );
-        //     ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
-        // return dest;
-    }
+    // public rotateLocal(quat: Quaternion, dest?: Matrix4): Matrix4 {
+    //     dest = dest ?? this;
+    //     const ww = quat.w * quat.w, xx = quat.x * quat.x;
+    //     const yy = quat.y * quat.y, zz = quat.z * quat.z;
+    //     const zw = quat.z * quat.w, dzw = zw + zw, xy = quat.x * quat.y, dxy = xy + xy;
+    //     const xz = quat.x * quat.z, dxz = xz + xz, yw = quat.y * quat.w, dyw = yw + yw;
+    //     const yz = quat.y * quat.z, dyz = yz + yz, xw = quat.x * quat.w, dxw = xw + xw;
+    //     const lm00 = ww + xx - zz - yy;
+    //     const lm01 = dxy + dzw;
+    //     const lm02 = dxz - dyw;
+    //     const lm10 = -dzw + dxy;
+    //     const lm11 = yy - zz + ww - xx;
+    //     const lm12 = dyz + dxw;
+    //     const lm20 = dyw + dxz;
+    //     const lm21 = dyz - dxw;
+    //     const lm22 = zz - yy - xx + ww;
+    //     return dest.set(
+    //         lm00 * this[0][0] + lm10 * this[0][1] + lm20 * this[0][2],
+    //         lm01 * this[0][0] + lm11 * this[0][1] + lm21 * this[0][2],
+    //         lm02 * this[0][0] + lm12 * this[0][1] + lm22 * this[0][2],
+    //         this[0][3],
+    //         lm00 * this[1][0] + lm10 * this[1][1] + lm20 * this[1][2],
+    //         lm01 * this[1][0] + lm11 * this[1][1] + lm21 * this[1][2],
+    //         lm02 * this[1][0] + lm12 * this[1][1] + lm22 * this[1][2],
+    //         this[1][3],
+    //         lm00 * this[2][0] + lm10 * this[2][1] + lm20 * this[2][2],
+    //         lm01 * this[2][0] + lm11 * this[2][1] + lm21 * this[2][2],
+    //         lm02 * this[2][0] + lm12 * this[2][1] + lm22 * this[2][2],
+    //         this[2][3],
+    //         lm00 * this[3][0] + lm10 * this[3][1] + lm20 * this[3][2],
+    //         lm01 * this[3][0] + lm11 * this[3][1] + lm21 * this[3][2],
+    //         lm02 * this[3][0] + lm12 * this[3][1] + lm22 * this[3][2],
+    //         this[3][3],
+    //     );
+    //     //     ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
+    //     // return dest;
+    // }
 
     /**
      * Apply a rotation transformation, rotating about the given {@link AxisAngle4d} and store the result in <code>dest</code>.
@@ -4598,41 +4599,9 @@ export class Matrix4 {
      *          will hold the result
      * @return dest
      */
-    public rotate(axisAngle: AxisAngle4, dest?: Matrix4): Matrix4 {
-        return rotate(axisAngle.angle, axisAngle.x, axisAngle.y, axisAngle.z, dest);
-    }
-
-    /**
-     * Apply a rotation transformation, rotating the given radians about the specified axis and store the result in <code>dest</code>.
-     * <p>
-     * When used with a right-handed coordinate system, the produced rotation will rotate a vector 
-     * counter-clockwise around the rotation axis, when viewing along the negative axis direction towards the origin.
-     * When used with a left-handed coordinate system, the rotation is clockwise.
-     * <p>
-     * If <code>M</code> is <code>this</code> matrix and <code>A</code> the rotation matrix obtained from the given angle and axis,
-     * then the new matrix will be <code>M * A</code>. So when transforming a
-     * vector <code>v</code> with the new matrix by using <code>M * A * v</code>,
-     * the axis-angle rotation will be applied first!
-     * <p>
-     * In order to set the matrix to a rotation transformation without post-multiplying,
-     * use {@link #rotation(double, Vector3dc)}.
-     * <p>
-     * Reference: <a href="http://en.wikipedia.org/wiki/Rotation_matrix#Axis_and_angle">http://en.wikipedia.org</a>
-     * 
-     * @see #rotate(double, double, double, double)
-     * @see #rotation(double, Vector3dc)
-     * 
-     * @param angle
-     *          the angle in radians
-     * @param axis
-     *          the rotation axis (needs to be {@link Vector3d#normalize() normalized})
-     * @param dest
-     *          will hold the result
-     * @return dest
-     */
-    public rotate(angle: number, axis: Vector3, dest?: Matrix4): Matrix4 {
-        return rotate(angle, axis.x, axis.y, axis.z, dest);
-    }
+    // public rotate(axisAngle: AxisAngle4, dest?: Matrix4): Matrix4 {
+    //     return rotate(axisAngle.angle, axisAngle.x, axisAngle.y, axisAngle.z, dest);
+    // }
 
     public getRow(row: number, dest: Vector3): Vector3;
     public getRow(row: number, dest?: Vector4): Vector4;
@@ -5088,15 +5057,24 @@ export class Matrix4 {
         return this;
     }
 
-    public unprojectRay(winCoords: Vector2, viewport: number[], originDest: Vector3, dirDest: Vector3): Matrix4 {
-        return this.unprojectRay(winCoords.x, winCoords.y, viewport, originDest, dirDest);
-    }
+    public unprojectInv(winCoords: Vector3, viewport: number[], dest: Vector4): Vector4;
+    public unprojectInv(winX: number, winY: number, winZ: number, viewport: number[], dest: Vector4): Vector4;
+    public unprojectInv(winCoords: Vector3, viewport: number[], dest: Vector3 | Vector4): Vector3;
+    public unprojectInv(winX: number, winY: number, winZ: number, viewport: number[], dest: Vector3): Vector3;
+    public unprojectInv(winX: number | Vector3, winY: number | number[], winZ: number | Vector3 | Vector4, viewport?: number[], dest?: Vector3 | Vector4): Vector3 | Vector4 {
+        if (winX instanceof Vector3) {
+            dest = winZ as Vector3 | Vector4;
+            viewport = winY as number[];
+            winZ = winX.z;
+            winY = winX.y;
+            winX = winX.x;
+        } else {
+            dest = dest as Vector3 | Vector4;
+            viewport = viewport as number[];
+            winZ = winZ as number;
+            winY = winY as number;
+        }
 
-    public unprojectInv(winCoords: Vector3, viewport: number[], dest: Vector4): Vector4 {
-        return this.unprojectInv(winCoords.x, winCoords.y, winCoords.z, viewport, dest);
-    }
-
-    public unprojectInv(winX: number, winY: number, winZ: number, viewport: number[], dest: Vector4): Vector4 {
         const ndcX = (winX - viewport[0]) / viewport[2] * 2.0 - 1.0;
         const ndcY = (winY - viewport[1]) / viewport[3] * 2.0 - 1.0;
         const ndcZ = winZ + winZ - 1.0;
@@ -5104,27 +5082,8 @@ export class Matrix4 {
         dest.x = (this[0][0] * ndcX + this[1][0] * ndcY + this[2][0] * ndcZ + this[3][0]) * invW;
         dest.y = (this[0][1] * ndcX + this[1][1] * ndcY + this[2][1] * ndcZ + this[3][1]) * invW;
         dest.z = (this[0][2] * ndcX + this[1][2] * ndcY + this[2][2] * ndcZ + this[3][2]) * invW;
-        dest.w = 1.0;
+        if (dest instanceof Vector4) dest.w = 1;
         return dest;
-    }
-
-    public unprojectInv(winCoords: Vector3, viewport: number[], dest: Vector3): Vector3 {
-        return this.unprojectInv(winCoords.x, winCoords.y, winCoords.z, viewport, dest);
-    }
-
-    public unprojectInv(winX: number, winY: number, winZ: number, viewport: number[], dest: Vector3): Vector3 {
-        const ndcX = (winX - viewport[0]) / viewport[2] * 2.0 - 1.0;
-        const ndcY = (winY - viewport[1]) / viewport[3] * 2.0 - 1.0;
-        const ndcZ = winZ + winZ - 1.0;
-        const invW = 1.0 / (this[0][3] * ndcX + this[1][3] * ndcY + this[2][3] * ndcZ + this[3][3]);
-        dest.x = (this[0][0] * ndcX + this[1][0] * ndcY + this[2][0] * ndcZ + this[3][0]) * invW;
-        dest.y = (this[0][1] * ndcX + this[1][1] * ndcY + this[2][1] * ndcZ + this[3][1]) * invW;
-        dest.z = (this[0][2] * ndcX + this[1][2] * ndcY + this[2][2] * ndcZ + this[3][2]) * invW;
-        return dest;
-    }
-
-    public unprojectInvRay(winCoords: Vector2, viewport: number[], originDest: Vector3, dirDest: Vector3): Matrix4 {
-        return this.unprojectInvRay(winCoords.x, winCoords.y, viewport, originDest, dirDest);
     }
 
     public unprojectInvRay(winX: number, winY: number, viewport: number[], originDest: Vector3, dirDest: Vector3): Matrix4 {
@@ -5146,20 +5105,68 @@ export class Matrix4 {
         return this;
     }
 
-    public project(x: number, y: number, z: number, viewport: number[], winCoordsDest: Vector3): Vector3 {
+    public project(position: Vector3, viewport: number[], dest?: Vector3): Vector3;
+    public project(x: number, y: number, z: number, viewport: number[], dest?: Vector3): Vector3;
+    public project(x: number | Vector3, y: number | number[], z?: number | Vector3, viewport?: number[], dest?: Vector3): Vector3 {
+        dest = dest ?? (z instanceof Vector3 ? z : new Vector3());
+        if (x instanceof Vector3) {
+            viewport = y as number[];
+            z = x.z, y = x.y, x = x.x;
+        } else {
+            y = y as number;
+            z = z as number;
+        }
         const invW = 1.0 / (this[0][3] * x + this[1][3] * y + this[2][3] * z + this[3][3]);
         const nx = (this[0][0] * x + this[1][0] * y + this[2][0] * z + this[3][0]) * invW;
         const ny = (this[0][1] * x + this[1][1] * y + this[2][1] * z + this[3][1]) * invW;
         const nz = (this[0][2] * x + this[1][2] * y + this[2][2] * z + this[3][2]) * invW;
-        winCoordsDest.x = (nx * 0.5 + 0.5) * viewport[2] + viewport[0];
-        winCoordsDest.y = (ny * 0.5 + 0.5) * viewport[3] + viewport[1];
-        winCoordsDest.z = 0.5 * nz + 0.5;
-        return winCoordsDest;
+        dest.x = (nx * 0.5 + 0.5) * viewport[2] + viewport[0];
+        dest.y = (ny * 0.5 + 0.5) * viewport[3] + viewport[1];
+        dest.z = 0.5 * nz + 0.5;
+        return dest;
     }
 
-    public project(position: Vector3, viewport: number[], dest: Vector3): Vector3 {
-        return project(position.x, position.y, position.z, viewport, dest);
-    }
+    /**
+     * Apply a mirror/reflection transformation to this matrix that reflects about the given plane
+     * specified via the plane normal and a point on the plane.
+     * <p>
+     * If <code>M</code> is <code>this</code> matrix and <code>R</code> the reflection matrix,
+     * then the new matrix will be <code>M * R</code>. So when transforming a
+     * vector <code>v</code> with the new matrix by using <code>M * R * v</code>, the
+     * reflection will be applied first!
+     * 
+     * @param nx
+     *          the x-coordinate of the plane normal
+     * @param ny
+     *          the y-coordinate of the plane normal
+     * @param nz
+     *          the z-coordinate of the plane normal
+     * @param px
+     *          the x-coordinate of a point on the plane
+     * @param py
+     *          the y-coordinate of a point on the plane
+     * @param pz
+     *          the z-coordinate of a point on the plane
+     * @return this
+     */
+    public reflect(nx: number, ny: number, nz: number, px: number, py: number, pz: number, dest?: Matrix4): Matrix4;
+
+    /**
+     * Apply a mirror/reflection transformation to this matrix that reflects about the given plane
+     * specified via the plane normal and a point on the plane.
+     * <p>
+     * If <code>M</code> is <code>this</code> matrix and <code>R</code> the reflection matrix,
+     * then the new matrix will be <code>M * R</code>. So when transforming a
+     * vector <code>v</code> with the new matrix by using <code>M * R * v</code>, the
+     * reflection will be applied first!
+     * 
+     * @param normal
+     *          the plane normal
+     * @param point
+     *          a point on the plane
+     * @return this
+     */
+    public reflect(normal: Vector3, point: Vector3, dest: Matrix4): Matrix4;
 
     /**
      * Apply a mirror/reflection transformation to this matrix that reflects about the given plane
@@ -5184,8 +5191,32 @@ export class Matrix4 {
      *          the constant in the plane equation
      * @return this
      */
-    public reflect(a: number, b: number, c: number, d: number, dest?: Matrix4): Matrix4 {
-        dest = dest ?? this;
+    public reflect(a: number, b: number, c: number, d: number, dest?: Matrix4): Matrix4;
+    public reflect(a: number | Vector3, b: number | Vector3, c?: number | Matrix4, px?: number, py?: number | Matrix4, pz?: number, dest?: Matrix4): Matrix4 {
+        dest = dest ?? (py instanceof Matrix4 ? py : (c instanceof Matrix4 ? c : this));
+
+        if (b instanceof Vector3) {
+            pz = b.z, py = b.y, px = b.x;
+        } else {
+            py = py as number;
+        }
+        if (a instanceof Vector3) {
+            c = a.z, b = a.y, a = a.x;
+        } else {
+            c = c as number;
+            b = b as number;
+        }
+
+        let d: number = px;
+        if (py) {
+            /* See: http://mathworld.wolfram.com/Plane.html */
+            const invLength = 1 / Math.sqrt(a * a + b * b + c * c);
+            a *= invLength;
+            b *= invLength;
+            c *= invLength;
+            d = -a * px - b * py - c * pz;
+        }
+
         if (this.PROPERTY_IDENTITY)
             return dest.reflection(a, b, c, d);
         if (this.PROPERTY_IDENTITY)
@@ -5264,58 +5295,6 @@ export class Matrix4 {
     }
 
     /**
-     * Apply a mirror/reflection transformation to this matrix that reflects about the given plane
-     * specified via the plane normal and a point on the plane.
-     * <p>
-     * If <code>M</code> is <code>this</code> matrix and <code>R</code> the reflection matrix,
-     * then the new matrix will be <code>M * R</code>. So when transforming a
-     * vector <code>v</code> with the new matrix by using <code>M * R * v</code>, the
-     * reflection will be applied first!
-     * 
-     * @param nx
-     *          the x-coordinate of the plane normal
-     * @param ny
-     *          the y-coordinate of the plane normal
-     * @param nz
-     *          the z-coordinate of the plane normal
-     * @param px
-     *          the x-coordinate of a point on the plane
-     * @param py
-     *          the y-coordinate of a point on the plane
-     * @param pz
-     *          the z-coordinate of a point on the plane
-     * @return this
-     */
-    public reflect(nx: number, ny: number, nz: number, px: number, py: number, pz: number, dest?: Matrix4): Matrix4 {
-        dest = dest ?? this;
-        const invLength = 1 / Math.sqrt(nx * nx + ny * ny + nz * nz);
-        const nnx = nx * invLength;
-        const nny = ny * invLength;
-        const nnz = nz * invLength;
-        /* See: http://mathworld.wolfram.com/Plane.html */
-        return this.reflect(nnx, nny, nnz, -nnx * px - nny * py - nnz * pz, dest);
-    }
-
-    /**
-     * Apply a mirror/reflection transformation to this matrix that reflects about the given plane
-     * specified via the plane normal and a point on the plane.
-     * <p>
-     * If <code>M</code> is <code>this</code> matrix and <code>R</code> the reflection matrix,
-     * then the new matrix will be <code>M * R</code>. So when transforming a
-     * vector <code>v</code> with the new matrix by using <code>M * R * v</code>, the
-     * reflection will be applied first!
-     * 
-     * @param normal
-     *          the plane normal
-     * @param point
-     *          a point on the plane
-     * @return this
-     */
-    public reflect(normal: Vector3, point: Vector3, dest: Matrix4): Matrix4 {
-        return this.reflect(normal.x, normal.y, normal.z, point.x, point.y, point.z, dest);
-    }
-
-    /**
      * Apply a mirror/reflection transformation to this matrix that reflects about a plane
      * specified via the plane orientation and a point on the plane.
      * <p>
@@ -5334,17 +5313,18 @@ export class Matrix4 {
      *          a point on the plane
      * @return this
      */
-    public reflect(orientation: Quaternion, point: Vector3, dest?: Matrix4): Matrix4 {
-        dest = dest ?? this;
-        const num1 = orientation.x + orientation.x;
-        const num2 = orientation.y + orientation.y;
-        const num3 = orientation.z + orientation.z;
-        const normalX = orientation.x * num3 + orientation.w * num2;
-        const normalY = orientation.y * num3 - orientation.w * num1;
-        const normalZ = 1.0 - (orientation.x * num1 + orientation.y * num2);
-        return this.reflect(normalX, normalY, normalZ, point.x, point.y, point.z, dest);
-    }
+    // public reflect(orientation: Quaternion, point: Vector3, dest?: Matrix4): Matrix4 {
+    //     dest = dest ?? this;
+    //     const num1 = orientation.x + orientation.x;
+    //     const num2 = orientation.y + orientation.y;
+    //     const num3 = orientation.z + orientation.z;
+    //     const normalX = orientation.x * num3 + orientation.w * num2;
+    //     const normalY = orientation.y * num3 - orientation.w * num1;
+    //     const normalZ = 1.0 - (orientation.x * num1 + orientation.y * num2);
+    //     return this.reflect(normalX, normalY, normalZ, point.x, point.y, point.z, dest);
+    // }
 
+    // TODO: reflection with other args
     /**
      * Set this matrix to a mirror/reflection transformation that reflects about the given plane
      * specified via the equation <code>x*a + y*b + z*c + d = 0</code>.
@@ -5363,7 +5343,58 @@ export class Matrix4 {
      *          the constant in the plane equation
      * @return this
      */
-    public reflection(a: number, b: number, c: number, d: number): Matrix4 {
+    public reflection(a: number, b: number, c: number, d: number): Matrix4;
+
+    /**
+     * Set this matrix to a mirror/reflection transformation that reflects about the given plane
+     * specified via the plane normal and a point on the plane.
+     * 
+     * @param normal
+     *          the plane normal
+     * @param point
+     *          a point on the plane
+     * @return this
+     */
+    public reflection(normal: Vector3, point: Vector3): Matrix4;
+
+    /**
+     * Set this matrix to a mirror/reflection transformation that reflects about the given plane
+     * specified via the plane normal and a point on the plane.
+     * 
+     * @param nx
+     *          the x-coordinate of the plane normal
+     * @param ny
+     *          the y-coordinate of the plane normal
+     * @param nz
+     *          the z-coordinate of the plane normal
+     * @param px
+     *          the x-coordinate of a point on the plane
+     * @param py
+     *          the y-coordinate of a point on the plane
+     * @param pz
+     *          the z-coordinate of a point on the plane
+     * @return this
+     */
+    public reflection(nx: number, ny: number, nz: number, px: number, py: number, pz: number): Matrix4;
+    public reflection(a: number | Vector3, b: number | Vector3, c?: number, px?: number, py?: number, pz?: number): Matrix4 {
+        if (b instanceof Vector3) {
+            pz = b.z, py = b.y, px = b.x;
+        }
+        if (a instanceof Vector3) {
+            c = a.z, b = a.y, a = a.x;
+        } else {
+            b = b as number;
+        }
+
+        let d: number = px;
+        if (py) {
+            /* See: http://mathworld.wolfram.com/Plane.html */
+            const invLength = 1 / Math.sqrt(a * a + b * b + c * c);
+            a *= invLength;
+            b *= invLength;
+            c *= invLength;
+            d = -a * px - b * py - c * pz;
+        }
         const da = a + a, db = b + b, dc = c + c, dd = d + d;
         this[0][0] = 1.0 - da * a;
         this[0][1] = -da * b;
@@ -5385,47 +5416,6 @@ export class Matrix4 {
     }
 
     /**
-     * Set this matrix to a mirror/reflection transformation that reflects about the given plane
-     * specified via the plane normal and a point on the plane.
-     * 
-     * @param nx
-     *          the x-coordinate of the plane normal
-     * @param ny
-     *          the y-coordinate of the plane normal
-     * @param nz
-     *          the z-coordinate of the plane normal
-     * @param px
-     *          the x-coordinate of a point on the plane
-     * @param py
-     *          the y-coordinate of a point on the plane
-     * @param pz
-     *          the z-coordinate of a point on the plane
-     * @return this
-     */
-    public reflection(nx: number, ny: number, nz: number, px: number, py: number, pz: number): Matrix4 {
-        const invLength = 1 / Math.sqrt(nx * nx + ny * ny + nz * nz);
-        const nnx = nx * invLength;
-        const nny = ny * invLength;
-        const nnz = nz * invLength;
-        /* See: http://mathworld.wolfram.com/Plane.html */
-        return reflection(nnx, nny, nnz, -nnx * px - nny * py - nnz * pz);
-    }
-
-    /**
-     * Set this matrix to a mirror/reflection transformation that reflects about the given plane
-     * specified via the plane normal and a point on the plane.
-     * 
-     * @param normal
-     *          the plane normal
-     * @param point
-     *          a point on the plane
-     * @return this
-     */
-    public reflection(normal: Vector3, point: Vector3): Matrix4 {
-        return reflection(normal.x, normal.y, normal.z, point.x, point.y, point.z);
-    }
-
-    /**
      * Set this matrix to a mirror/reflection transformation that reflects about a plane
      * specified via the plane orientation and a point on the plane.
      * <p>
@@ -5439,15 +5429,15 @@ export class Matrix4 {
      *          a point on the plane
      * @return this
      */
-    public reflection(orientation: Quaternion, point: Vector3): Matrix4 {
-        const num1 = orientation.x + orientation.x;
-        const num2 = orientation.y + orientation.y;
-        const num3 = orientation.z + orientation.z;
-        const normalX = orientation.x * num3 + orientation.w * num2;
-        const normalY = orientation.y * num3 - orientation.w * num1;
-        const normalZ = 1.0 - (orientation.x * num1 + orientation.y * num2);
-        return reflection(normalX, normalY, normalZ, point.x, point.y, point.z);
-    }
+    // public reflection(orientation: Quaternion, point: Vector3): Matrix4 {
+    //     const num1 = orientation.x + orientation.x;
+    //     const num2 = orientation.y + orientation.y;
+    //     const num3 = orientation.z + orientation.z;
+    //     const normalX = orientation.x * num3 + orientation.w * num2;
+    //     const normalY = orientation.y * num3 - orientation.w * num1;
+    //     const normalZ = 1.0 - (orientation.x * num1 + orientation.y * num2);
+    //     return reflection(normalX, normalY, normalZ, point.x, point.y, point.z);
+    // }
 
     /**
      * Apply an orthographic projection transformation for a right-handed coordinate system
@@ -6263,9 +6253,7 @@ export class Matrix4 {
      *            will hold the result
      * @return dest
      */
-    public lookAlong(dir: Vector3, up: Vector3, dest?: Matrix4): Matrix4 {
-        return this.lookAlong(dir.x, dir.y, dir.z, up.x, up.y, up.z, dest);
-    }
+    public lookAlong(dir: Vector3, up: Vector3, dest?: Matrix4): Matrix4;
 
     /**
      * Apply a rotation transformation to this matrix to make <code>-z</code> point along <code>dir</code>
@@ -6302,8 +6290,21 @@ export class Matrix4 {
      *              will hold the result
      * @return dest
      */
-    public lookAlong(dirX: number, dirY: number, dirZ: number, upX: number, upY: number, upZ: number, dest?: Matrix4): Matrix4 {
-        dest = dest ?? this;
+    public lookAlong(dirX: number, dirY: number, dirZ: number, upX: number, upY: number, upZ: number, dest?: Matrix4): Matrix4;
+    public lookAlong(dirX: number | Vector3, dirY: number | Vector3, dirZ?: number | Matrix4, upX?: number, upY?: number, upZ?: number, dest?: Matrix4): Matrix4 {
+
+        dest = dest ?? (dirZ instanceof Matrix4 ? dirZ : this);
+        if (dirY instanceof Vector3) {
+            upZ = dirY.z, upY = dirY.y, upX = dirY.x;
+        }
+        if (dirX instanceof Vector3) {
+            dirZ = dirX.z, dirY = dirX.y, dirX = dirX.x;
+        } else {
+            dirY = dirY as number;
+            dirZ = dirZ as number;
+        }
+
+
         if (this.PROPERTY_IDENTITY)
             return dest.setLookAlong(dirX, dirY, dirZ, upX, upY, upZ);
         return this.lookAlongGeneric(dirX, dirY, dirZ, upX, upY, upZ, dest);
@@ -6617,9 +6618,7 @@ export class Matrix4 {
      *            will hold the result
      * @return dest
      */
-    public lookAt(eye: Vector3, center: Vector3, up: Vector3, dest: Matrix4): Matrix4 {
-        return lookAt(eye.x, eye.y, eye.z, center.x, center.y, center.z, up.x, up.y, up.z, dest);
-    }
+    public lookAt(eye: Vector3, center: Vector3, up: Vector3, dest?: Matrix4): Matrix4;
 
     /**
      * Apply a "lookat" transformation to this matrix for a right-handed coordinate system, 
@@ -6660,9 +6659,26 @@ export class Matrix4 {
      */
     public lookAt(eyeX: number, eyeY: number, eyeZ: number,
         centerX: number, centerY: number, centerZ: number,
-        upX: number, upY: number, upZ: number, dest: Matrix4): Matrix4 {
+        upX: number, upY: number, upZ: number, dest?: Matrix4): Matrix4
+    public lookAt(eyeX: number | Vector3, eyeY: number | Vector3, eyeZ: number | Vector3,
+        centerX?: number | Matrix4, centerY?: number, centerZ?: number,
+        upX?: number, upY?: number, upZ?: number, dest?: Matrix4): Matrix4 {
+        dest = dest ?? (centerX instanceof Matrix4 ? centerX : this);
+        if (eyeZ instanceof Vector3) {
+            upZ = eyeZ.z, upY = eyeZ.y, upX = eyeZ.x;
+        }
+        if (eyeY instanceof Vector3) {
+            centerZ = eyeY.z, centerY = eyeY.y, centerX = eyeY.x;
+        } else {
+            centerX = centerX as number;
+        }
+        if (eyeX instanceof Vector3) {
+            eyeZ = eyeX.z, eyeY = eyeX.y, eyeX = eyeX.x;
+        } else {
+            eyeY = eyeY as number;
+            eyeZ = eyeZ as number;
+        }
 
-        dest = dest ?? this;
         if (this.PROPERTY_IDENTITY)
             return dest.setLookAt(eyeX, eyeY, eyeZ, centerX, centerY, centerZ, upX, upY, upZ);
         else if (this.PROPERTY_PERSPECTIVE)
@@ -6847,9 +6863,7 @@ export class Matrix4 {
      *            the direction of 'up'
      * @return this
      */
-    public setLookAtLH(eye: Vector3, center: Vector3, up: Vector3): Matrix4 {
-        return setLookAtLH(eye.x, eye.y, eye.z, center.x, center.y, center.z, up.x, up.y, up.z);
-    }
+    public setLookAtLH(eye: Vector3, center: Vector3, up: Vector3): Matrix4;
 
     /**
      * Set this matrix to be a "lookat" transformation for a left-handed coordinate system, 
@@ -6883,8 +6897,25 @@ export class Matrix4 {
      */
     public setLookAtLH(eyeX: number, eyeY: number, eyeZ: number,
         centerX: number, centerY: number, centerZ: number,
-        upX: number, upY: number, upZ: number, dest?: Matrix4): Matrix4 {
-        dest = dest ?? this;
+        upX: number, upY: number, upZ: number): Matrix4;
+    public setLookAtLH(eyeX: number | Vector3, eyeY: number | Vector3, eyeZ: number | Vector3,
+        centerX?: number, centerY?: number, centerZ?: number,
+        upX?: number, upY?: number, upZ?: number): Matrix4 {
+
+        if (eyeZ instanceof Vector3) {
+            upZ = eyeZ.z, upY = eyeZ.y, upX = eyeZ.x;
+        }
+        if (eyeY instanceof Vector3) {
+            centerZ = eyeY.z, centerY = eyeY.y, centerX = eyeY.x;
+        } else {
+            centerX = centerX as number;
+        }
+        if (eyeX instanceof Vector3) {
+            eyeZ = eyeX.z, eyeY = eyeX.y, eyeX = eyeX.x;
+        } else {
+            eyeY = eyeY as number;
+            eyeZ = eyeZ as number;
+        }
         // Compute direction from position to lookAt
         let dirX, dirY, dirZ;
         dirX = centerX - eyeX;
@@ -6954,9 +6985,7 @@ export class Matrix4 {
      *            will hold the result
      * @return dest
      */
-    public lookAtLH(eye: Vector3, center: Vector3, up: Vector3, dest?: Matrix4): Matrix4 {
-        return lookAtLH(eye.x, eye.y, eye.z, center.x, center.y, center.z, up.x, up.y, up.z, dest);
-    }
+    public lookAtLH(eye: Vector3, center: Vector3, up: Vector3, dest?: Matrix4): Matrix4;
 
     /**
      * Apply a "lookat" transformation to this matrix for a left-handed coordinate system, 
@@ -6997,8 +7026,26 @@ export class Matrix4 {
      */
     public lookAtLH(eyeX: number, eyeY: number, eyeZ: number,
         centerX: number, centerY: number, centerZ: number,
-        upX: number, upY: number, upZ: number, dest?: Matrix4): Matrix4 {
-        dest = dest ?? this;
+        upX: number, upY: number, upZ: number, dest?: Matrix4): Matrix4;
+    public lookAtLH(eyeX: number | Vector3, eyeY: number | Vector3, eyeZ: number | Vector3,
+        centerX?: number | Matrix4, centerY?: number, centerZ?: number,
+        upX?: number, upY?: number, upZ?: number, dest?: Matrix4): Matrix4 {
+        dest = dest ?? (centerX instanceof Matrix4 ? centerX : this);
+        if (eyeZ instanceof Vector3) {
+            upZ = eyeZ.z, upY = eyeZ.y, upX = eyeZ.x;
+        }
+        if (eyeY instanceof Vector3) {
+            centerZ = eyeY.z, centerY = eyeY.y, centerX = eyeY.x;
+        } else {
+            centerX = centerX as number;
+        }
+        if (eyeX instanceof Vector3) {
+            eyeZ = eyeX.z, eyeY = eyeX.y, eyeX = eyeX.x;
+        } else {
+            eyeY = eyeY as number;
+            eyeZ = eyeZ as number;
+        }
+
         if (this.PROPERTY_IDENTITY)
             return dest.setLookAtLH(eyeX, eyeY, eyeZ, centerX, centerY, centerZ, upX, upY, upZ);
         else if (this.PROPERTY_PERSPECTIVE)
@@ -7542,15 +7589,15 @@ export class Matrix4 {
         if (farInf) {
             // See: "Infinite Projection Matrix" (http://www.terathon.com/gdc07_lengyel.pdf)
             const e = 1E-6;
-            _m22(e - 1.0).
-                _m32((e - (zZeroToOne ? 1.0 : 2.0)) * zNear);
+            this[2][2] = (e - 1.0);
+            this[3][2] = ((e - (zZeroToOne ? 1.0 : 2.0)) * zNear);
         } else if (nearInf) {
             const e = 1E-6;
-            _m22((zZeroToOne ? 0.0 : 1.0) - e).
-                _m32(((zZeroToOne ? 1.0 : 2.0) - e) * zFar);
+            this[2][2] = ((zZeroToOne ? 0.0 : 1.0) - e);
+            this[3][2] = (((zZeroToOne ? 1.0 : 2.0) - e) * zFar);
         } else {
-            _m22((zZeroToOne ? zFar : zFar + zNear) / (zNear - zFar)).
-                _m32((zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar));
+            this[2][2] = ((zZeroToOne ? zFar : zFar + zNear) / (zNear - zFar));
+            this[3][2] = ((zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar));
         }
         this[2][3] = -1;
         this[3][0] = 0;
@@ -8464,6 +8511,7 @@ export class Matrix4 {
         return dest.set(x, y, z);
     }
 
+    // TODO: shadow
     /**
      * Apply a projection transformation to this matrix that projects onto the plane specified via the general plane equation
      * <code>x*a + y*b + z*c + d = 0</code> as if casting a shadow from a given light position/direction <code>light</code>.
@@ -8489,13 +8537,13 @@ export class Matrix4 {
      *          the constant in the plane equation
      * @return this
      */
-    public shadow(light: Vector4, a: number, b: number, c: number, d: number): Matrix4 {
-        return shadow(light.x, light.y, light.z, light.w, a, b, c, d, this);
-    }
+    // public shadow(light: Vector4, a: number, b: number, c: number, d: number): Matrix4 {
+    //     return shadow(light.x, light.y, light.z, light.w, a, b, c, d, this);
+    // }
 
-    public shadow(light: Vector4, a: number, b: number, c: number, d: number, dest: Matrix4): Matrix4 {
-        return shadow(light.x, light.y, light.z, light.w, a, b, c, d, dest);
-    }
+    // public shadow(light: Vector4, a: number, b: number, c: number, d: number, dest: Matrix4): Matrix4 {
+    //     return shadow(light.x, light.y, light.z, light.w, a, b, c, d, dest);
+    // }
 
     /**
      * Apply a projection transformation to this matrix that projects onto the plane specified via the general plane equation
@@ -8528,9 +8576,9 @@ export class Matrix4 {
      *          the constant in the plane equation
      * @return this
      */
-    public shadow(lightX: number, lightY: number, lightZ: number, lightW: number, a: number, b: number, c: number, d: number): Matrix4 {
-        return shadow(lightX, lightY, lightZ, lightW, a, b, c, d, this);
-    }
+    // public shadow(lightX: number, lightY: number, lightZ: number, lightW: number, a: number, b: number, c: number, d: number): Matrix4 {
+    //     return shadow(lightX, lightY, lightZ, lightW, a, b, c, d, this);
+    // }
 
     public shadow(lightX: number, lightY: number, lightZ: number, lightW: number, a: number, b: number, c: number, d: number, dest: Matrix4): Matrix4 {
         // normalize plane
@@ -8583,14 +8631,14 @@ export class Matrix4 {
         // return dest;
     }
 
-    public shadow(light: Vector4, planeTransform: Matrix4, dest: Matrix4): Matrix4 {
-        // compute plane equation by transforming (y = 0)
-        const a = planeTransform[1][0];
-        const b = planeTransform[1][1];
-        const c = planeTransform[1][2];
-        const d = -a * planeTransform[3][0] - b * planeTransform[3][1] - c * planeTransform[3][2];
-        return shadow(light.x, light.y, light.z, light.w, a, b, c, d, dest);
-    }
+    // public shadow(light: Vector4, planeTransform: Matrix4, dest: Matrix4): Matrix4 {
+    //     // compute plane equation by transforming (y = 0)
+    //     const a = planeTransform[1][0];
+    //     const b = planeTransform[1][1];
+    //     const c = planeTransform[1][2];
+    //     const d = -a * planeTransform[3][0] - b * planeTransform[3][1] - c * planeTransform[3][2];
+    //     return shadow(light.x, light.y, light.z, light.w, a, b, c, d, dest);
+    // }
 
     /**
      * Apply a projection transformation to this matrix that projects onto the plane with the general plane equation
@@ -8611,18 +8659,18 @@ export class Matrix4 {
      *          the transformation to transform the implied plane <code>y = 0</code> before applying the projection
      * @return this
      */
-    public shadow(light: Vector4, planeTransform: Matrix4): Matrix4 {
-        return shadow(light, planeTransform, this);
-    }
+    // public shadow(light: Vector4, planeTransform: Matrix4): Matrix4 {
+    //     return shadow(light, planeTransform, this);
+    // }
 
-    public shadow(lightX: number, lightY: number, lightZ: number, lightW: number, planeTransform: Matrix4, dest: Matrix4): Matrix4 {
-        // compute plane equation by transforming (y = 0)
-        const a = planeTransform[1][0];
-        const b = planeTransform[1][1];
-        const c = planeTransform[1][2];
-        const d = -a * planeTransform[3][0] - b * planeTransform[3][1] - c * planeTransform[3][2];
-        return shadow(lightX, lightY, lightZ, lightW, a, b, c, d, dest);
-    }
+    // public shadow(lightX: number, lightY: number, lightZ: number, lightW: number, planeTransform: Matrix4, dest: Matrix4): Matrix4 {
+    //     // compute plane equation by transforming (y = 0)
+    //     const a = planeTransform[1][0];
+    //     const b = planeTransform[1][1];
+    //     const c = planeTransform[1][2];
+    //     const d = -a * planeTransform[3][0] - b * planeTransform[3][1] - c * planeTransform[3][2];
+    //     return shadow(lightX, lightY, lightZ, lightW, a, b, c, d, dest);
+    // }
 
     /**
      * Apply a projection transformation to this matrix that projects onto the plane with the general plane equation
@@ -8649,9 +8697,9 @@ export class Matrix4 {
      *          the transformation to transform the implied plane <code>y = 0</code> before applying the projection
      * @return this
      */
-    public shadow(lightX: number, lightY: number, lightZ: number, lightW: number, planeTransform: Matrix4): Matrix4 {
-        return shadow(lightX, lightY, lightZ, lightW, planeTransform, this);
-    }
+    // public shadow(lightX: number, lightY: number, lightZ: number, lightW: number, planeTransform: Matrix4): Matrix4 {
+    //     return shadow(lightX, lightY, lightZ, lightW, planeTransform, this);
+    // }
 
     /**
      * Set this matrix to a cylindrical billboard transformation that rotates the local +Z axis of a given object with position <code>objPos</code> towards
@@ -8732,48 +8780,7 @@ export class Matrix4 {
      *          the up axis used to orient the object
      * @return this
      */
-    public billboardSpherical(objPos: Vector3, targetPos: Vector3, up: Vector3): Matrix4 {
-        let dirX = targetPos.x - objPos.x;
-        let dirY = targetPos.y - objPos.y;
-        let dirZ = targetPos.z - objPos.z;
-        // normalize dir
-        const invDirLen = 1 / Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
-        dirX *= invDirLen;
-        dirY *= invDirLen;
-        dirZ *= invDirLen;
-        // left = up x dir
-        let leftX = up.y * dirZ - up.z * dirY;
-        let leftY = up.z * dirX - up.x * dirZ;
-        let leftZ = up.x * dirY - up.y * dirX;
-        // normalize left
-        const invLeftLen = 1 / Math.sqrt(leftX * leftX + leftY * leftY + leftZ * leftZ);
-        leftX *= invLeftLen;
-        leftY *= invLeftLen;
-        leftZ *= invLeftLen;
-        // up = dir x left
-        const upX = dirY * leftZ - dirZ * leftY;
-        const upY = dirZ * leftX - dirX * leftZ;
-        const upZ = dirX * leftY - dirY * leftX;
-        // set matrix elements
-        this[0][0] = leftX;
-        this[0][1] = leftY;
-        this[0][2] = leftZ;
-        this[0][3] = 0.0;
-        this[1][0] = upX;
-        this[1][1] = upY;
-        this[1][2] = upZ;
-        this[1][3] = 0.0;
-        this[2][0] = dirX;
-        this[2][1] = dirY;
-        this[2][2] = dirZ;
-        this[2][3] = 0.0;
-        this[3][0] = objPos.x;
-        this[3][1] = objPos.y;
-        this[3][2] = objPos.z;
-        this[3][3] = 1.0;
-        // properties = PROPERTY_AFFINE | PROPERTY_ORTHONORMAL;
-        return this;
-    }
+    public billboardSpherical(objPos: Vector3, targetPos: Vector3, up: Vector3): Matrix4;
 
     /**
      * Set this matrix to a spherical billboard transformation that rotates the local +Z axis of a given object with position <code>objPos</code> towards
@@ -8783,7 +8790,7 @@ export class Matrix4 {
      * its position <code>objPos</code>.
      * <p>
      * In order to specify an <i>up</i> vector which needs to be maintained when rotating the +Z axis of the object,
-     * use {@link #billboardSpherical(Vector3dc, Vector3dc, Vector3dc)}.
+     * use {@link #billboardSpherical(Vector3, Vector3, Vector3)}.
      * 
      * @see #billboardSpherical(Vector3dc, Vector3dc, Vector3dc)
      * 
@@ -8793,40 +8800,81 @@ export class Matrix4 {
      *          the position of the target (for example the camera) towards which to rotate the object
      * @return this
      */
-    public billboardSpherical(objPos: Vector3, targetPos: Vector3): Matrix4 {
-        const toDirX = targetPos.x - objPos.x;
-        const toDirY = targetPos.y - objPos.y;
-        const toDirZ = targetPos.z - objPos.z;
-        let x = -toDirY;
-        let y = toDirX;
-        let w = Math.sqrt(toDirX * toDirX + toDirY * toDirY + toDirZ * toDirZ) + toDirZ;
-        const invNorm = 1 / Math.sqrt(x * x + y * y + w * w);
-        x *= invNorm;
-        y *= invNorm;
-        w *= invNorm;
-        const q00 = (x + x) * x;
-        const q11 = (y + y) * y;
-        const q01 = (x + x) * y;
-        const q03 = (x + x) * w;
-        const q13 = (y + y) * w;
-        this[0][0] = 1.0 - q11;
-        this[0][1] = q01;
-        this[0][2] = -q13;
-        this[0][3] = 0.0;
-        this[1][0] = q01;
-        this[1][1] = 1.0 - q00;
-        this[1][2] = q03;
-        this[1][3] = 0.0;
-        this[2][0] = q13;
-        this[2][1] = -q03;
-        this[2][2] = 1.0 - q11 - q00;
-        this[2][3] = 0.0;
-        this[3][0] = objPos.x;
-        this[3][1] = objPos.y;
-        this[3][2] = objPos.z;
-        this[3][3] = 1.0;
-        // properties = PROPERTY_AFFINE | PROPERTY_ORTHONORMAL;
-        return this;
+    public billboardSpherical(objPos: Vector3, targetPos: Vector3): Matrix4;
+    public billboardSpherical(objPos: Vector3, targetPos: Vector3, up?: Vector3) {
+        let dirX = targetPos.x - objPos.x;
+        let dirY = targetPos.y - objPos.y;
+        let dirZ = targetPos.z - objPos.z;
+        if (up) {
+            // normalize dir
+            const invDirLen = 1 / Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
+            dirX *= invDirLen;
+            dirY *= invDirLen;
+            dirZ *= invDirLen;
+            // left = up x dir
+            let leftX = up.y * dirZ - up.z * dirY;
+            let leftY = up.z * dirX - up.x * dirZ;
+            let leftZ = up.x * dirY - up.y * dirX;
+            // normalize left
+            const invLeftLen = 1 / Math.sqrt(leftX * leftX + leftY * leftY + leftZ * leftZ);
+            leftX *= invLeftLen;
+            leftY *= invLeftLen;
+            leftZ *= invLeftLen;
+            // up = dir x left
+            const upX = dirY * leftZ - dirZ * leftY;
+            const upY = dirZ * leftX - dirX * leftZ;
+            const upZ = dirX * leftY - dirY * leftX;
+            // set matrix elements
+            this[0][0] = leftX;
+            this[0][1] = leftY;
+            this[0][2] = leftZ;
+            this[0][3] = 0.0;
+            this[1][0] = upX;
+            this[1][1] = upY;
+            this[1][2] = upZ;
+            this[1][3] = 0.0;
+            this[2][0] = dirX;
+            this[2][1] = dirY;
+            this[2][2] = dirZ;
+            this[2][3] = 0.0;
+            this[3][0] = objPos.x;
+            this[3][1] = objPos.y;
+            this[3][2] = objPos.z;
+            this[3][3] = 1.0;
+            // properties = PROPERTY_AFFINE | PROPERTY_ORTHONORMAL;
+            return this;
+        } else {
+            let x = -dirY;
+            let y = dirX;
+            let w = Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ) + dirZ;
+            const invNorm = 1 / Math.sqrt(x * x + y * y + w * w);
+            x *= invNorm;
+            y *= invNorm;
+            w *= invNorm;
+            const q00 = (x + x) * x;
+            const q11 = (y + y) * y;
+            const q01 = (x + x) * y;
+            const q03 = (x + x) * w;
+            const q13 = (y + y) * w;
+            this[0][0] = 1.0 - q11;
+            this[0][1] = q01;
+            this[0][2] = -q13;
+            this[0][3] = 0.0;
+            this[1][0] = q01;
+            this[1][1] = 1.0 - q00;
+            this[1][2] = q03;
+            this[1][3] = 0.0;
+            this[2][0] = q13;
+            this[2][1] = -q03;
+            this[2][2] = 1.0 - q11 - q00;
+            this[2][3] = 0.0;
+            this[3][0] = objPos.x;
+            this[3][1] = objPos.y;
+            this[3][2] = objPos.z;
+            this[3][3] = 1.0;
+            // properties = PROPERTY_AFFINE | PROPERTY_ORTHONORMAL;
+            return this;
+        }
     }
 
     // public  hashCode() {
@@ -8990,7 +9038,33 @@ export class Matrix4 {
         return this;
     }
 
-    public arcball(radius: number, centerX: number, centerY: number, centerZ: number, angleX: number, angleY: number, dest: Matrix4): Matrix4 {
+    /**
+     * Apply an arcball view transformation to this matrix with the given <code>radius</code> and <code>center</code>
+     * position of the arcball and the specified X and Y rotation angles.
+     * <p>
+     * This method is equivalent to calling: <code>translate(0, 0, -radius).rotateX(angleX).rotateY(angleY).translate(-center.x, -center.y, -center.z)</code>
+     * 
+     * @param radius
+     *          the arcball radius
+     * @param center
+     *          the center position of the arcball
+     * @param angleX
+     *          the rotation angle around the X axis in radians
+     * @param angleY
+     *          the rotation angle around the Y axis in radians
+     * @return dest
+     */
+    public arcball(radius: number, center: Vector3, angleX: number, angleY: number, dest?: Matrix4): Matrix4;
+    public arcball(radius: number, centerX: number, centerY: number, centerZ: number, angleX: number, angleY: number, dest: Matrix4): Matrix4;
+    public arcball(radius: number, centerX: number | Vector3, centerY: number, centerZ: number, angleX?: number | Matrix4, angleY?: number, dest?: Matrix4): Matrix4 {
+        dest = dest ?? (angleX instanceof Matrix4 ? angleX : this);
+        if (centerX instanceof Vector3) {
+            angleY = centerZ, angleX = centerY;
+            centerZ = centerX.z, centerY = centerX.y, centerX = centerX.x;
+        } else {
+            angleX = angleX as number;
+        }
+
         const m30 = this[2][0] * -radius + this[3][0];
         const m31 = this[2][1] * -radius + this[3][1];
         const m32 = this[2][2] * -radius + this[3][2];
@@ -9033,33 +9107,6 @@ export class Matrix4 {
         dest[0][3] = nm03;
         // ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
         return dest;
-    }
-
-    /**
-     * Apply an arcball view transformation to this matrix with the given <code>radius</code> and <code>center</code>
-     * position of the arcball and the specified X and Y rotation angles.
-     * <p>
-     * This method is equivalent to calling: <code>translate(0, 0, -radius).rotateX(angleX).rotateY(angleY).translate(-center.x, -center.y, -center.z)</code>
-     * 
-     * @param radius
-     *          the arcball radius
-     * @param center
-     *          the center position of the arcball
-     * @param angleX
-     *          the rotation angle around the X axis in radians
-     * @param angleY
-     *          the rotation angle around the Y axis in radians
-     * @return dest
-     */
-    public arcball(radius: number, center: Vector3, angleX: number, angleY: number, dest: Matrix4): Matrix4 {
-        return arcball(radius, center.x, center.y, center.z, angleX, angleY, dest);
-    }
-    public arcball(radius: number, centerX: number, centerY: number, centerZ: number, angleX: number, angleY: number): Matrix4 {
-        return arcball(radius, centerX, centerY, centerZ, angleX, angleY, this);
-    }
-
-    public arcball(radius: number, center: Vector3, angleX: number, angleY: number): Matrix4 {
-        return arcball(radius, center.x, center.y, center.z, angleX, angleY, this);
     }
 
     /**
@@ -9378,9 +9425,7 @@ export class Matrix4 {
      *              will hold the result
      * @return dest
      */
-    public rotateTowards(direction: Vector3, up: Vector3, dest?: Matrix4): Matrix4 {
-        return rotateTowards(direction.x, direction.y, direction.z, up.x, up.y, up.z, dest);
-    }
+    public rotateTowards(direction: Vector3, up: Vector3, dest?: Matrix4): Matrix4;
 
     /**
      * Apply a model transformation to this matrix for a right-handed coordinate system, 
@@ -9416,8 +9461,20 @@ export class Matrix4 {
      *              will hold the result
      * @return dest
      */
-    public rotateTowards(dirX: number, dirY: number, dirZ: number, upX: number, upY: number, upZ: number, dest?: Matrix4): Matrix4 {
-        dest = dest ?? this;
+    public rotateTowards(dirX: number, dirY: number, dirZ: number, upX: number, upY: number, upZ: number, dest?: Matrix4): Matrix4;
+    public rotateTowards(dirX: number | Vector3, dirY: number | Vector3, dirZ?: number | Matrix4, upX?: number, upY?: number, upZ?: number, dest?: Matrix4): Matrix4 {
+        dest = dest ?? (dirZ instanceof Matrix4 ? dirZ : this);
+
+        if (dirY instanceof Vector3) {
+            upZ = dirY.z, upY = dirY.y, upX = dirY.x
+        }
+        if (dirX instanceof Vector3) {
+            dirZ = dirX.z, dirY = dirX.y, dirX = dirX.x;
+        } else {
+            dirY = dirY as number, dirZ = dirZ as number;
+        }
+
+
         // Normalize direction
         const invDirLength = 1 / Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
         const ndirX = dirX * invDirLength;
