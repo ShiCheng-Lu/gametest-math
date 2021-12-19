@@ -2,7 +2,6 @@
 
 // Note: all operations mutate the Vector unless |dest| is supplied
 
-import { add } from "./add.js"
 
 export type rawVector2 = { x: number, y: number }
 

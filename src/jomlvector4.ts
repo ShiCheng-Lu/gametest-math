@@ -23,9 +23,9 @@
  */
 
 import { BlockLocation, Location } from "mojang-minecraft";
-import { Matrix4 } from "./jomlmatrix4";
-import { Vector2 } from "./vector2";
-import { Vector3 } from "./jomlvector3";
+import { Matrix4 } from "./jomlmatrix4.js";
+import { Vector2 } from "./vector2.js";
+import { Vector3 } from "./jomlvector3.js";
 
 /**
  * Contains the definition of a Vector comprising 4 numbers and associated transformations.

@@ -49,7 +49,7 @@ const replace = [
 ]
 
 
-const file_path = './src/jomlvector4.ts';
+const file_path = './src/matrixMul.ts';
 
 let data = fs.readFileSync(file_path).toString();
 

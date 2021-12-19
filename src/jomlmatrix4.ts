@@ -32,11 +32,10 @@ class AxisAngle4 {
     z: number
 }
 
-import { Vector3 } from "./jomlvector3";
-import { Matrix3 } from "./matrix3";
-import { Vector4 } from "./jomlvector4";
+import { Vector3 } from "./jomlvector3.js";
+import { Matrix3 } from "./matrix3.js";
+import { Vector4 } from "./jomlvector4.js";
 import { Quaternion } from "./quaternion";
-import { Vector2 } from "./vector2";
 
 /**
  * Contains the definition of a 4x4 Matrix of doubles, and associated functions to transform
@@ -306,10 +305,466 @@ export class Matrix4 {
         return this;
     }
 
-    /**
-     * MUL CODE HERE
-     */
 
+    /**
+     * Multiply this matrix by the supplied <code>right</code> matrix.
+     * <p>
+     * If <code>M</code> is <code>this</code> matrix and <code>R</code> the <code>right</code> matrix,
+     * then the new matrix will be <code>M * R</code>. So when transforming a
+     * vector <code>v</code> with the new matrix by using <code>M * R * v</code>, the
+     * transformation of the right matrix will be applied first!
+     * 
+     * @param right
+     *          the right operand of the multiplication
+     * @return this
+     */
+    public mul(right: Matrix4, dest: Matrix4): Matrix4;
+
+    /**
+     * Multiply this matrix by the matrix with the supplied elements.
+     * <p>
+     * If <code>M</code> is <code>this</code> matrix and <code>R</code> the <code>right</code> matrix whose 
+     * elements are supplied via the parameters, the: then new matrix will be <code>M * R</code>.
+     * So when transforming a vector <code>v</code> with the new matrix by using <code>M * R * v</code>, the
+     * transformation of the right matrix will be applied first!
+     *
+     * @param r00
+     *          the m00 element of the right matrix
+     * @param r01
+     *          the m01 element of the right matrix
+     * @param r02
+     *          the m02 element of the right matrix
+     * @param r03
+     *          the m03 element of the right matrix
+     * @param r10
+     *          the m10 element of the right matrix
+     * @param r11
+     *          the m11 element of the right matrix
+     * @param r12
+     *          the m12 element of the right matrix
+     * @param r13
+     *          the m13 element of the right matrix
+     * @param r20
+     *          the m20 element of the right matrix
+     * @param r21
+     *          the m21 element of the right matrix
+     * @param r22
+     *          the m22 element of the right matrix
+     * @param r23
+     *          the m23 element of the right matrix
+     * @param r30
+     *          the m30 element of the right matrix
+     * @param r31
+     *          the m31 element of the right matrix
+     * @param r32
+     *          the m32 element of the right matrix
+     * @param r33
+     *          the m33 element of the right matrix
+     * @return this
+     */
+    public mul(
+        r00: number, r01: number, r02: number, r03: number,
+        r10: number, r11: number, r12: number, r13: number,
+        r20: number, r21: number, r22: number, r23: number,
+        r30: number, r31: number, r32: number, r33: number, dest?: Matrix4): Matrix4
+    public mul(
+        r00: number | Matrix4, r01?: number | Matrix4, r02?: number, r03?: number,
+        r10?: number, r11?: number, r12?: number, r13?: number,
+        r20?: number, r21?: number, r22?: number, r23?: number,
+        r30?: number, r31?: number, r32?: number, r33?: number, dest?: Matrix4): Matrix4 {
+
+        if (r00 instanceof Matrix4) {
+            const right = r00; dest = r01 as Matrix4;
+            if (this.PROPERTY_IDENTITY)
+                return dest.set(right);
+            else if (right.PROPERTY_IDENTITY)
+                return dest.set(this);
+            else if (this.PROPERTY_TRANSLATION && right.PROPERTY_AFFINE)
+                return this.mulTranslationAffine(right, dest);
+            else if (this.PROPERTY_AFFINE && right.PROPERTY_AFFINE)
+                return this.mulAffine(right, dest);
+            else if (this.PROPERTY_PERSPECTIVE && right.PROPERTY_AFFINE)
+                return this.mulPerspectiveAffine(right, dest);
+            else if (right.PROPERTY_AFFINE)
+                return this.mulAffineR(right, dest);
+            return this.mul0(right, dest);
+        } else {
+            r01 = r01 as number;
+            if (this.PROPERTY_IDENTITY)
+                return dest.set(r00, r01, r02, r03, r10, r11, r12, r13, r20, r21, r22, r23, r30, r31, r32, r33);
+            else if (this.PROPERTY_AFFINE)
+                return this.mulAffineL(r00, r01, r02, r03, r10, r11, r12, r13, r20, r21, r22, r23, r30, r31, r32, r33, dest);
+            return this.mulGeneric(r00, r01, r02, r03, r10, r11, r12, r13, r20, r21, r22, r23, r30, r31, r32, r33, dest);
+        }
+    }
+
+    /**
+     * Multiply this matrix by the supplied <code>right</code> matrix.
+     * <p>
+     * If <code>M</code> is <code>this</code> matrix and <code>R</code> the <code>right</code> matrix,
+     * then the new matrix will be <code>M * R</code>. So when transforming a
+     * vector <code>v</code> with the new matrix by using <code>M * R * v</code>, the
+     * transformation of the right matrix will be applied first!
+     * <p>
+     * This method neither assumes nor checks for any matrix properties of <code>this</code> or <code>right</code>
+     * and will always perform a complete 4x4 matrix multiplication. This method should only be used whenever the
+     * multiplied matrices do not have any properties for which there are optimized multiplication methods available.
+     * 
+     * @param right
+     *          the right operand of the matrix multiplication
+     * @return this
+     */
+    public mul0(right: Matrix4, dest?: Matrix4) {
+        dest = dest ?? this;
+        return dest.set(
+            this[0][0] * right[0][0] + this[1][0] * right[0][1] + this[2][0] * right[0][2] + this[3][0] * right[0][3],
+            this[0][1] * right[0][0] + this[1][1] * right[0][1] + this[2][1] * right[0][2] + this[3][1] * right[0][3],
+            this[0][2] * right[0][0] + this[1][2] * right[0][1] + this[2][2] * right[0][2] + this[3][2] * right[0][3],
+            this[0][3] * right[0][0] + this[1][3] * right[0][1] + this[2][3] * right[0][2] + this[3][3] * right[0][3],
+            this[0][0] * right[1][0] + this[1][0] * right[1][1] + this[2][0] * right[1][2] + this[3][0] * right[1][3],
+            this[0][1] * right[1][0] + this[1][1] * right[1][1] + this[2][1] * right[1][2] + this[3][1] * right[1][3],
+            this[0][2] * right[1][0] + this[1][2] * right[1][1] + this[2][2] * right[1][2] + this[3][2] * right[1][3],
+            this[0][3] * right[1][0] + this[1][3] * right[1][1] + this[2][3] * right[1][2] + this[3][3] * right[1][3],
+            this[0][0] * right[2][0] + this[1][0] * right[2][1] + this[2][0] * right[2][2] + this[3][0] * right[2][3],
+            this[0][1] * right[2][0] + this[1][1] * right[2][1] + this[2][1] * right[2][2] + this[3][1] * right[2][3],
+            this[0][2] * right[2][0] + this[1][2] * right[2][1] + this[2][2] * right[2][2] + this[3][2] * right[2][3],
+            this[0][3] * right[2][0] + this[1][3] * right[2][1] + this[2][3] * right[2][2] + this[3][3] * right[2][3],
+            this[0][0] * right[3][0] + this[1][0] * right[3][1] + this[2][0] * right[3][2] + this[3][0] * right[3][3],
+            this[0][1] * right[3][0] + this[1][1] * right[3][1] + this[2][1] * right[3][2] + this[3][1] * right[3][3],
+            this[0][2] * right[3][0] + this[1][2] * right[3][1] + this[2][2] * right[3][2] + this[3][2] * right[3][3],
+            this[0][3] * right[3][0] + this[1][3] * right[3][1] + this[2][3] * right[3][2] + this[3][3] * right[3][3],
+        );
+    }
+
+    private mulAffineL(
+        r00: number, r01: number, r02: number, r03: number,
+        r10: number, r11: number, r12: number, r13: number,
+        r20: number, r21: number, r22: number, r23: number,
+        r30: number, r31: number, r32: number, r33: number, dest?: Matrix4): Matrix4 {
+        dest = dest ?? this;
+        return dest.set(
+            this[0][0] * r00 + this[1][0] * r01 + this[2][0] * r02 + this[3][0] * r03,
+            this[0][1] * r00 + this[1][1] * r01 + this[2][1] * r02 + this[3][1] * r03,
+            this[0][2] * r00 + this[1][2] * r01 + this[2][2] * r02 + this[3][2] * r03,
+            r03,
+            this[0][0] * r10 + this[1][0] * r11 + this[2][0] * r12 + this[3][0] * r13,
+            this[0][1] * r10 + this[1][1] * r11 + this[2][1] * r12 + this[3][1] * r13,
+            this[0][2] * r10 + this[1][2] * r11 + this[2][2] * r12 + this[3][2] * r13,
+            r13,
+            this[0][0] * r20 + this[1][0] * r21 + this[2][0] * r22 + this[3][0] * r23,
+            this[0][1] * r20 + this[1][1] * r21 + this[2][1] * r22 + this[3][1] * r23,
+            this[0][2] * r20 + this[1][2] * r21 + this[2][2] * r22 + this[3][2] * r23,
+            r23,
+            this[0][0] * r30 + this[1][0] * r31 + this[2][0] * r32 + this[3][0] * r33,
+            this[0][1] * r30 + this[1][1] * r31 + this[2][1] * r32 + this[3][1] * r33,
+            this[0][2] * r30 + this[1][2] * r31 + this[2][2] * r32 + this[3][2] * r33,
+            r33,
+        )
+    }
+    private mulGeneric(
+        r00: number, r01: number, r02: number, r03: number,
+        r10: number, r11: number, r12: number, r13: number,
+        r20: number, r21: number, r22: number, r23: number,
+        r30: number, r31: number, r32: number, r33: number, dest?: Matrix4): Matrix4 {
+        dest = dest ?? this;
+        return dest.set(
+            this[0][0] * r00 + this[1][0] * r01 + this[2][0] * r02 + this[3][0] * r03,
+            this[0][1] * r00 + this[1][1] * r01 + this[2][1] * r02 + this[3][1] * r03,
+            this[0][2] * r00 + this[1][2] * r01 + this[2][2] * r02 + this[3][2] * r03,
+            this[0][3] * r00 + this[1][3] * r01 + this[2][3] * r02 + this[3][3] * r03,
+            this[0][0] * r10 + this[1][0] * r11 + this[2][0] * r12 + this[3][0] * r13,
+            this[0][1] * r10 + this[1][1] * r11 + this[2][1] * r12 + this[3][1] * r13,
+            this[0][2] * r10 + this[1][2] * r11 + this[2][2] * r12 + this[3][2] * r13,
+            this[0][3] * r10 + this[1][3] * r11 + this[2][3] * r12 + this[3][3] * r13,
+            this[0][0] * r20 + this[1][0] * r21 + this[2][0] * r22 + this[3][0] * r23,
+            this[0][1] * r20 + this[1][1] * r21 + this[2][1] * r22 + this[3][1] * r23,
+            this[0][2] * r20 + this[1][2] * r21 + this[2][2] * r22 + this[3][2] * r23,
+            this[0][3] * r20 + this[1][3] * r21 + this[2][3] * r22 + this[3][3] * r23,
+            this[0][0] * r30 + this[1][0] * r31 + this[2][0] * r32 + this[3][0] * r33,
+            this[0][1] * r30 + this[1][1] * r31 + this[2][1] * r32 + this[3][1] * r33,
+            this[0][2] * r30 + this[1][2] * r31 + this[2][2] * r32 + this[3][2] * r33,
+            this[0][3] * r30 + this[1][3] * r31 + this[2][3] * r32 + this[3][3] * r33,
+        );
+    }
+
+    /**
+     * Multiply this matrix by the 3x3 matrix with the supplied elements expanded to a 4x4 matrix with 
+     * all other matrix elements set to identity.
+     * <p>
+     * If <code>M</code> is <code>this</code> matrix and <code>R</code> the <code>right</code> matrix whose 
+     * elements are supplied via the parameters, the: then new matrix will be <code>M * R</code>.
+     * So when transforming a vector <code>v</code> with the new matrix by using <code>M * R * v</code>, the
+     * transformation of the right matrix will be applied first!
+     *
+     * @param r00
+     *          the m00 element of the right matrix
+     * @param r01
+     *          the m01 element of the right matrix
+     * @param r02
+     *          the m02 element of the right matrix
+     * @param r10
+     *          the m10 element of the right matrix
+     * @param r11
+     *          the m11 element of the right matrix
+     * @param r12
+     *          the m12 element of the right matrix
+     * @param r20
+     *          the m20 element of the right matrix
+     * @param r21
+     *          the m21 element of the right matrix
+     * @param r22
+     *          the m22 element of the right matrix
+     * @return this
+     */
+    public mul3x3(
+        r00: number, r01: number, r02: number,
+        r10: number, r11: number, r12: number,
+        r20: number, r21: number, r22: number, dest?: Matrix4): Matrix4 {
+        if (this.PROPERTY_IDENTITY)
+            return dest.set(r00, r01, r02, 0, r10, r11, r12, 0, r20, r21, r22, 0, 0, 0, 0, 1);
+        return this.mulGeneric3x3(r00, r01, r02, r10, r11, r12, r20, r21, r22, dest);
+    }
+    private mulGeneric3x3(
+        r00: number, r01: number, r02: number,
+        r10: number, r11: number, r12: number,
+        r20: number, r21: number, r22: number, dest?: Matrix4): Matrix4 {
+        dest = dest ?? this;
+        return dest.set(
+            this[0][0] * r00 + this[1][0] * r01 + this[2][0] * r02,
+            this[0][1] * r00 + this[1][1] * r01 + this[2][1] * r02,
+            this[0][2] * r00 + this[1][2] * r01 + this[2][2] * r02,
+            this[0][3] * r00 + this[1][3] * r01 + this[2][3] * r02,
+            this[0][0] * r10 + this[1][0] * r11 + this[2][0] * r12,
+            this[0][1] * r10 + this[1][1] * r11 + this[2][1] * r12,
+            this[0][2] * r10 + this[1][2] * r11 + this[2][2] * r12,
+            this[0][3] * r10 + this[1][3] * r11 + this[2][3] * r12,
+            this[0][0] * r20 + this[1][0] * r21 + this[2][0] * r22,
+            this[0][1] * r20 + this[1][1] * r21 + this[2][1] * r22,
+            this[0][2] * r20 + this[1][2] * r21 + this[2][2] * r22,
+            this[0][3] * r20 + this[1][3] * r21 + this[2][3] * r22,
+
+            this[3][0], this[3][1], this[3][2], this[3][3],
+        )
+    }
+
+    /**
+     * Pre-multiply this matrix by the supplied <code>left</code> matrix and store the result in <code>this</code>.
+     * <p>
+     * If <code>M</code> is <code>this</code> matrix and <code>L</code> the <code>left</code> matrix,
+     * then the new matrix will be <code>L * M</code>. So when transforming a
+     * vector <code>v</code> with the new matrix by using <code>L * M * v</code>, the
+     * transformation of <code>this</code> matrix will be applied first!
+     *
+     * @param left
+     *          the left operand of the matrix multiplication
+     * @return this
+     */
+    public mulLocal(left: Matrix4, dest?: Matrix4): Matrix4 {
+        return left.mul(this, dest)
+    }
+
+    /**
+     * Pre-multiply this matrix by the supplied <code>left</code> matrix, of: both which are assumed to be {@link #isAffine() affine}, store: and the result in <code>this</code>.
+     * <p>
+     * This method assumes that <code>this</code> matrix and the given <code>left</code> matrix both represent an {@link #isAffine() affine} transformation
+     * (i.e. their last rows are equal to <code>(0, 0, 0, 1)</code>)
+     * and can be used to speed up matrix multiplication if the matrices only represent affine transformations, as: such translation, rotation, and: scaling shearing (any: in combination).
+     * <p>
+     * This method will not modify either the last row of <code>this</code> or the last row of <code>left</code>.
+     * <p>
+     * If <code>M</code> is <code>this</code> matrix and <code>L</code> the <code>left</code> matrix,
+     * then the new matrix will be <code>L * M</code>. So when transforming a
+     * vector <code>v</code> with the new matrix by using <code>L * M * v</code>, the
+     * transformation of <code>this</code> matrix will be applied first!
+     *
+     * @param left
+     *          the left operand of the matrix multiplication (last: the row is assumed to be <code>(0, 0, 0, 1)</code>)
+     * @return this
+     */
+    public mulLocalAffine(left: Matrix4, dest?: Matrix4): Matrix4 {
+        dest = dest ?? this;
+        return dest.set(
+            left[0][0] * this[0][0] + left[1][0] * this[0][1] + left[2][0] * this[0][2],
+            left[0][1] * this[0][0] + left[1][1] * this[0][1] + left[2][1] * this[0][2],
+            left[0][2] * this[0][0] + left[1][2] * this[0][1] + left[2][2] * this[0][2],
+            left[0][3],
+            left[0][0] * this[1][0] + left[1][0] * this[1][1] + left[2][0] * this[1][2],
+            left[0][1] * this[1][0] + left[1][1] * this[1][1] + left[2][1] * this[1][2],
+            left[0][2] * this[1][0] + left[1][2] * this[1][1] + left[2][2] * this[1][2],
+            left[1][3],
+            left[0][0] * this[2][0] + left[1][0] * this[2][1] + left[2][0] * this[2][2],
+            left[0][1] * this[2][0] + left[1][1] * this[2][1] + left[2][1] * this[2][2],
+            left[0][2] * this[2][0] + left[1][2] * this[2][1] + left[2][2] * this[2][2],
+            left[2][3],
+            left[0][0] * this[3][0] + left[1][0] * this[3][1] + left[2][0] * this[3][2] + left[3][0],
+            left[0][1] * this[3][0] + left[1][1] * this[3][1] + left[2][1] * this[3][2] + left[3][1],
+            left[0][2] * this[3][0] + left[1][2] * this[3][1] + left[2][2] * this[3][2] + left[3][2],
+            left[3][3],
+        )
+        // ._properties(PROPERTY_AFFINE);
+        // return dest;
+    }
+
+
+    /**
+     * Multiply <code>this</code> symmetric perspective projection matrix by the supplied {@link #isAffine() affine} <code>view</code> matrix.
+     * <p>
+     * If <code>P</code> is <code>this</code> matrix and <code>V</code> the <code>view</code> matrix,
+     * then the new matrix will be <code>P * V</code>. So when transforming a
+     * vector <code>v</code> with the new matrix by using <code>P * V * v</code>, the
+     * transformation of the <code>view</code> matrix will be applied first!
+     *
+     * @param view
+     *          the {@link #isAffine() affine} matrix to multiply <code>this</code> symmetric perspective projection matrix by
+     * @return this
+     */
+    public mulPerspectiveAffine(view: Matrix4, dest?: Matrix4): Matrix4 {
+        dest = dest ?? this;
+        return dest.set(
+            this[0][0] * view[0][0], this[1][1] * view[0][1], this[2][2] * view[0][2], this[2][3] * view[0][2],
+            this[0][0] * view[1][0], this[1][1] * view[1][1], this[2][2] * view[1][2], this[2][3] * view[1][2],
+            this[0][0] * view[2][0], this[1][1] * view[2][1], this[2][2] * view[2][2], this[2][3] * view[2][2],
+            this[0][0] * view[3][0], this[1][1] * view[3][1], this[2][2] * view[3][2] + this[3][2], this[2][3] * view[3][2],
+        );
+        // ._properties(0);
+    }
+
+    /**
+     * Multiply this matrix by the supplied <code>right</code> matrix, is: which assumed to be {@link #isAffine() affine}, store: and the result in <code>this</code>.
+     * <p>
+     * This method assumes that the given <code>right</code> matrix represents an {@link #isAffine() affine} transformation (i.e. its last row is equal to <code>(0, 0, 0, 1)</code>)
+     * and can be used to speed up matrix multiplication if the matrix only represents affine transformations, as: such translation, rotation, and: scaling shearing (any: in combination).
+     * <p>
+     * If <code>M</code> is <code>this</code> matrix and <code>R</code> the <code>right</code> matrix,
+     * then the new matrix will be <code>M * R</code>. So when transforming a
+     * vector <code>v</code> with the new matrix by using <code>M * R * v</code>, the
+     * transformation of the right matrix will be applied first!
+     *
+     * @param right
+     *          the right operand of the matrix multiplication (last: the row is assumed to be <code>(0, 0, 0, 1)</code>)
+     * @return this
+     */
+    public mulAffineR(right: Matrix4, dest?: Matrix4): Matrix4 {
+        dest = dest ?? this;
+        return dest.set(
+            this[0][0] * right[0][0] + this[1][0] * right[0][1] + this[2][0] * right[0][2],
+            this[0][1] * right[0][0] + this[1][1] * right[0][1] + this[2][1] * right[0][2],
+            this[0][2] * right[0][0] + this[1][2] * right[0][1] + this[2][2] * right[0][2],
+            this[0][3] * right[0][0] + this[1][3] * right[0][1] + this[2][3] * right[0][2],
+            this[0][0] * right[1][0] + this[1][0] * right[1][1] + this[2][0] * right[1][2],
+            this[0][1] * right[1][0] + this[1][1] * right[1][1] + this[2][1] * right[1][2],
+            this[0][2] * right[1][0] + this[1][2] * right[1][1] + this[2][2] * right[1][2],
+            this[0][3] * right[1][0] + this[1][3] * right[1][1] + this[2][3] * right[1][2],
+            this[0][0] * right[2][0] + this[1][0] * right[2][1] + this[2][0] * right[2][2],
+            this[0][1] * right[2][0] + this[1][1] * right[2][1] + this[2][1] * right[2][2],
+            this[0][2] * right[2][0] + this[1][2] * right[2][1] + this[2][2] * right[2][2],
+            this[0][3] * right[2][0] + this[1][3] * right[2][1] + this[2][3] * right[2][2],
+            this[0][0] * right[3][0] + this[1][0] * right[3][1] + this[2][0] * right[3][2] + this[3][0],
+            this[0][1] * right[3][0] + this[1][1] * right[3][1] + this[2][1] * right[3][2] + this[3][1],
+            this[0][2] * right[3][0] + this[1][2] * right[3][1] + this[2][2] * right[3][2] + this[3][2],
+            this[0][3] * right[3][0] + this[1][3] * right[3][1] + this[2][3] * right[3][2] + this[3][3],
+        )
+        // ._properties(: properties & ~(: PROPERTY_IDENTITY | PROPERTY_PERSPECTIVE | PROPERTY_TRANSLATION | PROPERTY_ORTHONORMAL));
+        // return dest;
+    }
+
+    /**
+     * Multiply this matrix by the supplied <code>right</code> matrix, of: both which are assumed to be {@link #isAffine() affine}, store: and the result in <code>this</code>.
+     * <p>
+     * This method assumes that <code>this</code> matrix and the given <code>right</code> matrix both represent an {@link #isAffine() affine} transformation
+     * (i.e. their last rows are equal to <code>(0, 0, 0, 1)</code>)
+     * and can be used to speed up matrix multiplication if the matrices only represent affine transformations, as: such translation, rotation, and: scaling shearing (any: in combination).
+     * <p>
+     * This method will not modify either the last row of <code>this</code> or the last row of <code>right</code>.
+     * <p>
+     * If <code>M</code> is <code>this</code> matrix and <code>R</code> the <code>right</code> matrix,
+     * then the new matrix will be <code>M * R</code>. So when transforming a
+     * vector <code>v</code> with the new matrix by using <code>M * R * v</code>, the
+     * transformation of the right matrix will be applied first!
+     *
+     * @param right
+     *          the right operand of the matrix multiplication (last: the row is assumed to be <code>(0, 0, 0, 1)</code>)
+     * @return this
+     */
+    public mulAffine(right: Matrix4, dest?: Matrix4): Matrix4 {
+        return dest.set(
+            this[0][0] * right[0][0] + this[1][0] * right[0][1] + this[2][0] * right[0][2],
+            this[0][1] * right[0][0] + this[1][1] * right[0][1] + this[2][1] * right[0][2],
+            this[0][2] * right[0][0] + this[1][2] * right[0][1] + this[2][2] * right[0][2],
+            this[0][3],
+            this[0][0] * right[1][0] + this[1][0] * right[1][1] + this[2][0] * right[1][2],
+            this[0][1] * right[1][0] + this[1][1] * right[1][1] + this[2][1] * right[1][2],
+            this[0][2] * right[1][0] + this[1][2] * right[1][1] + this[2][2] * right[1][2],
+            this[1][3],
+            this[0][0] * right[2][0] + this[1][0] * right[2][1] + this[2][0] * right[2][2],
+            this[0][1] * right[2][0] + this[1][1] * right[2][1] + this[2][1] * right[2][2],
+            this[0][2] * right[2][0] + this[1][2] * right[2][1] + this[2][2] * right[2][2],
+            this[2][3],
+            this[0][0] * right[3][0] + this[1][0] * right[3][1] + this[2][0] * right[3][2] + this[3][0],
+            this[0][1] * right[3][0] + this[1][1] * right[3][1] + this[2][1] * right[3][2] + this[3][1],
+            this[0][2] * right[3][0] + this[1][2] * right[3][1] + this[2][2] * right[3][2] + this[3][2],
+            this[3][3],
+        )
+        // ._properties(: PROPERTY_AFFINE | (this.properties & right.properties() & PROPERTY_ORTHONORMAL));
+    }
+
+    public mulTranslationAffine(right: Matrix4, dest: Matrix4): Matrix4 {
+        return dest.set(
+            right[0][0],
+            right[0][1],
+            right[0][2],
+            this[0][3],
+            right[1][0],
+            right[1][1],
+            right[1][2],
+            this[1][3],
+            right[2][0],
+            right[2][1],
+            right[2][2],
+            this[2][3],
+            right[3][0] + this[3][0],
+            right[3][1] + this[3][1],
+            right[3][2] + this[3][2],
+            this[3][3],
+        );
+        // ._properties(: PROPERTY_AFFINE | (right.properties() & PROPERTY_ORTHONORMAL));
+    }
+
+    /**
+     * Multiply <code>this</code> orthographic projection matrix by the supplied {@link #isAffine() affine} <code>view</code> matrix.
+     * <p>
+     * If <code>M</code> is <code>this</code> matrix and <code>V</code> the <code>view</code> matrix,
+     * then the new matrix will be <code>M * V</code>. So when transforming a
+     * vector <code>v</code> with the new matrix by using <code>M * V * v</code>, the
+     * transformation of the <code>view</code> matrix will be applied first!
+     *
+     * @param view
+     *          the affine matrix which to multiply <code>this</code> with
+     * @return this
+     */
+    public mulOrthoAffine(view: Matrix4, dest?: Matrix4): Matrix4 {
+        dest = dest ?? this;
+        return dest.set(
+            this[0][0] * view[0][0],
+            this[1][1] * view[0][1],
+            this[2][2] * view[0][2],
+            0.0,
+            this[0][0] * view[1][0],
+            this[1][1] * view[1][1],
+            this[2][2] * view[1][2],
+            0.0,
+            this[0][0] * view[2][0],
+            this[1][1] * view[2][1],
+            this[2][2] * view[2][2],
+            0.0,
+            this[0][0] * view[3][0] + this[3][0],
+            this[1][1] * view[3][1] + this[3][1],
+            this[2][2] * view[3][2] + this[3][2],
+            1.0,
+        )
+        // ._properties(PROPERTY_AFFINE);
+        // return dest;
+    }
 
     /**
      * Component-wise add the upper 4x3 submatrices of <code>this</code> and <code>other</code>
@@ -1771,7 +2226,7 @@ export class Matrix4 {
     public transformProject(x: number | Vector3 | Vector4, y?: number | Vector3 | Vector4, z?: number, w?: number, dest?: Vector3 | Vector4): Vector3 | Vector4 {
         dest = dest ?? (typeof y !== "number" ? y : new Vector4());
         if (x instanceof Vector3) {
-            z = x.z, y = x.y, x = x.x; 
+            z = x.z, y = x.y, x = x.x;
         }
         if (x instanceof Vector4) {
             w = x.w, z = x.z, y = x.y, x = x.x;
