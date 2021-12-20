@@ -3,13 +3,13 @@
 // Note: all operations mutate the Vector unless |dest| is supplied
 
 
-export type rawVector2 = { x: number, y: number }
+export type Vector2Like = { x: number, y: number }
 
 
 export class Vector2 {
     x: number;
     y: number;
-    constructor(x?: number | rawVector2, y?: number) {
+    constructor(x?: number | Vector2Like, y?: number) {
         if (x === undefined) {
             this.x = 0;
             this.y = 0;

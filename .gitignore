@@ -3,3 +3,4 @@ tsconfig.json
 scripts
 mojang-minecraft
 build.sh
+build
