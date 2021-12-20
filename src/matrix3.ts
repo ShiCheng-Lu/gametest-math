@@ -15,6 +15,11 @@ export class Matrix3 {
     2: [number, number, number]
     3: [number, number, number]
 
+    m00: number; m10: number; m20: number;
+    m01: number; m11: number; m21: number;
+    m02: number; m12: number; m22: number;
+
+
     constructor(m: rawMatrix3) {
         this.set(m);
     }

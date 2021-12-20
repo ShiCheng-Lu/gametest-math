@@ -22,7 +22,6 @@
  * THE SOFTWARE.
  */
 
-// TODO: translate invertPerspectiveView
 // TODO: translate rotate for Quaternions
 
 class AxisAngle4 {
@@ -51,12 +50,12 @@ import { Quaternion } from "./quaternion";
  */
 export class Matrix4 {
 
-    [key: number]: [number, number, number, number];
-    0: [number, number, number, number] = [0, 0, 0, 0];
-    1: [number, number, number, number] = [0, 0, 0, 0];
-    2: [number, number, number, number] = [0, 0, 0, 0];
-    3: [number, number, number, number] = [0, 0, 0, 0];
+    [key: number]: { [key: number]: number };
 
+    m00: number; m10: number; m20: number; m30: number;
+    m01: number; m11: number; m21: number; m31: number;
+    m02: number; m12: number; m22: number; m32: number;
+    m03: number; m13: number; m23: number; m33: number;
 
     // double m00, m01, m02, m03;
     // double m10, m11, m12, m13;
@@ -143,37 +142,32 @@ export class Matrix4 {
         m10?: number, m11?: number, m12?: number, m13?: number,
         m20?: number, m21?: number, m22?: number, m23?: number,
         m30?: number, m31?: number, m32?: number, m33?: number) {
-        if (m00 === undefined) {
-            this[0][0] = 1;
-            this[1][1] = 1;
-            this[2][2] = 1;
-            this[3][3] = 1;
+        if (m00 === undefined) { // ()
+            this.m00 = 1, this.m10 = 0, this.m20 = 0, this.m30 = 0;
+            this.m01 = 0, this.m11 = 1, this.m21 = 0, this.m31 = 0;
+            this.m02 = 0, this.m12 = 0, this.m22 = 1, this.m32 = 0;
+            this.m03 = 0, this.m13 = 0, this.m23 = 0, this.m33 = 1;
             return;
-        } else if (m00 instanceof Vector4 && m01 instanceof Vector4
-            && m02 instanceof Vector4 && m03 instanceof Vector4) {
-            m33 = m03.w, m32 = m03.z, m31 = m03.y, m30 = m03.x;
-            m23 = m02.w, m22 = m02.z, m21 = m02.y, m20 = m02.x;
-            m13 = m01.w, m12 = m01.z, m11 = m01.y, m10 = m01.x;
-            m03 = m00.w, m02 = m00.z, m01 = m00.y, m00 = m00.x;
-        } else {
-            m00 = m00 as number, m01 = m01 as number, m02 = m02 as number, m03 = m03 as number;
         }
-        this[0][0] = m00;
-        this[0][1] = m01;
-        this[0][2] = m02;
-        this[0][3] = m03;
-        this[1][0] = m10;
-        this[1][1] = m11;
-        this[1][2] = m12;
-        this[1][3] = m13;
-        this[2][0] = m20;
-        this[2][1] = m21;
-        this[2][2] = m22;
-        this[2][3] = m23;
-        this[3][0] = m30;
-        this[3][1] = m31;
-        this[3][2] = m32;
-        this[3][3] = m33;
+        if (m00 instanceof Matrix4) { // (Matrix4)
+            this.m00 = m00.m00, this.m10 = m00.m10, this.m20 = m00.m20, this.m30 = m00.m30;
+            this.m01 = m00.m01, this.m11 = m00.m11, this.m21 = m00.m21, this.m31 = m00.m31;
+            this.m02 = m00.m02, this.m12 = m00.m12, this.m22 = m00.m22, this.m32 = m00.m32;
+            this.m03 = m00.m03, this.m13 = m00.m13, this.m23 = m00.m23, this.m33 = m00.m33;
+            return;
+        }
+        if (m00 instanceof Vector4 && m01 instanceof Vector4
+            && m02 instanceof Vector4 && m03 instanceof Vector4) { // (Vector4, Vector4, Vector4, Vector4)
+            this.m33 = m03.w, this.m32 = m03.z, this.m31 = m03.y, this.m30 = m03.x;
+            this.m23 = m02.w, this.m22 = m02.z, this.m21 = m02.y, this.m20 = m02.x;
+            this.m13 = m01.w, this.m12 = m01.z, this.m11 = m01.y, this.m10 = m01.x;
+            this.m03 = m00.w, this.m02 = m00.z, this.m01 = m00.y, this.m00 = m00.x;
+            return;
+        } // (m00 ... m33)
+        this.m00 = m00 as number, this.m10 = m10, this.m20 = m20, this.m30 = m30;
+        this.m01 = m01 as number, this.m11 = m11, this.m21 = m21, this.m31 = m31;
+        this.m02 = m02 as number, this.m12 = m12, this.m22 = m22, this.m32 = m32;
+        this.m03 = m03 as number, this.m13 = m13, this.m23 = m23, this.m33 = m33;
     }
 
     /**
@@ -193,14 +187,14 @@ export class Matrix4 {
     // }
 
     get PROPERTY_AFFINE(): boolean {
-        return this[0][3] === 0 && this[1][3] === 0 && this[2][3] === 0 && this[3][3] === 1;
+        return this.m03 === 0 && this.m13 === 0 && this.m23 === 0 && this.m33 === 1;
     }
 
     get PROPERTY_TRANSLATION(): boolean {
         return this.PROPERTY_AFFINE
-            && this[0][0] === 1 && this[1][0] === 0 && this[2][0] === 0
-            && this[0][1] === 0 && this[1][1] === 1 && this[2][1] === 0
-            && this[0][2] === 0 && this[1][2] === 0 && this[2][2] === 1;
+            && this.m00 === 1 && this.m10 === 0 && this.m20 === 0
+            && this.m01 === 0 && this.m11 === 1 && this.m21 === 0
+            && this.m02 === 0 && this.m12 === 0 && this.m22 === 1;
     }
 
     // TODO: is this the same as translation???
@@ -210,17 +204,68 @@ export class Matrix4 {
 
     get PROPERTY_IDENTITY(): boolean {
         return this.PROPERTY_TRANSLATION
-            && this[3][0] === 0 && this[3][1] === 0 && this[3][2] === 0 && this[3][3] === 1;
+            && this.m30 === 0 && this.m31 === 0 && this.m32 === 0 && this.m33 === 1;
     }
 
     get PROPERTY_PERSPECTIVE(): boolean {
-        return this[0][1] == 0 && this[0][2] == 0 && this[0][3] == 0
-            && this[1][0] == 0 && this[1][2] == 0 && this[1][3] == 0
-            && this[2][0] == 0 && this[2][1] == 0
-            && this[3][0] == 0 && this[3][1] == 0 && this[3][3] == 0
+        return this.m01 == 0 && this.m02 == 0 && this.m03 == 0
+            && this.m10 == 0 && this.m12 == 0 && this.m13 == 0
+            && this.m20 == 0 && this.m21 == 0
+            && this.m30 == 0 && this.m31 == 0 && this.m33 == 0
     }
 
-
+    get 0() {
+        const m = this;
+        return {
+            get 0(): number { return m.m00 },
+            get 1(): number { return m.m01 },
+            get 2(): number { return m.m02 },
+            get 3(): number { return m.m03 },
+            set 0(v: number) { m.m00 = v },
+            set 1(v: number) { m.m01 = v },
+            set 2(v: number) { m.m02 = v },
+            set 3(v: number) { m.m03 = v },
+        }
+    }
+    get 1() {
+        const m = this;
+        return {
+            get 0(): number { return m.m10 },
+            get 1(): number { return m.m11 },
+            get 2(): number { return m.m12 },
+            get 3(): number { return m.m13 },
+            set 0(v: number) { m.m10 = v },
+            set 1(v: number) { m.m11 = v },
+            set 2(v: number) { m.m12 = v },
+            set 3(v: number) { m.m13 = v },
+        }
+    }
+    get 2() {
+        const m = this;
+        return {
+            get 0(): number { return m.m20 },
+            get 1(): number { return m.m21 },
+            get 2(): number { return m.m22 },
+            get 3(): number { return m.m23 },
+            set 0(v: number) { m.m20 = v },
+            set 1(v: number) { m.m21 = v },
+            set 2(v: number) { m.m22 = v },
+            set 3(v: number) { m.m23 = v },
+        }
+    }
+    get 3() {
+        const m = this;
+        return {
+            get 0(): number { return m.m30 },
+            get 1(): number { return m.m31 },
+            get 2(): number { return m.m32 },
+            get 3(): number { return m.m33 },
+            set 0(v: number) { m.m30 = v },
+            set 1(v: number) { m.m31 = v },
+            set 2(v: number) { m.m32 = v },
+            set 3(v: number) { m.m33 = v },
+        }
+    }
 
     /**
      * Reset this matrix to the identity.
@@ -250,10 +295,10 @@ export class Matrix4 {
      * @return this
      */
     public identity(): Matrix4 {
-        this[0][0] = 1; this[1][0] = 0; this[2][0] = 0; this[3][0] = 0;
-        this[0][1] = 0; this[1][1] = 1; this[2][1] = 0; this[3][1] = 0;
-        this[0][2] = 0; this[1][2] = 0; this[2][2] = 1; this[3][2] = 0;
-        this[0][3] = 0; this[1][3] = 0; this[2][3] = 0; this[3][3] = 1;
+        this.m00 = 1; this.m10 = 0; this.m20 = 0; this.m30 = 0;
+        this.m01 = 0; this.m11 = 1; this.m21 = 0; this.m31 = 0;
+        this.m02 = 0; this.m12 = 0; this.m22 = 1; this.m32 = 0;
+        this.m03 = 0; this.m13 = 0; this.m23 = 0; this.m33 = 1;
         return this;
     }
 
@@ -266,10 +311,10 @@ export class Matrix4 {
      */
     public setTransposed(m: Matrix4): Matrix4 {
         return this.set(
-            m[0][0], m[1][0], m[2][0], m[3][0],
-            m[0][1], m[1][1], m[2][1], m[3][1],
-            m[0][2], m[1][2], m[2][2], m[3][2],
-            m[0][3], m[1][3], m[2][3], m[3][3],
+            m.m00, m.m10, m.m20, m.m30,
+            m.m01, m.m11, m.m21, m.m31,
+            m.m02, m.m12, m.m22, m.m32,
+            m.m03, m.m13, m.m23, m.m33,
         )
     }
 
@@ -282,9 +327,9 @@ export class Matrix4 {
      * @return this
      */
     public set3x3(mat: Matrix3) {
-        this[0][0] = mat[0][0]; this[1][0] = mat[1][0]; this[2][0] = mat[2][0];
-        this[0][1] = mat[0][1]; this[1][1] = mat[1][1]; this[2][1] = mat[2][1];
-        this[0][2] = mat[0][2]; this[1][2] = mat[1][2]; this[2][2] = mat[2][2];
+        this.m00 = mat.m00; this.m10 = mat.m10; this.m20 = mat.m20;
+        this.m01 = mat.m01; this.m11 = mat.m11; this.m21 = mat.m21;
+        this.m02 = mat.m02; this.m12 = mat.m12; this.m22 = mat.m22;
         return this;
     }
 
@@ -299,9 +344,9 @@ export class Matrix4 {
      * @return this
      */
     public set4x3(mat: Matrix4): Matrix4 {
-        this[0][0] = mat[0][0]; this[1][0] = mat[1][0]; this[2][0] = mat[2][0]; this[3][0] = mat[3][0];
-        this[0][1] = mat[0][1]; this[1][1] = mat[1][1]; this[2][1] = mat[2][1]; this[3][1] = mat[3][1];
-        this[0][2] = mat[0][2]; this[1][2] = mat[1][2]; this[2][2] = mat[2][2]; this[3][2] = mat[3][2];
+        this.m00 = mat.m00; this.m10 = mat.m10; this.m20 = mat.m20; this.m30 = mat.m30;
+        this.m01 = mat.m01; this.m11 = mat.m11; this.m21 = mat.m21; this.m31 = mat.m31;
+        this.m02 = mat.m02; this.m12 = mat.m12; this.m22 = mat.m22; this.m32 = mat.m32;
         return this;
     }
 
@@ -417,22 +462,22 @@ export class Matrix4 {
     public mul0(right: Matrix4, dest?: Matrix4) {
         dest = dest ?? this;
         return dest.set(
-            this[0][0] * right[0][0] + this[1][0] * right[0][1] + this[2][0] * right[0][2] + this[3][0] * right[0][3],
-            this[0][1] * right[0][0] + this[1][1] * right[0][1] + this[2][1] * right[0][2] + this[3][1] * right[0][3],
-            this[0][2] * right[0][0] + this[1][2] * right[0][1] + this[2][2] * right[0][2] + this[3][2] * right[0][3],
-            this[0][3] * right[0][0] + this[1][3] * right[0][1] + this[2][3] * right[0][2] + this[3][3] * right[0][3],
-            this[0][0] * right[1][0] + this[1][0] * right[1][1] + this[2][0] * right[1][2] + this[3][0] * right[1][3],
-            this[0][1] * right[1][0] + this[1][1] * right[1][1] + this[2][1] * right[1][2] + this[3][1] * right[1][3],
-            this[0][2] * right[1][0] + this[1][2] * right[1][1] + this[2][2] * right[1][2] + this[3][2] * right[1][3],
-            this[0][3] * right[1][0] + this[1][3] * right[1][1] + this[2][3] * right[1][2] + this[3][3] * right[1][3],
-            this[0][0] * right[2][0] + this[1][0] * right[2][1] + this[2][0] * right[2][2] + this[3][0] * right[2][3],
-            this[0][1] * right[2][0] + this[1][1] * right[2][1] + this[2][1] * right[2][2] + this[3][1] * right[2][3],
-            this[0][2] * right[2][0] + this[1][2] * right[2][1] + this[2][2] * right[2][2] + this[3][2] * right[2][3],
-            this[0][3] * right[2][0] + this[1][3] * right[2][1] + this[2][3] * right[2][2] + this[3][3] * right[2][3],
-            this[0][0] * right[3][0] + this[1][0] * right[3][1] + this[2][0] * right[3][2] + this[3][0] * right[3][3],
-            this[0][1] * right[3][0] + this[1][1] * right[3][1] + this[2][1] * right[3][2] + this[3][1] * right[3][3],
-            this[0][2] * right[3][0] + this[1][2] * right[3][1] + this[2][2] * right[3][2] + this[3][2] * right[3][3],
-            this[0][3] * right[3][0] + this[1][3] * right[3][1] + this[2][3] * right[3][2] + this[3][3] * right[3][3],
+            this.m00 * right.m00 + this.m10 * right.m01 + this.m20 * right.m02 + this.m30 * right.m03,
+            this.m01 * right.m00 + this.m11 * right.m01 + this.m21 * right.m02 + this.m31 * right.m03,
+            this.m02 * right.m00 + this.m12 * right.m01 + this.m22 * right.m02 + this.m32 * right.m03,
+            this.m03 * right.m00 + this.m13 * right.m01 + this.m23 * right.m02 + this.m33 * right.m03,
+            this.m00 * right.m10 + this.m10 * right.m11 + this.m20 * right.m12 + this.m30 * right.m13,
+            this.m01 * right.m10 + this.m11 * right.m11 + this.m21 * right.m12 + this.m31 * right.m13,
+            this.m02 * right.m10 + this.m12 * right.m11 + this.m22 * right.m12 + this.m32 * right.m13,
+            this.m03 * right.m10 + this.m13 * right.m11 + this.m23 * right.m12 + this.m33 * right.m13,
+            this.m00 * right.m20 + this.m10 * right.m21 + this.m20 * right.m22 + this.m30 * right.m23,
+            this.m01 * right.m20 + this.m11 * right.m21 + this.m21 * right.m22 + this.m31 * right.m23,
+            this.m02 * right.m20 + this.m12 * right.m21 + this.m22 * right.m22 + this.m32 * right.m23,
+            this.m03 * right.m20 + this.m13 * right.m21 + this.m23 * right.m22 + this.m33 * right.m23,
+            this.m00 * right.m30 + this.m10 * right.m31 + this.m20 * right.m32 + this.m30 * right.m33,
+            this.m01 * right.m30 + this.m11 * right.m31 + this.m21 * right.m32 + this.m31 * right.m33,
+            this.m02 * right.m30 + this.m12 * right.m31 + this.m22 * right.m32 + this.m32 * right.m33,
+            this.m03 * right.m30 + this.m13 * right.m31 + this.m23 * right.m32 + this.m33 * right.m33,
         );
     }
 
@@ -443,21 +488,21 @@ export class Matrix4 {
         r30: number, r31: number, r32: number, r33: number, dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            this[0][0] * r00 + this[1][0] * r01 + this[2][0] * r02 + this[3][0] * r03,
-            this[0][1] * r00 + this[1][1] * r01 + this[2][1] * r02 + this[3][1] * r03,
-            this[0][2] * r00 + this[1][2] * r01 + this[2][2] * r02 + this[3][2] * r03,
+            this.m00 * r00 + this.m10 * r01 + this.m20 * r02 + this.m30 * r03,
+            this.m01 * r00 + this.m11 * r01 + this.m21 * r02 + this.m31 * r03,
+            this.m02 * r00 + this.m12 * r01 + this.m22 * r02 + this.m32 * r03,
             r03,
-            this[0][0] * r10 + this[1][0] * r11 + this[2][0] * r12 + this[3][0] * r13,
-            this[0][1] * r10 + this[1][1] * r11 + this[2][1] * r12 + this[3][1] * r13,
-            this[0][2] * r10 + this[1][2] * r11 + this[2][2] * r12 + this[3][2] * r13,
+            this.m00 * r10 + this.m10 * r11 + this.m20 * r12 + this.m30 * r13,
+            this.m01 * r10 + this.m11 * r11 + this.m21 * r12 + this.m31 * r13,
+            this.m02 * r10 + this.m12 * r11 + this.m22 * r12 + this.m32 * r13,
             r13,
-            this[0][0] * r20 + this[1][0] * r21 + this[2][0] * r22 + this[3][0] * r23,
-            this[0][1] * r20 + this[1][1] * r21 + this[2][1] * r22 + this[3][1] * r23,
-            this[0][2] * r20 + this[1][2] * r21 + this[2][2] * r22 + this[3][2] * r23,
+            this.m00 * r20 + this.m10 * r21 + this.m20 * r22 + this.m30 * r23,
+            this.m01 * r20 + this.m11 * r21 + this.m21 * r22 + this.m31 * r23,
+            this.m02 * r20 + this.m12 * r21 + this.m22 * r22 + this.m32 * r23,
             r23,
-            this[0][0] * r30 + this[1][0] * r31 + this[2][0] * r32 + this[3][0] * r33,
-            this[0][1] * r30 + this[1][1] * r31 + this[2][1] * r32 + this[3][1] * r33,
-            this[0][2] * r30 + this[1][2] * r31 + this[2][2] * r32 + this[3][2] * r33,
+            this.m00 * r30 + this.m10 * r31 + this.m20 * r32 + this.m30 * r33,
+            this.m01 * r30 + this.m11 * r31 + this.m21 * r32 + this.m31 * r33,
+            this.m02 * r30 + this.m12 * r31 + this.m22 * r32 + this.m32 * r33,
             r33,
         )
     }
@@ -468,22 +513,22 @@ export class Matrix4 {
         r30: number, r31: number, r32: number, r33: number, dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            this[0][0] * r00 + this[1][0] * r01 + this[2][0] * r02 + this[3][0] * r03,
-            this[0][1] * r00 + this[1][1] * r01 + this[2][1] * r02 + this[3][1] * r03,
-            this[0][2] * r00 + this[1][2] * r01 + this[2][2] * r02 + this[3][2] * r03,
-            this[0][3] * r00 + this[1][3] * r01 + this[2][3] * r02 + this[3][3] * r03,
-            this[0][0] * r10 + this[1][0] * r11 + this[2][0] * r12 + this[3][0] * r13,
-            this[0][1] * r10 + this[1][1] * r11 + this[2][1] * r12 + this[3][1] * r13,
-            this[0][2] * r10 + this[1][2] * r11 + this[2][2] * r12 + this[3][2] * r13,
-            this[0][3] * r10 + this[1][3] * r11 + this[2][3] * r12 + this[3][3] * r13,
-            this[0][0] * r20 + this[1][0] * r21 + this[2][0] * r22 + this[3][0] * r23,
-            this[0][1] * r20 + this[1][1] * r21 + this[2][1] * r22 + this[3][1] * r23,
-            this[0][2] * r20 + this[1][2] * r21 + this[2][2] * r22 + this[3][2] * r23,
-            this[0][3] * r20 + this[1][3] * r21 + this[2][3] * r22 + this[3][3] * r23,
-            this[0][0] * r30 + this[1][0] * r31 + this[2][0] * r32 + this[3][0] * r33,
-            this[0][1] * r30 + this[1][1] * r31 + this[2][1] * r32 + this[3][1] * r33,
-            this[0][2] * r30 + this[1][2] * r31 + this[2][2] * r32 + this[3][2] * r33,
-            this[0][3] * r30 + this[1][3] * r31 + this[2][3] * r32 + this[3][3] * r33,
+            this.m00 * r00 + this.m10 * r01 + this.m20 * r02 + this.m30 * r03,
+            this.m01 * r00 + this.m11 * r01 + this.m21 * r02 + this.m31 * r03,
+            this.m02 * r00 + this.m12 * r01 + this.m22 * r02 + this.m32 * r03,
+            this.m03 * r00 + this.m13 * r01 + this.m23 * r02 + this.m33 * r03,
+            this.m00 * r10 + this.m10 * r11 + this.m20 * r12 + this.m30 * r13,
+            this.m01 * r10 + this.m11 * r11 + this.m21 * r12 + this.m31 * r13,
+            this.m02 * r10 + this.m12 * r11 + this.m22 * r12 + this.m32 * r13,
+            this.m03 * r10 + this.m13 * r11 + this.m23 * r12 + this.m33 * r13,
+            this.m00 * r20 + this.m10 * r21 + this.m20 * r22 + this.m30 * r23,
+            this.m01 * r20 + this.m11 * r21 + this.m21 * r22 + this.m31 * r23,
+            this.m02 * r20 + this.m12 * r21 + this.m22 * r22 + this.m32 * r23,
+            this.m03 * r20 + this.m13 * r21 + this.m23 * r22 + this.m33 * r23,
+            this.m00 * r30 + this.m10 * r31 + this.m20 * r32 + this.m30 * r33,
+            this.m01 * r30 + this.m11 * r31 + this.m21 * r32 + this.m31 * r33,
+            this.m02 * r30 + this.m12 * r31 + this.m22 * r32 + this.m32 * r33,
+            this.m03 * r30 + this.m13 * r31 + this.m23 * r32 + this.m33 * r33,
         );
     }
 
@@ -530,20 +575,20 @@ export class Matrix4 {
         r20: number, r21: number, r22: number, dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            this[0][0] * r00 + this[1][0] * r01 + this[2][0] * r02,
-            this[0][1] * r00 + this[1][1] * r01 + this[2][1] * r02,
-            this[0][2] * r00 + this[1][2] * r01 + this[2][2] * r02,
-            this[0][3] * r00 + this[1][3] * r01 + this[2][3] * r02,
-            this[0][0] * r10 + this[1][0] * r11 + this[2][0] * r12,
-            this[0][1] * r10 + this[1][1] * r11 + this[2][1] * r12,
-            this[0][2] * r10 + this[1][2] * r11 + this[2][2] * r12,
-            this[0][3] * r10 + this[1][3] * r11 + this[2][3] * r12,
-            this[0][0] * r20 + this[1][0] * r21 + this[2][0] * r22,
-            this[0][1] * r20 + this[1][1] * r21 + this[2][1] * r22,
-            this[0][2] * r20 + this[1][2] * r21 + this[2][2] * r22,
-            this[0][3] * r20 + this[1][3] * r21 + this[2][3] * r22,
+            this.m00 * r00 + this.m10 * r01 + this.m20 * r02,
+            this.m01 * r00 + this.m11 * r01 + this.m21 * r02,
+            this.m02 * r00 + this.m12 * r01 + this.m22 * r02,
+            this.m03 * r00 + this.m13 * r01 + this.m23 * r02,
+            this.m00 * r10 + this.m10 * r11 + this.m20 * r12,
+            this.m01 * r10 + this.m11 * r11 + this.m21 * r12,
+            this.m02 * r10 + this.m12 * r11 + this.m22 * r12,
+            this.m03 * r10 + this.m13 * r11 + this.m23 * r12,
+            this.m00 * r20 + this.m10 * r21 + this.m20 * r22,
+            this.m01 * r20 + this.m11 * r21 + this.m21 * r22,
+            this.m02 * r20 + this.m12 * r21 + this.m22 * r22,
+            this.m03 * r20 + this.m13 * r21 + this.m23 * r22,
 
-            this[3][0], this[3][1], this[3][2], this[3][3],
+            this.m30, this.m31, this.m32, this.m33,
         )
     }
 
@@ -584,22 +629,22 @@ export class Matrix4 {
     public mulLocalAffine(left: Matrix4, dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            left[0][0] * this[0][0] + left[1][0] * this[0][1] + left[2][0] * this[0][2],
-            left[0][1] * this[0][0] + left[1][1] * this[0][1] + left[2][1] * this[0][2],
-            left[0][2] * this[0][0] + left[1][2] * this[0][1] + left[2][2] * this[0][2],
-            left[0][3],
-            left[0][0] * this[1][0] + left[1][0] * this[1][1] + left[2][0] * this[1][2],
-            left[0][1] * this[1][0] + left[1][1] * this[1][1] + left[2][1] * this[1][2],
-            left[0][2] * this[1][0] + left[1][2] * this[1][1] + left[2][2] * this[1][2],
-            left[1][3],
-            left[0][0] * this[2][0] + left[1][0] * this[2][1] + left[2][0] * this[2][2],
-            left[0][1] * this[2][0] + left[1][1] * this[2][1] + left[2][1] * this[2][2],
-            left[0][2] * this[2][0] + left[1][2] * this[2][1] + left[2][2] * this[2][2],
-            left[2][3],
-            left[0][0] * this[3][0] + left[1][0] * this[3][1] + left[2][0] * this[3][2] + left[3][0],
-            left[0][1] * this[3][0] + left[1][1] * this[3][1] + left[2][1] * this[3][2] + left[3][1],
-            left[0][2] * this[3][0] + left[1][2] * this[3][1] + left[2][2] * this[3][2] + left[3][2],
-            left[3][3],
+            left.m00 * this.m00 + left.m10 * this.m01 + left.m20 * this.m02,
+            left.m01 * this.m00 + left.m11 * this.m01 + left.m21 * this.m02,
+            left.m02 * this.m00 + left.m12 * this.m01 + left.m22 * this.m02,
+            left.m03,
+            left.m00 * this.m10 + left.m10 * this.m11 + left.m20 * this.m12,
+            left.m01 * this.m10 + left.m11 * this.m11 + left.m21 * this.m12,
+            left.m02 * this.m10 + left.m12 * this.m11 + left.m22 * this.m12,
+            left.m13,
+            left.m00 * this.m20 + left.m10 * this.m21 + left.m20 * this.m22,
+            left.m01 * this.m20 + left.m11 * this.m21 + left.m21 * this.m22,
+            left.m02 * this.m20 + left.m12 * this.m21 + left.m22 * this.m22,
+            left.m23,
+            left.m00 * this.m30 + left.m10 * this.m31 + left.m20 * this.m32 + left.m30,
+            left.m01 * this.m30 + left.m11 * this.m31 + left.m21 * this.m32 + left.m31,
+            left.m02 * this.m30 + left.m12 * this.m31 + left.m22 * this.m32 + left.m32,
+            left.m33,
         )
         // ._properties(PROPERTY_AFFINE);
         // return dest;
@@ -621,10 +666,10 @@ export class Matrix4 {
     public mulPerspectiveAffine(view: Matrix4, dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            this[0][0] * view[0][0], this[1][1] * view[0][1], this[2][2] * view[0][2], this[2][3] * view[0][2],
-            this[0][0] * view[1][0], this[1][1] * view[1][1], this[2][2] * view[1][2], this[2][3] * view[1][2],
-            this[0][0] * view[2][0], this[1][1] * view[2][1], this[2][2] * view[2][2], this[2][3] * view[2][2],
-            this[0][0] * view[3][0], this[1][1] * view[3][1], this[2][2] * view[3][2] + this[3][2], this[2][3] * view[3][2],
+            this.m00 * view.m00, this.m11 * view.m01, this.m22 * view.m02, this.m23 * view.m02,
+            this.m00 * view.m10, this.m11 * view.m11, this.m22 * view.m12, this.m23 * view.m12,
+            this.m00 * view.m20, this.m11 * view.m21, this.m22 * view.m22, this.m23 * view.m22,
+            this.m00 * view.m30, this.m11 * view.m31, this.m22 * view.m32 + this.m32, this.m23 * view.m32,
         );
         // ._properties(0);
     }
@@ -647,22 +692,22 @@ export class Matrix4 {
     public mulAffineR(right: Matrix4, dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            this[0][0] * right[0][0] + this[1][0] * right[0][1] + this[2][0] * right[0][2],
-            this[0][1] * right[0][0] + this[1][1] * right[0][1] + this[2][1] * right[0][2],
-            this[0][2] * right[0][0] + this[1][2] * right[0][1] + this[2][2] * right[0][2],
-            this[0][3] * right[0][0] + this[1][3] * right[0][1] + this[2][3] * right[0][2],
-            this[0][0] * right[1][0] + this[1][0] * right[1][1] + this[2][0] * right[1][2],
-            this[0][1] * right[1][0] + this[1][1] * right[1][1] + this[2][1] * right[1][2],
-            this[0][2] * right[1][0] + this[1][2] * right[1][1] + this[2][2] * right[1][2],
-            this[0][3] * right[1][0] + this[1][3] * right[1][1] + this[2][3] * right[1][2],
-            this[0][0] * right[2][0] + this[1][0] * right[2][1] + this[2][0] * right[2][2],
-            this[0][1] * right[2][0] + this[1][1] * right[2][1] + this[2][1] * right[2][2],
-            this[0][2] * right[2][0] + this[1][2] * right[2][1] + this[2][2] * right[2][2],
-            this[0][3] * right[2][0] + this[1][3] * right[2][1] + this[2][3] * right[2][2],
-            this[0][0] * right[3][0] + this[1][0] * right[3][1] + this[2][0] * right[3][2] + this[3][0],
-            this[0][1] * right[3][0] + this[1][1] * right[3][1] + this[2][1] * right[3][2] + this[3][1],
-            this[0][2] * right[3][0] + this[1][2] * right[3][1] + this[2][2] * right[3][2] + this[3][2],
-            this[0][3] * right[3][0] + this[1][3] * right[3][1] + this[2][3] * right[3][2] + this[3][3],
+            this.m00 * right.m00 + this.m10 * right.m01 + this.m20 * right.m02,
+            this.m01 * right.m00 + this.m11 * right.m01 + this.m21 * right.m02,
+            this.m02 * right.m00 + this.m12 * right.m01 + this.m22 * right.m02,
+            this.m03 * right.m00 + this.m13 * right.m01 + this.m23 * right.m02,
+            this.m00 * right.m10 + this.m10 * right.m11 + this.m20 * right.m12,
+            this.m01 * right.m10 + this.m11 * right.m11 + this.m21 * right.m12,
+            this.m02 * right.m10 + this.m12 * right.m11 + this.m22 * right.m12,
+            this.m03 * right.m10 + this.m13 * right.m11 + this.m23 * right.m12,
+            this.m00 * right.m20 + this.m10 * right.m21 + this.m20 * right.m22,
+            this.m01 * right.m20 + this.m11 * right.m21 + this.m21 * right.m22,
+            this.m02 * right.m20 + this.m12 * right.m21 + this.m22 * right.m22,
+            this.m03 * right.m20 + this.m13 * right.m21 + this.m23 * right.m22,
+            this.m00 * right.m30 + this.m10 * right.m31 + this.m20 * right.m32 + this.m30,
+            this.m01 * right.m30 + this.m11 * right.m31 + this.m21 * right.m32 + this.m31,
+            this.m02 * right.m30 + this.m12 * right.m31 + this.m22 * right.m32 + this.m32,
+            this.m03 * right.m30 + this.m13 * right.m31 + this.m23 * right.m32 + this.m33,
         )
         // ._properties(: properties & ~(: PROPERTY_IDENTITY | PROPERTY_PERSPECTIVE | PROPERTY_TRANSLATION | PROPERTY_ORTHONORMAL));
         // return dest;
@@ -688,44 +733,44 @@ export class Matrix4 {
      */
     public mulAffine(right: Matrix4, dest?: Matrix4): Matrix4 {
         return dest.set(
-            this[0][0] * right[0][0] + this[1][0] * right[0][1] + this[2][0] * right[0][2],
-            this[0][1] * right[0][0] + this[1][1] * right[0][1] + this[2][1] * right[0][2],
-            this[0][2] * right[0][0] + this[1][2] * right[0][1] + this[2][2] * right[0][2],
-            this[0][3],
-            this[0][0] * right[1][0] + this[1][0] * right[1][1] + this[2][0] * right[1][2],
-            this[0][1] * right[1][0] + this[1][1] * right[1][1] + this[2][1] * right[1][2],
-            this[0][2] * right[1][0] + this[1][2] * right[1][1] + this[2][2] * right[1][2],
-            this[1][3],
-            this[0][0] * right[2][0] + this[1][0] * right[2][1] + this[2][0] * right[2][2],
-            this[0][1] * right[2][0] + this[1][1] * right[2][1] + this[2][1] * right[2][2],
-            this[0][2] * right[2][0] + this[1][2] * right[2][1] + this[2][2] * right[2][2],
-            this[2][3],
-            this[0][0] * right[3][0] + this[1][0] * right[3][1] + this[2][0] * right[3][2] + this[3][0],
-            this[0][1] * right[3][0] + this[1][1] * right[3][1] + this[2][1] * right[3][2] + this[3][1],
-            this[0][2] * right[3][0] + this[1][2] * right[3][1] + this[2][2] * right[3][2] + this[3][2],
-            this[3][3],
+            this.m00 * right.m00 + this.m10 * right.m01 + this.m20 * right.m02,
+            this.m01 * right.m00 + this.m11 * right.m01 + this.m21 * right.m02,
+            this.m02 * right.m00 + this.m12 * right.m01 + this.m22 * right.m02,
+            this.m03,
+            this.m00 * right.m10 + this.m10 * right.m11 + this.m20 * right.m12,
+            this.m01 * right.m10 + this.m11 * right.m11 + this.m21 * right.m12,
+            this.m02 * right.m10 + this.m12 * right.m11 + this.m22 * right.m12,
+            this.m13,
+            this.m00 * right.m20 + this.m10 * right.m21 + this.m20 * right.m22,
+            this.m01 * right.m20 + this.m11 * right.m21 + this.m21 * right.m22,
+            this.m02 * right.m20 + this.m12 * right.m21 + this.m22 * right.m22,
+            this.m23,
+            this.m00 * right.m30 + this.m10 * right.m31 + this.m20 * right.m32 + this.m30,
+            this.m01 * right.m30 + this.m11 * right.m31 + this.m21 * right.m32 + this.m31,
+            this.m02 * right.m30 + this.m12 * right.m31 + this.m22 * right.m32 + this.m32,
+            this.m33,
         )
         // ._properties(: PROPERTY_AFFINE | (this.properties & right.properties() & PROPERTY_ORTHONORMAL));
     }
 
     public mulTranslationAffine(right: Matrix4, dest: Matrix4): Matrix4 {
         return dest.set(
-            right[0][0],
-            right[0][1],
-            right[0][2],
-            this[0][3],
-            right[1][0],
-            right[1][1],
-            right[1][2],
-            this[1][3],
-            right[2][0],
-            right[2][1],
-            right[2][2],
-            this[2][3],
-            right[3][0] + this[3][0],
-            right[3][1] + this[3][1],
-            right[3][2] + this[3][2],
-            this[3][3],
+            right.m00,
+            right.m01,
+            right.m02,
+            this.m03,
+            right.m10,
+            right.m11,
+            right.m12,
+            this.m13,
+            right.m20,
+            right.m21,
+            right.m22,
+            this.m23,
+            right.m30 + this.m30,
+            right.m31 + this.m31,
+            right.m32 + this.m32,
+            this.m33,
         );
         // ._properties(: PROPERTY_AFFINE | (right.properties() & PROPERTY_ORTHONORMAL));
     }
@@ -745,21 +790,21 @@ export class Matrix4 {
     public mulOrthoAffine(view: Matrix4, dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            this[0][0] * view[0][0],
-            this[1][1] * view[0][1],
-            this[2][2] * view[0][2],
+            this.m00 * view.m00,
+            this.m11 * view.m01,
+            this.m22 * view.m02,
             0.0,
-            this[0][0] * view[1][0],
-            this[1][1] * view[1][1],
-            this[2][2] * view[1][2],
+            this.m00 * view.m10,
+            this.m11 * view.m11,
+            this.m22 * view.m12,
             0.0,
-            this[0][0] * view[2][0],
-            this[1][1] * view[2][1],
-            this[2][2] * view[2][2],
+            this.m00 * view.m20,
+            this.m11 * view.m21,
+            this.m22 * view.m22,
             0.0,
-            this[0][0] * view[3][0] + this[3][0],
-            this[1][1] * view[3][1] + this[3][1],
-            this[2][2] * view[3][2] + this[3][2],
+            this.m00 * view.m30 + this.m30,
+            this.m11 * view.m31 + this.m31,
+            this.m22 * view.m32 + this.m32,
             1.0,
         )
         // ._properties(PROPERTY_AFFINE);
@@ -781,22 +826,22 @@ export class Matrix4 {
      */
     public fma4x3(other: Matrix4, otherFactor: number, dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
-        dest[0][0] = other[0][0] * otherFactor + this[0][0];
-        dest[0][1] = other[0][1] * otherFactor + this[0][1];
-        dest[0][2] = other[0][2] * otherFactor + this[0][2];
-        dest[0][3] = this[0][3];
-        dest[1][0] = other[1][0] * otherFactor + this[1][0];
-        dest[1][1] = other[1][1] * otherFactor + this[1][1];
-        dest[1][2] = other[1][2] * otherFactor + this[1][2];
-        dest[1][3] = this[1][3];
-        dest[2][0] = other[2][0] * otherFactor + this[2][0];
-        dest[2][1] = other[2][1] * otherFactor + this[2][1];
-        dest[2][2] = other[2][2] * otherFactor + this[2][2];
-        dest[2][3] = this[2][3];
-        dest[3][0] = other[3][0] * otherFactor + this[3][0];
-        dest[3][1] = other[3][1] * otherFactor + this[3][1];
-        dest[3][2] = other[3][2] * otherFactor + this[3][2];
-        dest[3][3] = this[3][3];
+        dest.m00 = other.m00 * otherFactor + this.m00;
+        dest.m01 = other.m01 * otherFactor + this.m01;
+        dest.m02 = other.m02 * otherFactor + this.m02;
+        dest.m03 = this.m03;
+        dest.m10 = other.m10 * otherFactor + this.m10;
+        dest.m11 = other.m11 * otherFactor + this.m11;
+        dest.m12 = other.m12 * otherFactor + this.m12;
+        dest.m13 = this.m13;
+        dest.m20 = other.m20 * otherFactor + this.m20;
+        dest.m21 = other.m21 * otherFactor + this.m21;
+        dest.m22 = other.m22 * otherFactor + this.m22;
+        dest.m23 = this.m23;
+        dest.m30 = other.m30 * otherFactor + this.m30;
+        dest.m31 = other.m31 * otherFactor + this.m31;
+        dest.m32 = other.m32 * otherFactor + this.m32;
+        dest.m33 = this.m33;
         return dest;
     }
 
@@ -809,22 +854,22 @@ export class Matrix4 {
      */
     public add(other: Matrix4, dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
-        dest[0][0] = this[0][0] + other[0][0]
-        dest[0][1] = this[0][1] + other[0][1]
-        dest[0][2] = this[0][2] + other[0][2]
-        dest[0][3] = this[0][3] + other[0][3]
-        dest[1][0] = this[1][0] + other[1][0]
-        dest[1][1] = this[1][1] + other[1][1]
-        dest[1][2] = this[1][2] + other[1][2]
-        dest[1][3] = this[1][3] + other[1][3]
-        dest[2][0] = this[2][0] + other[2][0]
-        dest[2][1] = this[2][1] + other[2][1]
-        dest[2][2] = this[2][2] + other[2][2]
-        dest[2][3] = this[2][3] + other[2][3]
-        dest[3][0] = this[3][0] + other[3][0]
-        dest[3][1] = this[3][1] + other[3][1]
-        dest[3][2] = this[3][2] + other[3][2]
-        dest[3][3] = this[3][3] + other[3][3]
+        dest.m00 = this.m00 + other.m00
+        dest.m01 = this.m01 + other.m01
+        dest.m02 = this.m02 + other.m02
+        dest.m03 = this.m03 + other.m03
+        dest.m10 = this.m10 + other.m10
+        dest.m11 = this.m11 + other.m11
+        dest.m12 = this.m12 + other.m12
+        dest.m13 = this.m13 + other.m13
+        dest.m20 = this.m20 + other.m20
+        dest.m21 = this.m21 + other.m21
+        dest.m22 = this.m22 + other.m22
+        dest.m23 = this.m23 + other.m23
+        dest.m30 = this.m30 + other.m30
+        dest.m31 = this.m31 + other.m31
+        dest.m32 = this.m32 + other.m32
+        dest.m33 = this.m33 + other.m33
         return dest;
     }
 
@@ -837,22 +882,22 @@ export class Matrix4 {
      */
     public sub(subtrahend: Matrix4, dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
-        dest[0][0] = this[0][0] - subtrahend[0][0]
-        dest[0][1] = this[0][1] - subtrahend[0][1]
-        dest[0][2] = this[0][2] - subtrahend[0][2]
-        dest[0][3] = this[0][3] - subtrahend[0][3]
-        dest[1][0] = this[1][0] - subtrahend[1][0]
-        dest[1][1] = this[1][1] - subtrahend[1][1]
-        dest[1][2] = this[1][2] - subtrahend[1][2]
-        dest[1][3] = this[1][3] - subtrahend[1][3]
-        dest[2][0] = this[2][0] - subtrahend[2][0]
-        dest[2][1] = this[2][1] - subtrahend[2][1]
-        dest[2][2] = this[2][2] - subtrahend[2][2]
-        dest[2][3] = this[2][3] - subtrahend[2][3]
-        dest[3][0] = this[3][0] - subtrahend[3][0]
-        dest[3][1] = this[3][1] - subtrahend[3][1]
-        dest[3][2] = this[3][2] - subtrahend[3][2]
-        dest[3][3] = this[3][3] - subtrahend[3][3]
+        dest.m00 = this.m00 - subtrahend.m00
+        dest.m01 = this.m01 - subtrahend.m01
+        dest.m02 = this.m02 - subtrahend.m02
+        dest.m03 = this.m03 - subtrahend.m03
+        dest.m10 = this.m10 - subtrahend.m10
+        dest.m11 = this.m11 - subtrahend.m11
+        dest.m12 = this.m12 - subtrahend.m12
+        dest.m13 = this.m13 - subtrahend.m13
+        dest.m20 = this.m20 - subtrahend.m20
+        dest.m21 = this.m21 - subtrahend.m21
+        dest.m22 = this.m22 - subtrahend.m22
+        dest.m23 = this.m23 - subtrahend.m23
+        dest.m30 = this.m30 - subtrahend.m30
+        dest.m31 = this.m31 - subtrahend.m31
+        dest.m32 = this.m32 - subtrahend.m32
+        dest.m33 = this.m33 - subtrahend.m33
         return dest;
     }
 
@@ -865,22 +910,22 @@ export class Matrix4 {
      */
     public mulComponentWise(other: Matrix4, dest?: Matrix4) {
         dest = dest ?? this;
-        dest[0][0] = this[0][0] * other[0][0];
-        dest[0][1] = this[0][1] * other[0][1];
-        dest[0][2] = this[0][2] * other[0][2];
-        dest[0][3] = this[0][3] * other[0][3];
-        dest[1][0] = this[1][0] * other[1][0];
-        dest[1][1] = this[1][1] * other[1][1];
-        dest[1][2] = this[1][2] * other[1][2];
-        dest[1][3] = this[1][3] * other[1][3];
-        dest[2][0] = this[2][0] * other[2][0];
-        dest[2][1] = this[2][1] * other[2][1];
-        dest[2][2] = this[2][2] * other[2][2];
-        dest[2][3] = this[2][3] * other[2][3];
-        dest[3][0] = this[3][0] * other[3][0];
-        dest[3][1] = this[3][1] * other[3][1];
-        dest[3][2] = this[3][2] * other[3][2];
-        dest[3][3] = this[3][3] * other[3][3];
+        dest.m00 = this.m00 * other.m00;
+        dest.m01 = this.m01 * other.m01;
+        dest.m02 = this.m02 * other.m02;
+        dest.m03 = this.m03 * other.m03;
+        dest.m10 = this.m10 * other.m10;
+        dest.m11 = this.m11 * other.m11;
+        dest.m12 = this.m12 * other.m12;
+        dest.m13 = this.m13 * other.m13;
+        dest.m20 = this.m20 * other.m20;
+        dest.m21 = this.m21 * other.m21;
+        dest.m22 = this.m22 * other.m22;
+        dest.m23 = this.m23 * other.m23;
+        dest.m30 = this.m30 * other.m30;
+        dest.m31 = this.m31 * other.m31;
+        dest.m32 = this.m32 * other.m32;
+        dest.m33 = this.m33 * other.m33;
         return dest;
     }
 
@@ -893,22 +938,22 @@ export class Matrix4 {
      */
     public add4x3(other: Matrix4, dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
-        dest[0][0] = this[0][0] + other[0][0];
-        dest[0][1] = this[0][1] + other[0][1];
-        dest[0][2] = this[0][2] + other[0][2];
-        dest[0][3] = this[0][3];
-        dest[1][0] = this[1][0] + other[1][0];
-        dest[1][1] = this[1][1] + other[1][1];
-        dest[1][2] = this[1][2] + other[1][2];
-        dest[1][3] = this[1][3];
-        dest[2][0] = this[2][0] + other[2][0];
-        dest[2][1] = this[2][1] + other[2][1];
-        dest[2][2] = this[2][2] + other[2][2];
-        dest[2][3] = this[2][3];
-        dest[3][0] = this[3][0] + other[3][0];
-        dest[3][1] = this[3][1] + other[3][1];
-        dest[3][2] = this[3][2] + other[3][2];
-        dest[3][3] = this[3][3];
+        dest.m00 = this.m00 + other.m00;
+        dest.m01 = this.m01 + other.m01;
+        dest.m02 = this.m02 + other.m02;
+        dest.m03 = this.m03;
+        dest.m10 = this.m10 + other.m10;
+        dest.m11 = this.m11 + other.m11;
+        dest.m12 = this.m12 + other.m12;
+        dest.m13 = this.m13;
+        dest.m20 = this.m20 + other.m20;
+        dest.m21 = this.m21 + other.m21;
+        dest.m22 = this.m22 + other.m22;
+        dest.m23 = this.m23;
+        dest.m30 = this.m30 + other.m30;
+        dest.m31 = this.m31 + other.m31;
+        dest.m32 = this.m32 + other.m32;
+        dest.m33 = this.m33;
         return dest;
     }
 
@@ -921,22 +966,22 @@ export class Matrix4 {
      */
     public sub4x3(subtrahend: Matrix4, dest: Matrix4): Matrix4 {
         dest = dest ?? this;
-        dest[0][0] = this[0][0] - subtrahend[0][0];
-        dest[0][1] = this[0][1] - subtrahend[0][1];
-        dest[0][2] = this[0][2] - subtrahend[0][2];
-        dest[0][3] = this[0][3];
-        dest[1][0] = this[1][0] - subtrahend[1][0];
-        dest[1][1] = this[1][1] - subtrahend[1][1];
-        dest[1][2] = this[1][2] - subtrahend[1][2];
-        dest[1][3] = this[1][3];
-        dest[2][0] = this[2][0] - subtrahend[2][0];
-        dest[2][1] = this[2][1] - subtrahend[2][1];
-        dest[2][2] = this[2][2] - subtrahend[2][2];
-        dest[2][3] = this[2][3];
-        dest[3][0] = this[3][0] - subtrahend[3][0];
-        dest[3][1] = this[3][1] - subtrahend[3][1];
-        dest[3][2] = this[3][2] - subtrahend[3][2];
-        dest[3][3] = this[3][3];
+        dest.m00 = this.m00 - subtrahend.m00;
+        dest.m01 = this.m01 - subtrahend.m01;
+        dest.m02 = this.m02 - subtrahend.m02;
+        dest.m03 = this.m03;
+        dest.m10 = this.m10 - subtrahend.m10;
+        dest.m11 = this.m11 - subtrahend.m11;
+        dest.m12 = this.m12 - subtrahend.m12;
+        dest.m13 = this.m13;
+        dest.m20 = this.m20 - subtrahend.m20;
+        dest.m21 = this.m21 - subtrahend.m21;
+        dest.m22 = this.m22 - subtrahend.m22;
+        dest.m23 = this.m23;
+        dest.m30 = this.m30 - subtrahend.m30;
+        dest.m31 = this.m31 - subtrahend.m31;
+        dest.m32 = this.m32 - subtrahend.m32;
+        dest.m33 = this.m33;
         return dest;
     }
 
@@ -949,22 +994,22 @@ export class Matrix4 {
      */
     public mul4x3ComponentWise(other: Matrix4, dest: Matrix4): Matrix4 {
         dest = dest ?? this;
-        dest[0][0] = this[0][0] * other[0][0];
-        dest[0][1] = this[0][1] * other[0][1];
-        dest[0][2] = this[0][2] * other[0][2];
-        dest[0][3] = this[0][3];
-        dest[1][0] = this[1][0] * other[1][0];
-        dest[1][1] = this[1][1] * other[1][1];
-        dest[1][2] = this[1][2] * other[1][2];
-        dest[1][3] = this[1][3];
-        dest[2][0] = this[2][0] * other[2][0];
-        dest[2][1] = this[2][1] * other[2][1];
-        dest[2][2] = this[2][2] * other[2][2];
-        dest[2][3] = this[2][3];
-        dest[3][0] = this[3][0] * other[3][0];
-        dest[3][1] = this[3][1] * other[3][1];
-        dest[3][2] = this[3][2] * other[3][2];
-        dest[3][3] = this[3][3];
+        dest.m00 = this.m00 * other.m00;
+        dest.m01 = this.m01 * other.m01;
+        dest.m02 = this.m02 * other.m02;
+        dest.m03 = this.m03;
+        dest.m10 = this.m10 * other.m10;
+        dest.m11 = this.m11 * other.m11;
+        dest.m12 = this.m12 * other.m12;
+        dest.m13 = this.m13;
+        dest.m20 = this.m20 * other.m20;
+        dest.m21 = this.m21 * other.m21;
+        dest.m22 = this.m22 * other.m22;
+        dest.m23 = this.m23;
+        dest.m30 = this.m30 * other.m30;
+        dest.m31 = this.m31 * other.m31;
+        dest.m32 = this.m32 * other.m32;
+        dest.m33 = this.m33;
         return dest;
     }
 
@@ -1087,7 +1132,7 @@ export class Matrix4 {
      * 2, 6, 10, 14<br>
      * 3, 7, 11, 15<br>
      * 
-     * @see #set(double[])
+     * @see #set(number[])
      * 
      * @param m
      *          the array to read the matrix values from
@@ -1157,42 +1202,41 @@ export class Matrix4 {
             this[m00][m01] = m02;
             return this;
         }
-        if (typeof m00 === "number") {
-            m01 = m01 as number; m02 = m02 as number, m03 = m03 as number;
-            this[0][0] = m00; this[1][0] = m10; this[2][0] = m20; this[3][0] = m30;
-            this[0][1] = m01; this[1][1] = m11; this[2][1] = m21; this[3][1] = m31;
-            this[0][2] = m02; this[1][2] = m12; this[2][2] = m22; this[3][2] = m32;
-            this[0][3] = m03; this[1][3] = m13; this[2][3] = m23; this[3][3] = m33;
+        if (typeof m00 === "number" && typeof m01 === "number" && typeof m02 === "number" && typeof m03 === "number") {
+            this.m00 = m00; this.m10 = m10; this.m20 = m20; this.m30 = m30;
+            this.m01 = m01; this.m11 = m11; this.m21 = m21; this.m31 = m31;
+            this.m02 = m02; this.m12 = m12; this.m22 = m22; this.m32 = m32;
+            this.m03 = m03; this.m13 = m13; this.m23 = m23; this.m33 = m33;
             return this;
         }
         if (m00 instanceof Matrix4) {
-            this[0][0] = m00[0][0]; this[1][0] = m00[1][0]; this[2][0] = m00[2][0]; this[3][0] = m00[3][0];
-            this[0][1] = m00[0][1]; this[1][1] = m00[1][1]; this[2][1] = m00[2][1]; this[3][1] = m00[3][1];
-            this[0][2] = m00[0][2]; this[1][2] = m00[1][2]; this[2][2] = m00[2][2]; this[3][2] = m00[3][2];
-            this[0][3] = m00[0][3]; this[1][3] = m00[1][3]; this[2][3] = m00[2][3]; this[3][3] = m00[3][3];
+            this.m00 = m00.m00; this.m10 = m00.m10; this.m20 = m00.m20; this.m30 = m00.m30;
+            this.m01 = m00.m01; this.m11 = m00.m11; this.m21 = m00.m21; this.m31 = m00.m31;
+            this.m02 = m00.m02; this.m12 = m00.m12; this.m22 = m00.m22; this.m32 = m00.m32;
+            this.m03 = m00.m03; this.m13 = m00.m13; this.m23 = m00.m23; this.m33 = m00.m33;
             return this;
         }
         if (m00 instanceof Matrix3) {
-            this[0][0] = m00[0][0]; this[1][0] = m00[1][0]; this[2][0] = m00[2][0]; this[3][0] = 0;
-            this[0][1] = m00[0][1]; this[1][1] = m00[1][1]; this[2][1] = m00[2][1]; this[3][1] = 0;
-            this[0][2] = m00[0][2]; this[1][2] = m00[1][2]; this[2][2] = m00[2][2]; this[2][3] = 0;
-            this[0][3] = 0; this[1][3] = 0; this[3][2] = 0; this[3][3] = 1;
+            this.m00 = m00.m00; this.m10 = m00.m10; this.m20 = m00.m20; this.m30 = 0;
+            this.m01 = m00.m01; this.m11 = m00.m11; this.m21 = m00.m21; this.m31 = 0;
+            this.m02 = m00.m02; this.m12 = m00.m12; this.m22 = m00.m22; this.m23 = 0;
+            this.m03 = 0; this.m13 = 0; this.m32 = 0; this.m33 = 1;
             return this;
         }
         if (m00 instanceof Vector4 && m01 instanceof Vector4
             && m02 instanceof Vector4 && m03 instanceof Vector4) {
-            this[0][0] = m00.x; this[1][0] = m01.x; this[2][0] = m02.x; this[3][0] = m03.x;
-            this[0][1] = m00.y; this[1][1] = m01.y; this[2][1] = m02.y; this[3][1] = m03.y;
-            this[0][2] = m00.z; this[1][2] = m01.z; this[2][2] = m02.z; this[3][2] = m03.z;
-            this[0][3] = m00.w; this[1][3] = m01.w; this[2][3] = m02.w; this[3][3] = m03.w;
+            this.m00 = m00.x; this.m10 = m01.x; this.m20 = m02.x; this.m30 = m03.x;
+            this.m01 = m00.y; this.m11 = m01.y; this.m21 = m02.y; this.m31 = m03.y;
+            this.m02 = m00.z; this.m12 = m01.z; this.m22 = m02.z; this.m32 = m03.z;
+            this.m03 = m00.w; this.m13 = m01.w; this.m23 = m02.w; this.m33 = m03.w;
             return this;
         } else { // array set
             const off = (m01 as number) ?? 0;
             m00 = m00 as number[];
-            this[0][0] = m00[off + 0.]; this[0][1] = m00[off + 1.]; this[0][2] = m00[off + 2.]; this[0][3] = m00[off + 3.];
-            this[1][0] = m00[off + 4.]; this[1][1] = m00[off + 5.]; this[1][2] = m00[off + 6.]; this[1][3] = m00[off + 7.];
-            this[2][0] = m00[off + 8.]; this[2][1] = m00[off + 9.]; this[2][2] = m00[off + 10]; this[2][3] = m00[off + 11];
-            this[3][0] = m00[off + 12]; this[3][1] = m00[off + 13]; this[3][2] = m00[off + 14]; this[3][3] = m00[off + 15];
+            this.m00 = m00[off + 0.]; this.m01 = m00[off + 1.]; this.m02 = m00[off + 2.]; this.m03 = m00[off + 3.];
+            this.m10 = m00[off + 4.]; this.m11 = m00[off + 5.]; this.m12 = m00[off + 6.]; this.m13 = m00[off + 7.];
+            this.m20 = m00[off + 8.]; this.m21 = m00[off + 9.]; this.m22 = m00[off + 10]; this.m23 = m00[off + 11];
+            this.m30 = m00[off + 12]; this.m31 = m00[off + 13]; this.m32 = m00[off + 14]; this.m33 = m00[off + 15];
             return this;
         }
     }
@@ -1201,18 +1245,18 @@ export class Matrix4 {
     public determinant(): number {
         if (this.PROPERTY_AFFINE)
             return this.determinantAffine();
-        return (this[0][0] * this[1][1] - this[0][1] * this[1][0]) * (this[2][2] * this[3][3] - this[2][3] * this[3][2])
-            + (this[0][2] * this[1][0] - this[0][0] * this[1][2]) * (this[2][1] * this[3][3] - this[2][3] * this[3][1])
-            + (this[0][0] * this[1][3] - this[0][3] * this[1][0]) * (this[2][1] * this[3][2] - this[2][2] * this[3][1])
-            + (this[0][1] * this[1][2] - this[0][2] * this[1][1]) * (this[2][0] * this[3][3] - this[2][3] * this[3][0])
-            + (this[0][3] * this[1][1] - this[0][1] * this[1][3]) * (this[2][0] * this[3][2] - this[2][2] * this[3][0])
-            + (this[0][2] * this[1][3] - this[0][3] * this[1][2]) * (this[2][0] * this[3][1] - this[2][1] * this[3][0])
+        return (this.m00 * this.m11 - this.m01 * this.m10) * (this.m22 * this.m33 - this.m23 * this.m32)
+            + (this.m02 * this.m10 - this.m00 * this.m12) * (this.m21 * this.m33 - this.m23 * this.m31)
+            + (this.m00 * this.m13 - this.m03 * this.m10) * (this.m21 * this.m32 - this.m22 * this.m31)
+            + (this.m01 * this.m12 - this.m02 * this.m11) * (this.m20 * this.m33 - this.m23 * this.m30)
+            + (this.m03 * this.m11 - this.m01 * this.m13) * (this.m20 * this.m32 - this.m22 * this.m30)
+            + (this.m02 * this.m13 - this.m03 * this.m12) * (this.m20 * this.m31 - this.m21 * this.m30)
     }
 
     public determinant3x3(): number {
-        return (this[0][0] * this[1][1] - this[0][1] * this[1][0]) * this[2][2]
-            + (this[0][2] * this[1][0] - this[0][0] * this[1][2]) * this[2][1]
-            + (this[0][1] * this[1][2] - this[0][2] * this[1][1]) * this[2][0];
+        return (this.m00 * this.m11 - this.m01 * this.m10) * this.m22
+            + (this.m02 * this.m10 - this.m00 * this.m12) * this.m21
+            + (this.m01 * this.m12 - this.m02 * this.m11) * this.m20;
     }
 
     public determinantAffine(): number {
@@ -1245,56 +1289,56 @@ export class Matrix4 {
     private invertTranslation(dest?: Matrix4): Matrix4 {
         if (dest && dest !== this)
             dest.set(this);
-        dest[3][0] = -this[3][0];
-        dest[3][1] = -this[3][1];
-        dest[3][2] = -this[3][2];
+        dest.m30 = -this.m30;
+        dest.m31 = -this.m31;
+        dest.m32 = -this.m32;
         return dest;
     }
     private invertOrthonormal(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            this[0][0], this[1][0], this[2][0], 0,
-            this[0][1], this[1][1], this[2][1], 0,
-            this[0][2], this[1][2], this[2][2], 0,
+            this.m00, this.m10, this.m20, 0,
+            this.m01, this.m11, this.m21, 0,
+            this.m02, this.m12, this.m22, 0,
 
-            -(this[0][0] * this[3][0] + this[0][1] * this[3][1] + this[0][2] * this[3][2]),
-            -(this[1][0] * this[3][0] + this[1][1] * this[3][1] + this[1][2] * this[3][2]),
-            -(this[2][0] * this[3][0] + this[2][1] * this[3][1] + this[2][2] * this[3][2]),
+            -(this.m00 * this.m30 + this.m01 * this.m31 + this.m02 * this.m32),
+            -(this.m10 * this.m30 + this.m11 * this.m31 + this.m12 * this.m32),
+            -(this.m20 * this.m30 + this.m21 * this.m31 + this.m22 * this.m32),
             1
         );
     }
     private invertGeneric(dest: Matrix4): Matrix4 {
         dest = dest ?? this;
-        const a = this[0][0] * this[1][1] - this[0][1] * this[1][0];
-        const b = this[0][0] * this[1][2] - this[0][2] * this[1][0];
-        const c = this[0][0] * this[1][3] - this[0][3] * this[1][0];
-        const d = this[0][1] * this[1][2] - this[0][2] * this[1][1];
-        const e = this[0][1] * this[1][3] - this[0][3] * this[1][1];
-        const f = this[0][2] * this[1][3] - this[0][3] * this[1][2];
-        const g = this[2][0] * this[3][1] - this[2][1] * this[3][0];
-        const h = this[2][0] * this[3][2] - this[2][2] * this[3][0];
-        const i = this[2][0] * this[3][3] - this[2][3] * this[3][0];
-        const j = this[2][1] * this[3][2] - this[2][2] * this[3][1];
-        const k = this[2][1] * this[3][3] - this[2][3] * this[3][1];
-        const l = this[2][2] * this[3][3] - this[2][3] * this[3][2];
+        const a = this.m00 * this.m11 - this.m01 * this.m10;
+        const b = this.m00 * this.m12 - this.m02 * this.m10;
+        const c = this.m00 * this.m13 - this.m03 * this.m10;
+        const d = this.m01 * this.m12 - this.m02 * this.m11;
+        const e = this.m01 * this.m13 - this.m03 * this.m11;
+        const f = this.m02 * this.m13 - this.m03 * this.m12;
+        const g = this.m20 * this.m31 - this.m21 * this.m30;
+        const h = this.m20 * this.m32 - this.m22 * this.m30;
+        const i = this.m20 * this.m33 - this.m23 * this.m30;
+        const j = this.m21 * this.m32 - this.m22 * this.m31;
+        const k = this.m21 * this.m33 - this.m23 * this.m31;
+        const l = this.m22 * this.m33 - this.m23 * this.m32;
         const det = 1 / (a * l - b * k + c * j + d * i - e * h + f * g);
         return dest.set(
-            (+ this[1][1] * l - this[1][2] * k + this[1][3] * j) * det,
-            (- this[0][1] * l + this[0][2] * k - this[0][3] * j) * det,
-            (+ this[3][1] * f - this[3][2] * e + this[3][3] * d) * det,
-            (- this[2][1] * f + this[2][2] * e - this[2][3] * d) * det,
-            (- this[1][0] * l + this[1][2] * i - this[1][3] * h) * det,
-            (+ this[0][0] * l - this[0][2] * i + this[0][3] * h) * det,
-            (- this[3][0] * f + this[3][2] * c - this[3][3] * b) * det,
-            (+ this[2][0] * f - this[2][2] * c + this[2][3] * b) * det,
-            (+ this[1][0] * k - this[1][1] * i + this[1][3] * g) * det,
-            (- this[0][0] * k + this[0][1] * i - this[0][3] * g) * det,
-            (+ this[3][0] * e - this[3][1] * c + this[3][3] * a) * det,
-            (- this[2][0] * e + this[2][1] * c - this[2][3] * a) * det,
-            (- this[1][0] * j + this[1][1] * h - this[1][2] * g) * det,
-            (+ this[0][0] * j - this[0][1] * h + this[0][2] * g) * det,
-            (- this[3][0] * d + this[3][1] * b - this[3][2] * a) * det,
-            (+ this[2][0] * d - this[2][1] * b + this[2][2] * a) * det,
+            (+ this.m11 * l - this.m12 * k + this.m13 * j) * det,
+            (- this.m01 * l + this.m02 * k - this.m03 * j) * det,
+            (+ this.m31 * f - this.m32 * e + this.m33 * d) * det,
+            (- this.m21 * f + this.m22 * e - this.m23 * d) * det,
+            (- this.m10 * l + this.m12 * i - this.m13 * h) * det,
+            (+ this.m00 * l - this.m02 * i + this.m03 * h) * det,
+            (- this.m30 * f + this.m32 * c - this.m33 * b) * det,
+            (+ this.m20 * f - this.m22 * c + this.m23 * b) * det,
+            (+ this.m10 * k - this.m11 * i + this.m13 * g) * det,
+            (- this.m00 * k + this.m01 * i - this.m03 * g) * det,
+            (+ this.m30 * e - this.m31 * c + this.m33 * a) * det,
+            (- this.m20 * e + this.m21 * c - this.m23 * a) * det,
+            (- this.m10 * j + this.m11 * h - this.m12 * g) * det,
+            (+ this.m00 * j - this.m01 * h + this.m02 * g) * det,
+            (- this.m30 * d + this.m31 * b - this.m32 * a) * det,
+            (+ this.m20 * d - this.m21 * b + this.m22 * a) * det,
         )
     }
 
@@ -1313,13 +1357,13 @@ export class Matrix4 {
      */
     public invertPerspective(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
-        const a = 1.0 / (this[0][0] * this[1][1]);
-        const l = -1.0 / (this[2][3] * this[3][2]);
+        const a = 1.0 / (this.m00 * this.m11);
+        const l = -1.0 / (this.m23 * this.m32);
         return dest.set(
-            this[1][1] * a, 0, 0, 0,
-            0, this[0][0] * a, 0, 0,
-            0, 0, 0, -this[2][3] * l,
-            0, 0, -this[3][2] * l, this[2][2] * l
+            this.m11 * a, 0, 0, 0,
+            0, this.m00 * a, 0, 0,
+            0, 0, 0, -this.m23 * l,
+            0, 0, -this.m32 * l, this.m22 * l
         );
     }
 
@@ -1340,22 +1384,21 @@ export class Matrix4 {
      * @return this
      */
     public invertFrustum(dest?: Matrix4): Matrix4 {
-        const invM00 = 1.0 / this[0][0];
-        const invM11 = 1.0 / this[1][1];
-        const invM23 = 1.0 / this[2][3];
-        const invM32 = 1.0 / this[3][2];
+        const invM00 = 1.0 / this.m00;
+        const invM11 = 1.0 / this.m11;
+        const invM23 = 1.0 / this.m23;
+        const invM32 = 1.0 / this.m32;
         return dest.set(
             invM00, 0, 0, 0,
             0, invM11, 0, 0,
             0, 0, 0, invM32,
 
-            -this[2][0] * invM00 * invM23,
-            -this[2][1] * invM11 * invM23,
+            -this.m20 * invM00 * invM23,
+            -this.m21 * invM11 * invM23,
             invM23,
-            -this[2][2] * invM23 * invM32
+            -this.m22 * invM23 * invM32
         );
     }
-
 
     /**
      * Invert <code>this</code> orthographic projection matrix.
@@ -1365,40 +1408,40 @@ export class Matrix4 {
      * @return this
      */
     public invertOrtho(dest?: Matrix4): Matrix4 {
-        const invM00 = 1.0 / this[0][0];
-        const invM11 = 1.0 / this[1][1];
-        const invM22 = 1.0 / this[2][2];
+        const invM00 = 1.0 / this.m00;
+        const invM11 = 1.0 / this.m11;
+        const invM22 = 1.0 / this.m22;
         return dest.set(
             invM00, 0, 0, 0,
             0, invM11, 0, 0,
             0, 0, invM22, 0,
-            -this[3][0] * invM00, -this[3][1] * invM11, -this[3][2] * invM22, 1
+            -this.m30 * invM00, -this.m31 * invM11, -this.m32 * invM22, 1
         )
     }
 
     public invertPerspectiveView(view: Matrix4, dest: Matrix4): Matrix4 {
-        const a = 1.0 / (this[0][0] * this[1][1]);
-        const l = -1.0 / (this[2][3] * this[3][2]);
-        const pm00 = this[1][1] * a;
-        const pm11 = this[0][0] * a;
-        const pm23 = this[2][3] * -l;
-        const pm32 = this[3][2] * -l;
-        const pm33 = this[2][2] * l;
-        const vm30 = -view[0][0] * view[3][0] - view[0][1] * view[3][1] - view[0][2] * view[3][2];
-        const vm31 = -view[1][0] * view[3][0] - view[1][1] * view[3][1] - view[1][2] * view[3][2];
-        const vm32 = -view[2][0] * view[3][0] - view[2][1] * view[3][1] - view[2][2] * view[3][2];
-        const nm10 = view[0][1] * pm11;
-        const nm30 = view[0][2] * pm32 + vm30 * pm33;
-        const nm31 = view[1][2] * pm32 + vm31 * pm33;
-        const nm32 = view[2][2] * pm32 + vm32 * pm33;
+        const a = 1.0 / (this.m00 * this.m11);
+        const l = -1.0 / (this.m23 * this.m32);
+        const pm00 = this.m11 * a;
+        const pm11 = this.m00 * a;
+        const pm23 = this.m23 * -l;
+        const pm32 = this.m32 * -l;
+        const pm33 = this.m22 * l;
+        const vm30 = -view.m00 * view.m30 - view.m01 * view.m31 - view.m02 * view.m32;
+        const vm31 = -view.m10 * view.m30 - view.m11 * view.m31 - view.m12 * view.m32;
+        const vm32 = -view.m20 * view.m30 - view.m21 * view.m31 - view.m22 * view.m32;
+        const nm10 = view.m01 * pm11;
+        const nm30 = view.m02 * pm32 + vm30 * pm33;
+        const nm31 = view.m12 * pm32 + vm31 * pm33;
+        const nm32 = view.m22 * pm32 + vm32 * pm33;
         return dest.set(
-            view[0][0] * pm00,
-            view[1][0] * pm00,
-            view[2][0] * pm00,
+            view.m00 * pm00,
+            view.m10 * pm00,
+            view.m20 * pm00,
             0.0,
             nm10,
-            view[1][1] * pm11,
-            view[2][1] * pm11,
+            view.m11 * pm11,
+            view.m21 * pm11,
             0.0,
             vm30 * pm23,
             vm31 * pm23,
@@ -1415,13 +1458,13 @@ export class Matrix4 {
      */
     public invertAffine(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
-        const m11m00 = this[0][0] * this[1][1], m10m01 = this[0][1] * this[1][0], m10m02 = this[0][2] * this[1][0];
-        const m12m00 = this[0][0] * this[1][2], m12m01 = this[0][1] * this[1][2], m11m02 = this[0][2] * this[1][1];
-        const s = 1.0 / ((m11m00 - m10m01) * this[2][2] + (m10m02 - m12m00) * this[2][1] + (m12m01 - m11m02) * this[2][0]);
-        const m10m22 = this[1][0] * this[2][2], m10m21 = this[1][0] * this[2][1], m11m22 = this[1][1] * this[2][2];
-        const m11m20 = this[1][1] * this[2][0], m12m21 = this[1][2] * this[2][1], m12m20 = this[1][2] * this[2][0];
-        const m20m02 = this[2][0] * this[0][2], m20m01 = this[2][0] * this[0][1], m21m02 = this[2][1] * this[0][2];
-        const m21m00 = this[2][1] * this[0][0], m22m01 = this[2][2] * this[0][1], m22m00 = this[2][2] * this[0][0];
+        const m11m00 = this.m00 * this.m11, m10m01 = this.m01 * this.m10, m10m02 = this.m02 * this.m10;
+        const m12m00 = this.m00 * this.m12, m12m01 = this.m01 * this.m12, m11m02 = this.m02 * this.m11;
+        const s = 1.0 / ((m11m00 - m10m01) * this.m22 + (m10m02 - m12m00) * this.m21 + (m12m01 - m11m02) * this.m20);
+        const m10m22 = this.m10 * this.m22, m10m21 = this.m10 * this.m21, m11m22 = this.m11 * this.m22;
+        const m11m20 = this.m11 * this.m20, m12m21 = this.m12 * this.m21, m12m20 = this.m12 * this.m20;
+        const m20m02 = this.m20 * this.m02, m20m01 = this.m20 * this.m01, m21m02 = this.m21 * this.m02;
+        const m21m00 = this.m21 * this.m00, m22m01 = this.m22 * this.m01, m22m00 = this.m22 * this.m00;
         return dest.set(
             (m11m22 - m12m21) * s,
             (m21m02 - m22m01) * s,
@@ -1435,9 +1478,9 @@ export class Matrix4 {
             (m20m01 - m21m00) * s,
             (m11m00 - m10m01) * s,
             0,
-            (m10m22 * this[3][1] - m10m21 * this[3][2] + m11m20 * this[3][2] - m11m22 * this[3][0] + m12m21 * this[3][0] - m12m20 * this[3][1]) * s,
-            (m20m02 * this[3][1] - m20m01 * this[3][2] + m21m00 * this[3][2] - m21m02 * this[3][0] + m22m01 * this[3][0] - m22m00 * this[3][1]) * s,
-            (m11m02 * this[3][0] - m12m01 * this[3][0] + m12m00 * this[3][1] - m10m02 * this[3][1] + m10m01 * this[3][2] - m11m00 * this[3][2]) * s,
+            (m10m22 * this.m31 - m10m21 * this.m32 + m11m20 * this.m32 - m11m22 * this.m30 + m12m21 * this.m30 - m12m20 * this.m31) * s,
+            (m20m02 * this.m31 - m20m01 * this.m32 + m21m00 * this.m32 - m21m02 * this.m30 + m22m01 * this.m30 - m22m00 * this.m31) * s,
+            (m11m02 * this.m30 - m12m01 * this.m30 + m12m00 * this.m31 - m10m02 * this.m31 + m10m01 * this.m32 - m11m00 * this.m32) * s,
             1,
         )
     }
@@ -1450,10 +1493,10 @@ export class Matrix4 {
     public transpose(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            this[0][0], this[1][0], this[2][0], this[3][0],
-            this[0][1], this[1][1], this[2][1], this[3][1],
-            this[0][2], this[1][2], this[2][2], this[3][2],
-            this[0][3], this[1][3], this[2][3], this[3][3],
+            this.m00, this.m10, this.m20, this.m30,
+            this.m01, this.m11, this.m21, this.m31,
+            this.m02, this.m12, this.m22, this.m32,
+            this.m03, this.m13, this.m23, this.m33,
         )
     }
 
@@ -1467,10 +1510,10 @@ export class Matrix4 {
     public transpose3x3(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            this[0][0], this[1][0], this[2][0], dest[0][3],
-            this[0][1], this[1][1], this[2][1], dest[1][3],
-            this[0][2], this[1][2], this[2][2], dest[2][3],
-            dest[3][0], dest[3][1], dest[3][2], dest[3][3],
+            this.m00, this.m10, this.m20, dest.m03,
+            this.m01, this.m11, this.m21, dest.m13,
+            this.m02, this.m12, this.m22, dest.m23,
+            dest.m30, dest.m31, dest.m32, dest.m33,
         )
     }
 
@@ -1505,10 +1548,10 @@ export class Matrix4 {
             z = x.z, y = x.y, x = x.x;
         }
         this.identity();
-        this[3][0] = x;
-        this[3][1] = y;
-        this[3][2] = z;
-        this[3][3] = 1;
+        this.m30 = x;
+        this.m31 = y;
+        this.m32 = z;
+        this.m33 = 1;
         return this;
     }
 
@@ -1549,25 +1592,25 @@ export class Matrix4 {
         if (x instanceof Vector3) {
             z = x.z, y = x.y, x = x.x;
         }
-        this[3][0] = x;
-        this[3][1] = y;
-        this[3][2] = z;
+        this.m30 = x;
+        this.m31 = y;
+        this.m32 = z;
         return this;
     }
 
     public getTranslation(dest?: Vector3): Vector3 {
         dest = dest ?? new Vector3();
-        dest.x = this[3][0];
-        dest.y = this[3][1];
-        dest.z = this[3][2];
+        dest.x = this.m30;
+        dest.y = this.m31;
+        dest.z = this.m32;
         return dest;
     }
 
     public getScale(dest?: Vector3): Vector3 {
         dest = dest ?? new Vector3();
-        dest.x = Math.sqrt(this[0][0] * this[0][0] + this[0][1] * this[0][1] + this[0][2] * this[0][2]);
-        dest.y = Math.sqrt(this[1][0] * this[1][0] + this[1][1] * this[1][1] + this[1][2] * this[1][2]);
-        dest.z = Math.sqrt(this[2][0] * this[2][0] + this[2][1] * this[2][1] + this[2][2] * this[2][2]);
+        dest.x = Math.sqrt(this.m00 * this.m00 + this.m01 * this.m01 + this.m02 * this.m02);
+        dest.y = Math.sqrt(this.m10 * this.m10 + this.m11 * this.m11 + this.m12 * this.m12);
+        dest.z = Math.sqrt(this.m20 * this.m20 + this.m21 * this.m21 + this.m22 * this.m22);
         return dest;
     }
 
@@ -1580,27 +1623,27 @@ export class Matrix4 {
      */
     public toString(formatter?: (x: number) => string): string {
         formatter = formatter ?? ((x: number) => x.toString());
-        return `${formatter(this[0][0])} ${formatter(this[1][0])} ${formatter(this[2][0])} ${formatter(this[3][0])} \n`
-            + `${formatter(this[0][1])} ${formatter(this[1][1])} ${formatter(this[2][1])} ${formatter(this[3][1])} \n`
-            + `${formatter(this[0][2])} ${formatter(this[1][2])} ${formatter(this[2][2])} ${formatter(this[3][2])} \n`
-            + `${formatter(this[0][3])} ${formatter(this[1][3])} ${formatter(this[2][3])} ${formatter(this[3][3])} \n`
+        return `${formatter(this.m00)} ${formatter(this.m10)} ${formatter(this.m20)} ${formatter(this.m30)} \n`
+            + `${formatter(this.m01)} ${formatter(this.m11)} ${formatter(this.m21)} ${formatter(this.m31)} \n`
+            + `${formatter(this.m02)} ${formatter(this.m12)} ${formatter(this.m22)} ${formatter(this.m32)} \n`
+            + `${formatter(this.m03)} ${formatter(this.m13)} ${formatter(this.m23)} ${formatter(this.m33)} \n`
     }
 
 
 
     public get3x3(dest: Matrix3): Matrix3 {
-        dest[0][0] = this[0][0]; dest[1][0] = this[1][0]; dest[2][0] = this[2][0];
-        dest[0][1] = this[0][1]; dest[1][1] = this[1][1]; dest[2][1] = this[2][1];
-        dest[0][2] = this[0][2]; dest[1][2] = this[1][2]; dest[2][2] = this[2][2];
+        dest.m00 = this.m00; dest.m10 = this.m10; dest.m20 = this.m20;
+        dest.m01 = this.m01; dest.m11 = this.m11; dest.m21 = this.m21;
+        dest.m02 = this.m02; dest.m12 = this.m12; dest.m22 = this.m22;
         return dest;
     }
     public get(dest: Matrix4): Matrix4;
     // TODO: Quaternion
-    // public Quaterniond getUnnormalizedRotation( dest: Quaternion) {
+    // public getUnnormalizedRotation( dest: Quaternion): Quaternion {
     //     return dest.setFromUnnormalized(this);
     // }
 
-    // public Quaterniond getNormalizedRotation( dest: Quaternion) {
+    // public getNormalizedRotation( dest: Quaternion): Quaternion {
     //     return dest.setFromNormalized(this);
     // }
 
@@ -1614,22 +1657,22 @@ export class Matrix4 {
             return this[dest][offset]; // this[column][row]
         }
         offset = offset ?? 0;
-        dest[offset + 0] = this[0][0];
-        dest[offset + 1] = this[0][1];
-        dest[offset + 2] = this[0][2];
-        dest[offset + 3] = this[0][3];
-        dest[offset + 4] = this[1][0];
-        dest[offset + 5] = this[1][1];
-        dest[offset + 6] = this[1][2];
-        dest[offset + 7] = this[1][3];
-        dest[offset + 8] = this[2][0];
-        dest[offset + 9] = this[2][1];
-        dest[offset + 10] = this[2][2];
-        dest[offset + 11] = this[2][3];
-        dest[offset + 12] = this[3][0];
-        dest[offset + 13] = this[3][1];
-        dest[offset + 14] = this[3][2];
-        dest[offset + 15] = this[3][3];
+        dest[offset + 0] = this.m00;
+        dest[offset + 1] = this.m01;
+        dest[offset + 2] = this.m02;
+        dest[offset + 3] = this.m03;
+        dest[offset + 4] = this.m10;
+        dest[offset + 5] = this.m11;
+        dest[offset + 6] = this.m12;
+        dest[offset + 7] = this.m13;
+        dest[offset + 8] = this.m20;
+        dest[offset + 9] = this.m21;
+        dest[offset + 10] = this.m22;
+        dest[offset + 11] = this.m23;
+        dest[offset + 12] = this.m30;
+        dest[offset + 13] = this.m31;
+        dest[offset + 14] = this.m32;
+        dest[offset + 15] = this.m33;
         return dest;
     }
 
@@ -1639,10 +1682,10 @@ export class Matrix4 {
      * @return this
      */
     public zero(): Matrix4 {
-        this[0][0] = 0; this[1][0] = 0; this[2][0] = 0; this[3][0] = 0;
-        this[0][1] = 0; this[1][1] = 0; this[2][1] = 0; this[3][1] = 0;
-        this[0][2] = 0; this[1][2] = 0; this[2][2] = 0; this[3][2] = 0;
-        this[0][3] = 0; this[1][3] = 0; this[2][3] = 0; this[3][3] = 0;
+        this.m00 = 0; this.m10 = 0; this.m20 = 0; this.m30 = 0;
+        this.m01 = 0; this.m11 = 0; this.m21 = 0; this.m31 = 0;
+        this.m02 = 0; this.m12 = 0; this.m22 = 0; this.m32 = 0;
+        this.m03 = 0; this.m13 = 0; this.m23 = 0; this.m33 = 0;
         return this;
     }
 
@@ -1698,9 +1741,9 @@ export class Matrix4 {
             z = x, y = x;
         }
         this.identity();
-        this[0][0] = x;
-        this[1][1] = y;
-        this[2][2] = z;
+        this.m00 = x;
+        this.m11 = y;
+        this.m22 = z;
         return this;
     }
 
@@ -1816,15 +1859,15 @@ export class Matrix4 {
         const xw = quat.x * quat.w, dxw = xw + xw;
         if (!this.PROPERTY_IDENTITY)
             this.identity();
-        this[0][0] = w2 + x2 - z2 - y2;
-        this[0][1] = dxy + dzw;
-        this[0][2] = dxz - dyw;
-        this[1][0] = -dzw + dxy;
-        this[1][1] = y2 - z2 + w2 - x2;
-        this[1][2] = dyz + dxw;
-        this[2][0] = dyw + dxz;
-        this[2][1] = dyz - dxw;
-        this[2][2] = z2 - y2 - x2 + w2;
+        this.m00 = w2 + x2 - z2 - y2;
+        this.m01 = dxy + dzw;
+        this.m02 = dxz - dyw;
+        this.m10 = -dzw + dxy;
+        this.m11 = y2 - z2 + w2 - x2;
+        this.m12 = dyz + dxw;
+        this.m20 = dyw + dxz;
+        this.m21 = dyz - dxw;
+        this.m22 = z2 - y2 - x2 + w2;
         return this;
     }
     private rotationInternal(angle: number, x: number, y: number, z: number): Matrix4 {
@@ -1834,15 +1877,15 @@ export class Matrix4 {
         const xy = x * y, xz = x * z, yz = y * z;
 
         this.identity();
-        this[0][0] = cos + x * x * C;
-        this[1][0] = xy * C - z * sin;
-        this[2][0] = xz * C + y * sin;
-        this[0][1] = xy * C + z * sin;
-        this[1][1] = cos + y * y * C;
-        this[2][1] = yz * C - x * sin;
-        this[0][2] = xz * C - y * sin;
-        this[1][2] = yz * C + x * sin;
-        this[2][2] = cos + z * z * C;
+        this.m00 = cos + x * x * C;
+        this.m10 = xy * C - z * sin;
+        this.m20 = xz * C + y * sin;
+        this.m01 = xy * C + z * sin;
+        this.m11 = cos + y * y * C;
+        this.m21 = yz * C - x * sin;
+        this.m02 = xz * C - y * sin;
+        this.m12 = yz * C + x * sin;
+        this.m22 = cos + z * z * C;
 
         return this;
     }
@@ -1864,10 +1907,10 @@ export class Matrix4 {
         const sin = Math.sin(ang);
         const cos = Math.cos(ang);
         this.identity();
-        this[1][1] = cos;
-        this[1][2] = sin;
-        this[2][1] = -sin;
-        this[2][2] = cos;
+        this.m11 = cos;
+        this.m12 = sin;
+        this.m21 = -sin;
+        this.m22 = cos;
         return this;
     }
 
@@ -1888,10 +1931,10 @@ export class Matrix4 {
         const sin = Math.sin(ang);
         const cos = Math.cos(ang);
         this.identity();
-        this[0][0] = cos;
-        this[0][2] = -sin;
-        this[2][0] = sin;
-        this[2][2] = cos;
+        this.m00 = cos;
+        this.m02 = -sin;
+        this.m20 = sin;
+        this.m22 = cos;
         return this;
     }
 
@@ -1912,10 +1955,10 @@ export class Matrix4 {
         const sin = Math.sin(ang);
         const cos = Math.cos(ang);
         this.identity();
-        this[0][0] = cos;
-        this[0][1] = sin;
-        this[1][0] = -sin;
-        this[1][1] = cos;
+        this.m00 = cos;
+        this.m01 = sin;
+        this.m10 = -sin;
+        this.m11 = cos;
         return this;
     }
 
@@ -1933,10 +1976,10 @@ export class Matrix4 {
     public rotationTowardsXY(dirX: number, dirY: number): Matrix4 {
         if (!this.PROPERTY_IDENTITY)
             this.identity();
-        this[0][0] = dirY;
-        this[0][1] = dirX;
-        this[1][0] = -dirX;
-        this[1][1] = dirY;
+        this.m00 = dirY;
+        this.m01 = dirX;
+        this.m10 = -dirX;
+        this.m11 = dirY;
         return this;
     }
 
@@ -2097,16 +2140,16 @@ export class Matrix4 {
             cosY * cosZ,
             sinX * sinY * cosZ + cosX * sinZ,
             cosX * -sinY * cosZ + sinX * sinZ,
-            this[0][3],
+            this.m03,
             cosY * -sinZ,
             sinX * sinY * -sinZ + cosX * cosZ,
             cosX * sinY * sinZ + sinX * cosZ,
-            this[1][3],
+            this.m13,
             sinY,
             -sinX * cosY,
             cosX * cosY,
-            this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3],
+            this.m23,
+            this.m30, this.m31, this.m32, this.m33,
         )
     }
 
@@ -2138,16 +2181,16 @@ export class Matrix4 {
             cosZ * cosY,
             sinZ * cosY,
             -sinY,
-            this[0][3],
+            this.m03,
             -sinZ * cosX + cosZ * sinY * sinX,
             cosZ * cosX + sinZ * sinY * sinX,
             cosY * sinX,
-            this[1][3],
+            this.m13,
             sinZ * sinX + cosZ * sinY * cosX,
             cosZ * -sinX + sinZ * sinY * cosX,
             cosY * cosX,
-            this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3],
+            this.m23,
+            this.m30, this.m31, this.m32, this.m33,
         );
     }
 
@@ -2179,16 +2222,16 @@ export class Matrix4 {
             cosY * cosZ + sinY * sinX * sinZ,
             cosX * sinZ,
             -sinY * cosZ + cosY * sinX * sinZ,
-            this[0][3],
+            this.m03,
             cosY * -sinZ + sinY * sinX * cosZ,
             cosX * cosZ,
             sinY * sinZ + cosY * sinX * cosZ,
-            this[1][3],
+            this.m13,
             sinY * cosX,
             -sinX,
             cosY * cosX,
-            this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3],
+            this.m23,
+            this.m30, this.m31, this.m32, this.m33,
         )
     }
 
@@ -2332,22 +2375,22 @@ export class Matrix4 {
         }
 
         dest = dest ?? this;
-        dest[0][0] = this[0][0] * x
-        dest[0][1] = this[0][1] * x
-        dest[0][2] = this[0][2] * x
-        dest[0][3] = this[0][3] * x
-        dest[1][0] = this[1][0] * y
-        dest[1][1] = this[1][1] * y
-        dest[1][2] = this[1][2] * y
-        dest[1][3] = this[1][3] * y
-        dest[2][0] = this[2][0] * z
-        dest[2][1] = this[2][1] * z
-        dest[2][2] = this[2][2] * z
-        dest[2][3] = this[2][3] * z
-        dest[3][0] = this[3][0]
-        dest[3][1] = this[3][1]
-        dest[3][2] = this[3][2]
-        dest[3][3] = this[3][3]
+        dest.m00 = this.m00 * x
+        dest.m01 = this.m01 * x
+        dest.m02 = this.m02 * x
+        dest.m03 = this.m03 * x
+        dest.m10 = this.m10 * y
+        dest.m11 = this.m11 * y
+        dest.m12 = this.m12 * y
+        dest.m13 = this.m13 * y
+        dest.m20 = this.m20 * z
+        dest.m21 = this.m21 * z
+        dest.m22 = this.m22 * z
+        dest.m23 = this.m23 * z
+        dest.m30 = this.m30
+        dest.m31 = this.m31
+        dest.m32 = this.m32
+        dest.m33 = this.m33
         return dest;
     }
 
@@ -2426,18 +2469,18 @@ export class Matrix4 {
             sz = sx, sy = sx, sx = sx;
         }
 
-        const nm30 = this[0][0] * ox + this[1][0] * oy + this[2][0] * oz + this[3][0];
-        const nm31 = this[0][1] * ox + this[1][1] * oy + this[2][1] * oz + this[3][1];
-        const nm32 = this[0][2] * ox + this[1][2] * oy + this[2][2] * oz + this[3][2];
-        const nm33 = this[0][3] * ox + this[1][3] * oy + this[2][3] * oz + this[3][3];
+        const nm30 = this.m00 * ox + this.m10 * oy + this.m20 * oz + this.m30;
+        const nm31 = this.m01 * ox + this.m11 * oy + this.m21 * oz + this.m31;
+        const nm32 = this.m02 * ox + this.m12 * oy + this.m22 * oz + this.m32;
+        const nm33 = this.m03 * ox + this.m13 * oy + this.m23 * oz + this.m33;
         return dest.set(
-            this[0][0] * sx, this[0][1] * sx, this[0][2] * sx, this[0][3] * sx,
-            this[1][0] * sy, this[1][1] * sy, this[1][2] * sy, this[1][3] * sy,
-            this[2][0] * sz, this[2][1] * sz, this[2][2] * sz, this[2][3] * sz,
-            -dest[0][0] * ox - dest[1][0] * oy - dest[2][0] * oz + nm30, // col 3
-            -dest[0][1] * ox - dest[1][1] * oy - dest[2][1] * oz + nm31,
-            -dest[0][2] * ox - dest[1][2] * oy - dest[2][2] * oz + nm32,
-            -dest[0][3] * ox - dest[1][3] * oy - dest[2][3] * oz + nm33,
+            this.m00 * sx, this.m01 * sx, this.m02 * sx, this.m03 * sx,
+            this.m10 * sy, this.m11 * sy, this.m12 * sy, this.m13 * sy,
+            this.m20 * sz, this.m21 * sz, this.m22 * sz, this.m23 * sz,
+            -dest.m00 * ox - dest.m10 * oy - dest.m20 * oz + nm30, // col 3
+            -dest.m01 * ox - dest.m11 * oy - dest.m21 * oz + nm31,
+            -dest.m02 * ox - dest.m12 * oy - dest.m22 * oz + nm32,
+            -dest.m03 * ox - dest.m13 * oy - dest.m23 * oz + nm33,
         )
     }
 
@@ -2479,10 +2522,10 @@ export class Matrix4 {
             z = x, y = z;
         }
         return dest.set(
-            x * this[0][0], y * this[0][1], z * this[0][2], this[0][3],
-            x * this[1][0], y * this[1][1], z * this[1][2], this[1][3],
-            x * this[2][0], y * this[2][1], z * this[2][2], this[2][3],
-            x * this[3][0], y * this[3][1], z * this[3][2], this[3][3],
+            x * this.m00, y * this.m01, z * this.m02, this.m03,
+            x * this.m10, y * this.m11, z * this.m12, this.m13,
+            x * this.m20, y * this.m21, z * this.m22, this.m23,
+            x * this.m30, y * this.m31, z * this.m32, this.m33,
         )
     }
 
@@ -2542,22 +2585,22 @@ export class Matrix4 {
             oz = ox, oy = sz, ox = sy;
             sz = sx, sy = sx, sx = sx;
         }
-        dest[0][0] = sx * (this[0][0] - ox * this[0][3]) + ox * this[0][3]
-        dest[0][1] = sy * (this[0][1] - oy * this[0][3]) + oy * this[0][3]
-        dest[0][2] = sz * (this[0][2] - oz * this[0][3]) + oz * this[0][3]
-        dest[0][3] = this[0][3]
-        dest[1][0] = sx * (this[1][0] - ox * this[1][3]) + ox * this[1][3]
-        dest[1][1] = sy * (this[1][1] - oy * this[1][3]) + oy * this[1][3]
-        dest[1][2] = sz * (this[1][2] - oz * this[1][3]) + oz * this[1][3]
-        dest[1][3] = this[1][3]
-        dest[2][0] = sx * (this[2][0] - ox * this[2][3]) + ox * this[2][3]
-        dest[2][1] = sy * (this[2][1] - oy * this[2][3]) + oy * this[2][3]
-        dest[2][2] = sz * (this[2][2] - oz * this[2][3]) + oz * this[2][3]
-        dest[2][3] = this[2][3]
-        dest[3][0] = sx * (this[3][0] - ox * this[3][3]) + ox * this[3][3]
-        dest[3][1] = sy * (this[3][1] - oy * this[3][3]) + oy * this[3][3]
-        dest[3][2] = sz * (this[3][2] - oz * this[3][3]) + oz * this[3][3]
-        dest[3][3] = this[3][3]
+        dest.m00 = sx * (this.m00 - ox * this.m03) + ox * this.m03
+        dest.m01 = sy * (this.m01 - oy * this.m03) + oy * this.m03
+        dest.m02 = sz * (this.m02 - oz * this.m03) + oz * this.m03
+        dest.m03 = this.m03
+        dest.m10 = sx * (this.m10 - ox * this.m13) + ox * this.m13
+        dest.m11 = sy * (this.m11 - oy * this.m13) + oy * this.m13
+        dest.m12 = sz * (this.m12 - oz * this.m13) + oz * this.m13
+        dest.m13 = this.m13
+        dest.m20 = sx * (this.m20 - ox * this.m23) + ox * this.m23
+        dest.m21 = sy * (this.m21 - oy * this.m23) + oy * this.m23
+        dest.m22 = sz * (this.m22 - oz * this.m23) + oz * this.m23
+        dest.m23 = this.m23
+        dest.m30 = sx * (this.m30 - ox * this.m33) + ox * this.m33
+        dest.m31 = sy * (this.m31 - oy * this.m33) + oy * this.m33
+        dest.m32 = sz * (this.m32 - oz * this.m33) + oz * this.m33
+        dest.m33 = this.m33
         return dest;
     }
 
@@ -2659,30 +2702,30 @@ export class Matrix4 {
         const rm20 = xz * C + y * s;
         const rm21 = yz * C - x * s;
         const rm22 = zz * C + c;
-        const nm00 = this[0][0] * rm00 + this[1][0] * rm01 + this[2][0] * rm02;
-        const nm01 = this[0][1] * rm00 + this[1][1] * rm01 + this[2][1] * rm02;
-        const nm02 = this[0][2] * rm00 + this[1][2] * rm01 + this[2][2] * rm02;
-        const nm03 = this[0][3] * rm00 + this[1][3] * rm01 + this[2][3] * rm02;
-        const nm10 = this[0][0] * rm10 + this[1][0] * rm11 + this[2][0] * rm12;
-        const nm11 = this[0][1] * rm10 + this[1][1] * rm11 + this[2][1] * rm12;
-        const nm12 = this[0][2] * rm10 + this[1][2] * rm11 + this[2][2] * rm12;
-        const nm13 = this[0][3] * rm10 + this[1][3] * rm11 + this[2][3] * rm12;
-        dest[2][0] = (this[0][0] * rm20 + this[1][0] * rm21 + this[2][0] * rm22)
-        dest[2][1] = (this[0][1] * rm20 + this[1][1] * rm21 + this[2][1] * rm22)
-        dest[2][2] = (this[0][2] * rm20 + this[1][2] * rm21 + this[2][2] * rm22)
-        dest[2][3] = (this[0][3] * rm20 + this[1][3] * rm21 + this[2][3] * rm22)
-        dest[0][0] = (nm00)
-        dest[0][1] = (nm01)
-        dest[0][2] = (nm02)
-        dest[0][3] = (nm03)
-        dest[1][0] = (nm10)
-        dest[1][1] = (nm11)
-        dest[1][2] = (nm12)
-        dest[1][3] = (nm13)
-        dest[3][0] = (this[3][0])
-        dest[3][1] = (this[3][1])
-        dest[3][2] = (this[3][2])
-        dest[3][3] = (this[3][3])
+        const nm00 = this.m00 * rm00 + this.m10 * rm01 + this.m20 * rm02;
+        const nm01 = this.m01 * rm00 + this.m11 * rm01 + this.m21 * rm02;
+        const nm02 = this.m02 * rm00 + this.m12 * rm01 + this.m22 * rm02;
+        const nm03 = this.m03 * rm00 + this.m13 * rm01 + this.m23 * rm02;
+        const nm10 = this.m00 * rm10 + this.m10 * rm11 + this.m20 * rm12;
+        const nm11 = this.m01 * rm10 + this.m11 * rm11 + this.m21 * rm12;
+        const nm12 = this.m02 * rm10 + this.m12 * rm11 + this.m22 * rm12;
+        const nm13 = this.m03 * rm10 + this.m13 * rm11 + this.m23 * rm12;
+        dest.m20 = (this.m00 * rm20 + this.m10 * rm21 + this.m20 * rm22)
+        dest.m21 = (this.m01 * rm20 + this.m11 * rm21 + this.m21 * rm22)
+        dest.m22 = (this.m02 * rm20 + this.m12 * rm21 + this.m22 * rm22)
+        dest.m23 = (this.m03 * rm20 + this.m13 * rm21 + this.m23 * rm22)
+        dest.m00 = (nm00)
+        dest.m01 = (nm01)
+        dest.m02 = (nm02)
+        dest.m03 = (nm03)
+        dest.m10 = (nm10)
+        dest.m11 = (nm11)
+        dest.m12 = (nm12)
+        dest.m13 = (nm13)
+        dest.m30 = (this.m30)
+        dest.m31 = (this.m31)
+        dest.m32 = (this.m32)
+        dest.m33 = (this.m33)
         return dest;
     }
 
@@ -2725,11 +2768,11 @@ export class Matrix4 {
     public rotateTranslation(ang: number, x: number, y: number, z: number, dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         if (y === 0 && z === 0 && Math.abs(x) === 1)
-            return dest.rotationX(x * ang).setTranslation(this[3][0], this[3][1], this[3][2]);
+            return dest.rotationX(x * ang).setTranslation(this.m30, this.m31, this.m32);
         else if (x === 0 && z === 0 && Math.abs(y) === 1)
-            return dest.rotationY(y * ang).setTranslation(this[3][0], this[3][1], this[3][2]);
+            return dest.rotationY(y * ang).setTranslation(this.m30, this.m31, this.m32);
         else if (x === 0 && y === 0 && Math.abs(z) === 1)
-            return dest.rotationZ(z * ang).setTranslation(this[3][0], this[3][1], this[3][2]);
+            return dest.rotationZ(z * ang).setTranslation(this.m30, this.m31, this.m32);
 
         const s = Math.sin(ang);
         const c = Math.cos(ang);
@@ -2746,29 +2789,23 @@ export class Matrix4 {
         const rm20 = xz * C + y * s;
         const rm21 = yz * C - x * s;
         const rm22 = zz * C + c;
-        const nm00 = rm00; // TODO: verify this, this makes no sense + why the dest[][] set order
-        const nm01 = rm01;
-        const nm02 = rm02;
-        const nm10 = rm10;
-        const nm11 = rm11;
-        const nm12 = rm12;
         // set non-dependent values directly
-        dest[2][0] = (rm20)
-        dest[2][1] = (rm21)
-        dest[2][2] = (rm22)
+        dest.m20 = rm20;
+        dest.m21 = rm21;
+        dest.m22 = rm22;
         // set other values
-        dest[0][0] = (nm00)
-        dest[0][1] = (nm01)
-        dest[0][2] = (nm02)
-        dest[0][3] = (0.0)
-        dest[1][0] = (nm10)
-        dest[1][1] = (nm11)
-        dest[1][2] = (nm12)
-        dest[1][3] = (0.0)
-        dest[3][0] = (this[3][0])
-        dest[3][1] = (this[3][1])
-        dest[3][2] = (this[3][2])
-        dest[3][3] = (this[3][3])
+        dest.m00 = rm00;
+        dest.m01 = rm01;
+        dest.m02 = rm02;
+        dest.m03 = 0.0;
+        dest.m10 = rm10;
+        dest.m11 = rm11;
+        dest.m12 = rm12;
+        dest.m13 = 0.0;
+        dest.m30 = this.m30;
+        dest.m31 = this.m31;
+        dest.m32 = this.m32;
+        dest.m33 = this.m33;
         return dest;
     }
 
@@ -2833,30 +2870,30 @@ export class Matrix4 {
         const rm21 = yz * C - x * s;
         const rm22 = zz * C + c;
         // add temporaries for dependent values
-        const nm00 = this[0][0] * rm00 + this[1][0] * rm01 + this[2][0] * rm02;
-        const nm01 = this[0][1] * rm00 + this[1][1] * rm01 + this[2][1] * rm02;
-        const nm02 = this[0][2] * rm00 + this[1][2] * rm01 + this[2][2] * rm02;
-        const nm10 = this[0][0] * rm10 + this[1][0] * rm11 + this[2][0] * rm12;
-        const nm11 = this[0][1] * rm10 + this[1][1] * rm11 + this[2][1] * rm12;
-        const nm12 = this[0][2] * rm10 + this[1][2] * rm11 + this[2][2] * rm12;
+        const nm00 = this.m00 * rm00 + this.m10 * rm01 + this.m20 * rm02;
+        const nm01 = this.m01 * rm00 + this.m11 * rm01 + this.m21 * rm02;
+        const nm02 = this.m02 * rm00 + this.m12 * rm01 + this.m22 * rm02;
+        const nm10 = this.m00 * rm10 + this.m10 * rm11 + this.m20 * rm12;
+        const nm11 = this.m01 * rm10 + this.m11 * rm11 + this.m21 * rm12;
+        const nm12 = this.m02 * rm10 + this.m12 * rm11 + this.m22 * rm12;
         // set non-dependent values directly
-        dest[2][0] = (this[0][0] * rm20 + this[1][0] * rm21 + this[2][0] * rm22)
-        dest[2][1] = (this[0][1] * rm20 + this[1][1] * rm21 + this[2][1] * rm22)
-        dest[2][2] = (this[0][2] * rm20 + this[1][2] * rm21 + this[2][2] * rm22)
-        dest[2][3] = (0.0)
+        dest.m20 = (this.m00 * rm20 + this.m10 * rm21 + this.m20 * rm22)
+        dest.m21 = (this.m01 * rm20 + this.m11 * rm21 + this.m21 * rm22)
+        dest.m22 = (this.m02 * rm20 + this.m12 * rm21 + this.m22 * rm22)
+        dest.m23 = (0.0)
         // set other values
-        dest[0][0] = (nm00)
-        dest[0][1] = (nm01)
-        dest[0][2] = (nm02)
-        dest[0][3] = (0.0)
-        dest[1][0] = (nm10)
-        dest[1][1] = (nm11)
-        dest[1][2] = (nm12)
-        dest[1][3] = (0.0)
-        dest[3][0] = (this[3][0])
-        dest[3][1] = (this[3][1])
-        dest[3][2] = (this[3][2])
-        dest[3][3] = (this[3][3])
+        dest.m00 = (nm00)
+        dest.m01 = (nm01)
+        dest.m02 = (nm02)
+        dest.m03 = (0.0)
+        dest.m10 = (nm10)
+        dest.m11 = (nm11)
+        dest.m12 = (nm12)
+        dest.m13 = (0.0)
+        dest.m30 = (this.m30)
+        dest.m31 = (this.m31)
+        dest.m32 = (this.m32)
+        dest.m33 = (this.m33)
         return dest;
     }
 
@@ -2902,32 +2939,32 @@ export class Matrix4 {
         const rm20 = dyw + dxz;
         const rm21 = dyz - dxw;
         const rm22 = z2 - y2 - x2 + w2;
-        const tm30 = this[0][0] * ox + this[1][0] * oy + this[2][0] * oz + this[3][0];
-        const tm31 = this[0][1] * ox + this[1][1] * oy + this[2][1] * oz + this[3][1];
-        const tm32 = this[0][2] * ox + this[1][2] * oy + this[2][2] * oz + this[3][2];
-        const nm00 = this[0][0] * rm00 + this[1][0] * rm01 + this[2][0] * rm02;
-        const nm01 = this[0][1] * rm00 + this[1][1] * rm01 + this[2][1] * rm02;
-        const nm02 = this[0][2] * rm00 + this[1][2] * rm01 + this[2][2] * rm02;
-        const nm10 = this[0][0] * rm10 + this[1][0] * rm11 + this[2][0] * rm12;
-        const nm11 = this[0][1] * rm10 + this[1][1] * rm11 + this[2][1] * rm12;
-        const nm12 = this[0][2] * rm10 + this[1][2] * rm11 + this[2][2] * rm12;
+        const tm30 = this.m00 * ox + this.m10 * oy + this.m20 * oz + this.m30;
+        const tm31 = this.m01 * ox + this.m11 * oy + this.m21 * oz + this.m31;
+        const tm32 = this.m02 * ox + this.m12 * oy + this.m22 * oz + this.m32;
+        const nm00 = this.m00 * rm00 + this.m10 * rm01 + this.m20 * rm02;
+        const nm01 = this.m01 * rm00 + this.m11 * rm01 + this.m21 * rm02;
+        const nm02 = this.m02 * rm00 + this.m12 * rm01 + this.m22 * rm02;
+        const nm10 = this.m00 * rm10 + this.m10 * rm11 + this.m20 * rm12;
+        const nm11 = this.m01 * rm10 + this.m11 * rm11 + this.m21 * rm12;
+        const nm12 = this.m02 * rm10 + this.m12 * rm11 + this.m22 * rm12;
 
-        dest[2][0] = this[0][0] * rm20 + this[1][0] * rm21 + this[2][0] * rm22;
-        dest[2][1] = this[0][1] * rm20 + this[1][1] * rm21 + this[2][1] * rm22;
-        dest[2][2] = this[0][2] * rm20 + this[1][2] * rm21 + this[2][2] * rm22;
-        dest[2][3] = 0.0;
-        dest[0][0] = nm00;
-        dest[0][1] = nm01;
-        dest[0][2] = nm02;
-        dest[0][3] = 0.0;
-        dest[1][0] = nm10;
-        dest[1][1] = nm11;
-        dest[1][2] = nm12;
-        dest[1][3] = 0.0;
-        dest[3][0] = -nm00 * ox - nm10 * oy - this[2][0] * oz + tm30;
-        dest[3][1] = -nm01 * ox - nm11 * oy - this[2][1] * oz + tm31;
-        dest[3][2] = -nm02 * ox - nm12 * oy - this[2][2] * oz + tm32;
-        dest[3][3] = 1.0;
+        dest.m20 = this.m00 * rm20 + this.m10 * rm21 + this.m20 * rm22;
+        dest.m21 = this.m01 * rm20 + this.m11 * rm21 + this.m21 * rm22;
+        dest.m22 = this.m02 * rm20 + this.m12 * rm21 + this.m22 * rm22;
+        dest.m23 = 0.0;
+        dest.m00 = nm00;
+        dest.m01 = nm01;
+        dest.m02 = nm02;
+        dest.m03 = 0.0;
+        dest.m10 = nm10;
+        dest.m11 = nm11;
+        dest.m12 = nm12;
+        dest.m13 = 0.0;
+        dest.m30 = -nm00 * ox - nm10 * oy - this.m20 * oz + tm30;
+        dest.m31 = -nm01 * ox - nm11 * oy - this.m21 * oz + tm31;
+        dest.m32 = -nm02 * ox - nm12 * oy - this.m22 * oz + tm32;
+        dest.m33 = 1.0;
         return dest;
     }
 
@@ -2953,34 +2990,34 @@ export class Matrix4 {
         const rm20 = dyw + dxz;
         const rm21 = dyz - dxw;
         const rm22 = z2 - y2 - x2 + w2;
-        const tm30 = this[0][0] * ox + this[1][0] * oy + this[2][0] * oz + this[3][0];
-        const tm31 = this[0][1] * ox + this[1][1] * oy + this[2][1] * oz + this[3][1];
-        const tm32 = this[0][2] * ox + this[1][2] * oy + this[2][2] * oz + this[3][2];
-        const nm00 = this[0][0] * rm00 + this[1][0] * rm01 + this[2][0] * rm02;
-        const nm01 = this[0][1] * rm00 + this[1][1] * rm01 + this[2][1] * rm02;
-        const nm02 = this[0][2] * rm00 + this[1][2] * rm01 + this[2][2] * rm02;
-        const nm03 = this[0][3] * rm00 + this[1][3] * rm01 + this[2][3] * rm02;
-        const nm10 = this[0][0] * rm10 + this[1][0] * rm11 + this[2][0] * rm12;
-        const nm11 = this[0][1] * rm10 + this[1][1] * rm11 + this[2][1] * rm12;
-        const nm12 = this[0][2] * rm10 + this[1][2] * rm11 + this[2][2] * rm12;
-        const nm13 = this[0][3] * rm10 + this[1][3] * rm11 + this[2][3] * rm12;
+        const tm30 = this.m00 * ox + this.m10 * oy + this.m20 * oz + this.m30;
+        const tm31 = this.m01 * ox + this.m11 * oy + this.m21 * oz + this.m31;
+        const tm32 = this.m02 * ox + this.m12 * oy + this.m22 * oz + this.m32;
+        const nm00 = this.m00 * rm00 + this.m10 * rm01 + this.m20 * rm02;
+        const nm01 = this.m01 * rm00 + this.m11 * rm01 + this.m21 * rm02;
+        const nm02 = this.m02 * rm00 + this.m12 * rm01 + this.m22 * rm02;
+        const nm03 = this.m03 * rm00 + this.m13 * rm01 + this.m23 * rm02;
+        const nm10 = this.m00 * rm10 + this.m10 * rm11 + this.m20 * rm12;
+        const nm11 = this.m01 * rm10 + this.m11 * rm11 + this.m21 * rm12;
+        const nm12 = this.m02 * rm10 + this.m12 * rm11 + this.m22 * rm12;
+        const nm13 = this.m03 * rm10 + this.m13 * rm11 + this.m23 * rm12;
 
-        dest[2][0] = this[0][0] * rm20 + this[1][0] * rm21 + this[2][0] * rm22;
-        dest[2][1] = this[0][1] * rm20 + this[1][1] * rm21 + this[2][1] * rm22;
-        dest[2][2] = this[0][2] * rm20 + this[1][2] * rm21 + this[2][2] * rm22;
-        dest[2][3] = this[0][3] * rm20 + this[1][3] * rm21 + this[2][3] * rm22;
-        dest[0][0] = nm00;
-        dest[0][1] = nm01;
-        dest[0][2] = nm02;
-        dest[0][3] = nm03;
-        dest[1][0] = nm10;
-        dest[1][1] = nm11;
-        dest[1][2] = nm12;
-        dest[1][3] = nm13;
-        dest[3][0] = -nm00 * ox - nm10 * oy - this[2][0] * oz + tm30;
-        dest[3][1] = -nm01 * ox - nm11 * oy - this[2][1] * oz + tm31;
-        dest[3][2] = -nm02 * ox - nm12 * oy - this[2][2] * oz + tm32;
-        dest[3][3] = this[3][3];
+        dest.m20 = this.m00 * rm20 + this.m10 * rm21 + this.m20 * rm22;
+        dest.m21 = this.m01 * rm20 + this.m11 * rm21 + this.m21 * rm22;
+        dest.m22 = this.m02 * rm20 + this.m12 * rm21 + this.m22 * rm22;
+        dest.m23 = this.m03 * rm20 + this.m13 * rm21 + this.m23 * rm22;
+        dest.m00 = nm00;
+        dest.m01 = nm01;
+        dest.m02 = nm02;
+        dest.m03 = nm03;
+        dest.m10 = nm10;
+        dest.m11 = nm11;
+        dest.m12 = nm12;
+        dest.m13 = nm13;
+        dest.m30 = -nm00 * ox - nm10 * oy - this.m20 * oz + tm30;
+        dest.m31 = -nm01 * ox - nm11 * oy - this.m21 * oz + tm31;
+        dest.m32 = -nm02 * ox - nm12 * oy - this.m22 * oz + tm32;
+        dest.m33 = this.m33;
         return dest;
     }
 
@@ -3011,22 +3048,22 @@ export class Matrix4 {
         const zw = quat.z * quat.w, dzw = zw + zw, xy = quat.x * quat.y, dxy = xy + xy;
         const xz = quat.x * quat.z, dxz = xz + xz, yw = quat.y * quat.w, dyw = yw + yw;
         const yz = quat.y * quat.z, dyz = yz + yz, xw = quat.x * quat.w, dxw = xw + xw;
-        this[2][0] = (dyw + dxz);
-        this[2][1] = (dyz - dxw);
-        this[2][2] = (z2 - y2 - x2 + w2);
-        this[2][3] = (0.0);
-        this[0][0] = (w2 + x2 - z2 - y2);
-        this[0][1] = (dxy + dzw);
-        this[0][2] = (dxz - dyw);
-        this[0][3] = (0.0);
-        this[1][0] = (-dzw + dxy);
-        this[1][1] = (y2 - z2 + w2 - x2);
-        this[1][2] = (dyz + dxw);
-        this[1][3] = (0.0);
-        this[3][0] = (-this[0][0] * ox - this[1][0] * oy - this[2][0] * oz + ox);
-        this[3][1] = (-this[0][1] * ox - this[1][1] * oy - this[2][1] * oz + oy);
-        this[3][2] = (-this[0][2] * ox - this[1][2] * oy - this[2][2] * oz + oz);
-        this[3][3] = (1.0);
+        this.m20 = (dyw + dxz);
+        this.m21 = (dyz - dxw);
+        this.m22 = (z2 - y2 - x2 + w2);
+        this.m23 = (0.0);
+        this.m00 = (w2 + x2 - z2 - y2);
+        this.m01 = (dxy + dzw);
+        this.m02 = (dxz - dyw);
+        this.m03 = (0.0);
+        this.m10 = (-dzw + dxy);
+        this.m11 = (y2 - z2 + w2 - x2);
+        this.m12 = (dyz + dxw);
+        this.m13 = (0.0);
+        this.m30 = (-this.m00 * ox - this.m10 * oy - this.m20 * oz + ox);
+        this.m31 = (-this.m01 * ox - this.m11 * oy - this.m21 * oz + oy);
+        this.m32 = (-this.m02 * ox - this.m12 * oy - this.m22 * oz + oz);
+        this.m33 = (1.0);
         return this;
     }
 
@@ -3096,22 +3133,22 @@ export class Matrix4 {
         const lm21 = yz * C - x * s;
         const lm22 = zz * C + c;
         return dest.set(
-            lm00 * this[0][0] + lm10 * this[0][1] + lm20 * this[0][2],
-            lm01 * this[0][0] + lm11 * this[0][1] + lm21 * this[0][2],
-            lm02 * this[0][0] + lm12 * this[0][1] + lm22 * this[0][2],
-            this[0][3],
-            lm00 * this[1][0] + lm10 * this[1][1] + lm20 * this[1][2],
-            lm01 * this[1][0] + lm11 * this[1][1] + lm21 * this[1][2],
-            lm02 * this[1][0] + lm12 * this[1][1] + lm22 * this[1][2],
-            this[1][3],
-            lm00 * this[2][0] + lm10 * this[2][1] + lm20 * this[2][2],
-            lm01 * this[2][0] + lm11 * this[2][1] + lm21 * this[2][2],
-            lm02 * this[2][0] + lm12 * this[2][1] + lm22 * this[2][2],
-            this[2][3],
-            lm00 * this[3][0] + lm10 * this[3][1] + lm20 * this[3][2],
-            lm01 * this[3][0] + lm11 * this[3][1] + lm21 * this[3][2],
-            lm02 * this[3][0] + lm12 * this[3][1] + lm22 * this[3][2],
-            this[3][3],
+            lm00 * this.m00 + lm10 * this.m01 + lm20 * this.m02,
+            lm01 * this.m00 + lm11 * this.m01 + lm21 * this.m02,
+            lm02 * this.m00 + lm12 * this.m01 + lm22 * this.m02,
+            this.m03,
+            lm00 * this.m10 + lm10 * this.m11 + lm20 * this.m12,
+            lm01 * this.m10 + lm11 * this.m11 + lm21 * this.m12,
+            lm02 * this.m10 + lm12 * this.m11 + lm22 * this.m12,
+            this.m13,
+            lm00 * this.m20 + lm10 * this.m21 + lm20 * this.m22,
+            lm01 * this.m20 + lm11 * this.m21 + lm21 * this.m22,
+            lm02 * this.m20 + lm12 * this.m21 + lm22 * this.m22,
+            this.m23,
+            lm00 * this.m30 + lm10 * this.m31 + lm20 * this.m32,
+            lm01 * this.m30 + lm11 * this.m31 + lm21 * this.m32,
+            lm02 * this.m30 + lm12 * this.m31 + lm22 * this.m32,
+            this.m33,
         );
     }
 
@@ -3163,34 +3200,34 @@ export class Matrix4 {
         const lm20 = yw + xz + xz + yw;
         const lm21 = yz + yz - xw - xw;
         const lm22 = z2 - y2 - x2 + w2;
-        const tm00 = this[0][0] - ox * this[0][3];
-        const tm01 = this[0][1] - oy * this[0][3];
-        const tm02 = this[0][2] - oz * this[0][3];
-        const tm10 = this[1][0] - ox * this[1][3];
-        const tm11 = this[1][1] - oy * this[1][3];
-        const tm12 = this[1][2] - oz * this[1][3];
-        const tm20 = this[2][0] - ox * this[2][3];
-        const tm21 = this[2][1] - oy * this[2][3];
-        const tm22 = this[2][2] - oz * this[2][3];
-        const tm30 = this[3][0] - ox * this[3][3];
-        const tm31 = this[3][1] - oy * this[3][3];
-        const tm32 = this[3][2] - oz * this[3][3];
-        dest[0][0] = lm00 * tm00 + lm10 * tm01 + lm20 * tm02 + ox * this[0][3];
-        dest[0][1] = lm01 * tm00 + lm11 * tm01 + lm21 * tm02 + oy * this[0][3];
-        dest[0][2] = lm02 * tm00 + lm12 * tm01 + lm22 * tm02 + oz * this[0][3];
-        dest[0][3] = this[0][3];
-        dest[1][0] = lm00 * tm10 + lm10 * tm11 + lm20 * tm12 + ox * this[1][3];
-        dest[1][1] = lm01 * tm10 + lm11 * tm11 + lm21 * tm12 + oy * this[1][3];
-        dest[1][2] = lm02 * tm10 + lm12 * tm11 + lm22 * tm12 + oz * this[1][3];
-        dest[1][3] = this[1][3];
-        dest[2][0] = lm00 * tm20 + lm10 * tm21 + lm20 * tm22 + ox * this[2][3];
-        dest[2][1] = lm01 * tm20 + lm11 * tm21 + lm21 * tm22 + oy * this[2][3];
-        dest[2][2] = lm02 * tm20 + lm12 * tm21 + lm22 * tm22 + oz * this[2][3];
-        dest[2][3] = this[2][3];
-        dest[3][0] = lm00 * tm30 + lm10 * tm31 + lm20 * tm32 + ox * this[3][3];
-        dest[3][1] = lm01 * tm30 + lm11 * tm31 + lm21 * tm32 + oy * this[3][3];
-        dest[3][2] = lm02 * tm30 + lm12 * tm31 + lm22 * tm32 + oz * this[3][3];
-        dest[3][3] = this[3][3];
+        const tm00 = this.m00 - ox * this.m03;
+        const tm01 = this.m01 - oy * this.m03;
+        const tm02 = this.m02 - oz * this.m03;
+        const tm10 = this.m10 - ox * this.m13;
+        const tm11 = this.m11 - oy * this.m13;
+        const tm12 = this.m12 - oz * this.m13;
+        const tm20 = this.m20 - ox * this.m23;
+        const tm21 = this.m21 - oy * this.m23;
+        const tm22 = this.m22 - oz * this.m23;
+        const tm30 = this.m30 - ox * this.m33;
+        const tm31 = this.m31 - oy * this.m33;
+        const tm32 = this.m32 - oz * this.m33;
+        dest.m00 = lm00 * tm00 + lm10 * tm01 + lm20 * tm02 + ox * this.m03;
+        dest.m01 = lm01 * tm00 + lm11 * tm01 + lm21 * tm02 + oy * this.m03;
+        dest.m02 = lm02 * tm00 + lm12 * tm01 + lm22 * tm02 + oz * this.m03;
+        dest.m03 = this.m03;
+        dest.m10 = lm00 * tm10 + lm10 * tm11 + lm20 * tm12 + ox * this.m13;
+        dest.m11 = lm01 * tm10 + lm11 * tm11 + lm21 * tm12 + oy * this.m13;
+        dest.m12 = lm02 * tm10 + lm12 * tm11 + lm22 * tm12 + oz * this.m13;
+        dest.m13 = this.m13;
+        dest.m20 = lm00 * tm20 + lm10 * tm21 + lm20 * tm22 + ox * this.m23;
+        dest.m21 = lm01 * tm20 + lm11 * tm21 + lm21 * tm22 + oy * this.m23;
+        dest.m22 = lm02 * tm20 + lm12 * tm21 + lm22 * tm22 + oz * this.m23;
+        dest.m23 = this.m23;
+        dest.m30 = lm00 * tm30 + lm10 * tm31 + lm20 * tm32 + ox * this.m33;
+        dest.m31 = lm01 * tm30 + lm11 * tm31 + lm21 * tm32 + oy * this.m33;
+        dest.m32 = lm02 * tm30 + lm12 * tm31 + lm22 * tm32 + oz * this.m33;
+        dest.m33 = this.m33;
         return dest;
     }
 
@@ -3252,24 +3289,24 @@ export class Matrix4 {
     }
     private translateGeneric(x: number, y: number, z: number, dest?: Matrix4) {
         dest = dest ?? this;
-        dest[3][0] = this[0][0] * x * this[1][0] * y + this[2][0] * z + this[3][0];
-        dest[3][1] = this[0][1] * x * this[1][1] * y + this[2][1] * z + this[3][1];
-        dest[3][2] = this[0][2] * x * this[1][2] * y + this[2][2] * z + this[3][2];
-        dest[3][3] = this[0][3] * x * this[1][3] * y + this[2][3] * z + this[3][3];
+        dest.m30 = this.m00 * x * this.m10 * y + this.m20 * z + this.m30;
+        dest.m31 = this.m01 * x * this.m11 * y + this.m21 * z + this.m31;
+        dest.m32 = this.m02 * x * this.m12 * y + this.m22 * z + this.m32;
+        dest.m33 = this.m03 * x * this.m13 * y + this.m23 * z + this.m33;
         if (dest === this)
             return;
-        dest[0][0] = this[0][0];
-        dest[0][1] = this[0][1];
-        dest[0][2] = this[0][2];
-        dest[0][3] = this[0][3];
-        dest[1][0] = this[1][0];
-        dest[1][1] = this[1][1];
-        dest[1][2] = this[1][2];
-        dest[1][3] = this[1][3];
-        dest[2][0] = this[2][0];
-        dest[2][1] = this[2][1];
-        dest[2][2] = this[2][2];
-        dest[2][3] = this[2][3];
+        dest.m00 = this.m00;
+        dest.m01 = this.m01;
+        dest.m02 = this.m02;
+        dest.m03 = this.m03;
+        dest.m10 = this.m10;
+        dest.m11 = this.m11;
+        dest.m12 = this.m12;
+        dest.m13 = this.m13;
+        dest.m20 = this.m20;
+        dest.m21 = this.m21;
+        dest.m22 = this.m22;
+        dest.m23 = this.m23;
         return dest;
     }
 
@@ -3334,22 +3371,22 @@ export class Matrix4 {
     }
     private translateLocalGeneric(x: number, y: number, z: number, dest: Matrix4) {
         return dest.set(
-            this[0][0] + x * this[0][3],
-            this[0][1] + y * this[0][3],
-            this[0][2] + z * this[0][3],
-            this[1][3],
-            this[1][0] + x * this[1][3],
-            this[1][1] + y * this[1][3],
-            this[1][2] + z * this[1][3],
-            this[2][3],
-            this[2][0] + x * this[2][3],
-            this[2][1] + y * this[2][3],
-            this[2][2] + z * this[2][3],
-            this[0][3],
-            this[3][0] + x * this[3][3],
-            this[3][1] + y * this[3][3],
-            this[3][2] + z * this[3][3],
-            this[3][3],
+            this.m00 + x * this.m03,
+            this.m01 + y * this.m03,
+            this.m02 + z * this.m03,
+            this.m13,
+            this.m10 + x * this.m13,
+            this.m11 + y * this.m13,
+            this.m12 + z * this.m13,
+            this.m23,
+            this.m20 + x * this.m23,
+            this.m21 + y * this.m23,
+            this.m22 + z * this.m23,
+            this.m03,
+            this.m30 + x * this.m33,
+            this.m31 + y * this.m33,
+            this.m32 + z * this.m33,
+            this.m33,
         );
     }
 
@@ -3384,22 +3421,22 @@ export class Matrix4 {
         const sin = Math.sin(ang);
         const cos = Math.cos(ang);
         return dest.set(
-            this[0][0],
-            cos * this[0][1] - sin * this[0][2],
-            sin * this[0][1] + cos * this[0][2],
-            this[0][3],
-            this[1][0],
-            cos * this[1][1] - sin * this[1][2],
-            sin * this[1][1] + cos * this[1][2],
-            this[1][3],
-            this[2][0],
-            cos * this[2][1] - sin * this[2][2],
-            sin * this[2][1] + cos * this[2][2],
-            this[2][3],
-            this[3][0],
-            cos * this[3][1] - sin * this[3][2],
-            sin * this[3][1] + cos * this[3][2],
-            this[3][3],
+            this.m00,
+            cos * this.m01 - sin * this.m02,
+            sin * this.m01 + cos * this.m02,
+            this.m03,
+            this.m10,
+            cos * this.m11 - sin * this.m12,
+            sin * this.m11 + cos * this.m12,
+            this.m13,
+            this.m20,
+            cos * this.m21 - sin * this.m22,
+            sin * this.m21 + cos * this.m22,
+            this.m23,
+            this.m30,
+            cos * this.m31 - sin * this.m32,
+            sin * this.m31 + cos * this.m32,
+            this.m33,
         );
     }
 
@@ -3434,22 +3471,22 @@ export class Matrix4 {
         const sin = Math.sin(ang);
         const cos = Math.cos(ang);
         return dest.set(
-            cos * this[0][0] + sin * this[0][2],
-            this[0][1],
-            cos * this[0][2] - sin * this[0][0],
-            this[0][3],
-            cos * this[1][0] + sin * this[1][2],
-            this[1][1],
-            cos * this[1][2] - sin * this[1][0],
-            this[1][3],
-            cos * this[2][0] + sin * this[2][2],
-            this[2][1],
-            cos * this[2][2] - sin * this[2][0],
-            this[2][3],
-            cos * this[3][0] + sin * this[3][2],
-            this[3][1],
-            cos * this[3][2] - sin * this[3][0],
-            this[3][3],
+            cos * this.m00 + sin * this.m02,
+            this.m01,
+            cos * this.m02 - sin * this.m00,
+            this.m03,
+            cos * this.m10 + sin * this.m12,
+            this.m11,
+            cos * this.m12 - sin * this.m10,
+            this.m13,
+            cos * this.m20 + sin * this.m22,
+            this.m21,
+            cos * this.m22 - sin * this.m20,
+            this.m23,
+            cos * this.m30 + sin * this.m32,
+            this.m31,
+            cos * this.m32 - sin * this.m30,
+            this.m33,
         )
     }
 
@@ -3484,22 +3521,22 @@ export class Matrix4 {
         const sin = Math.sin(ang);
         const cos = Math.cos(ang);
         return dest.set(
-            sin * this[0][0] + cos * this[0][1],
-            cos * this[0][0] - sin * this[0][1],
-            this[0][2],
-            this[0][3],
-            cos * this[1][0] - sin * this[1][1],
-            sin * this[1][0] + cos * this[1][1],
-            this[1][2],
-            this[1][3],
-            cos * this[2][0] - sin * this[2][1],
-            sin * this[2][0] + cos * this[2][1],
-            this[2][2],
-            this[2][3],
-            cos * this[3][0] - sin * this[3][1],
-            sin * this[3][0] + cos * this[3][1],
-            this[3][2],
-            this[3][3],
+            sin * this.m00 + cos * this.m01,
+            cos * this.m00 - sin * this.m01,
+            this.m02,
+            this.m03,
+            cos * this.m10 - sin * this.m11,
+            sin * this.m10 + cos * this.m11,
+            this.m12,
+            this.m13,
+            cos * this.m20 - sin * this.m21,
+            sin * this.m20 + cos * this.m21,
+            this.m22,
+            this.m23,
+            cos * this.m30 - sin * this.m31,
+            sin * this.m30 + cos * this.m31,
+            this.m32,
+            this.m33,
         );
     }
 
@@ -3526,7 +3563,7 @@ export class Matrix4 {
         if (this.PROPERTY_IDENTITY)
             return dest.rotationX(ang);
         else if (this.PROPERTY_TRANSLATION) {
-            const x = this[3][0], y = this[3][1], z = this[3][2];
+            const x = this.m30, y = this.m31, z = this.m32;
             return dest.rotationX(ang).setTranslation(x, y, z);
         }
         return this.rotateXInternal(ang, dest);
@@ -3536,22 +3573,22 @@ export class Matrix4 {
         const cos = Math.cos(ang);
         // set non-dependent values directly
         return dest.set(
-            this[0][0],
-            this[0][1],
-            this[0][2],
-            this[0][3],
-            this[1][0] * cos + this[2][0] * sin,
-            this[1][1] * cos + this[2][1] * sin,
-            this[1][2] * cos + this[2][2] * sin,
-            this[1][3] * cos + this[2][3] * sin,
-            this[2][0] * cos - this[1][0] * sin,
-            this[2][1] * cos - this[1][1] * sin,
-            this[2][2] * cos - this[1][2] * sin,
-            this[2][3] * cos - this[1][3] * sin,
-            this[3][0],
-            this[3][1],
-            this[3][2],
-            this[3][3],
+            this.m00,
+            this.m01,
+            this.m02,
+            this.m03,
+            this.m10 * cos + this.m20 * sin,
+            this.m11 * cos + this.m21 * sin,
+            this.m12 * cos + this.m22 * sin,
+            this.m13 * cos + this.m23 * sin,
+            this.m20 * cos - this.m10 * sin,
+            this.m21 * cos - this.m11 * sin,
+            this.m22 * cos - this.m12 * sin,
+            this.m23 * cos - this.m13 * sin,
+            this.m30,
+            this.m31,
+            this.m32,
+            this.m33,
         );
         // ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
         // return dest;
@@ -3580,7 +3617,7 @@ export class Matrix4 {
         if (this.PROPERTY_IDENTITY)
             return dest.rotationY(ang);
         else if (this.PROPERTY_TRANSLATION) {
-            return dest.rotationY(ang).setTranslation(this[3][0], this[3][1], this[3][2]);
+            return dest.rotationY(ang).setTranslation(this.m30, this.m31, this.m32);
         }
         return this.rotateYInternal(ang, dest);
     }
@@ -3589,22 +3626,22 @@ export class Matrix4 {
         const cos = Math.cos(ang);
         // set non-dependent values directly
         return dest.set(
-            this[0][0] * cos - this[2][0] * sin,
-            this[0][1] * cos - this[2][1] * sin,
-            this[0][2] * cos - this[2][2] * sin,
-            this[0][3] * cos - this[2][3] * sin,
-            this[1][0],
-            this[1][1],
-            this[1][2],
-            this[1][3],
-            this[0][0] * sin + this[2][0] * cos,
-            this[0][1] * sin + this[2][1] * cos,
-            this[0][2] * sin + this[2][2] * cos,
-            this[0][3] * sin + this[2][3] * cos,
-            this[3][0],
-            this[3][1],
-            this[3][2],
-            this[3][3],
+            this.m00 * cos - this.m20 * sin,
+            this.m01 * cos - this.m21 * sin,
+            this.m02 * cos - this.m22 * sin,
+            this.m03 * cos - this.m23 * sin,
+            this.m10,
+            this.m11,
+            this.m12,
+            this.m13,
+            this.m00 * sin + this.m20 * cos,
+            this.m01 * sin + this.m21 * cos,
+            this.m02 * sin + this.m22 * cos,
+            this.m03 * sin + this.m23 * cos,
+            this.m30,
+            this.m31,
+            this.m32,
+            this.m33,
         )
         // ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
         // return dest;
@@ -3633,7 +3670,7 @@ export class Matrix4 {
         if (this.PROPERTY_IDENTITY)
             return dest.rotationZ(ang);
         else if (this.PROPERTY_TRANSLATION) {
-            return dest.rotationZ(ang).setTranslation(this[3][0], this[3][1], this[3][2]);
+            return dest.rotationZ(ang).setTranslation(this.m30, this.m31, this.m32);
         }
         // rotateZInternal
         const sin = Math.sin(ang);
@@ -3662,22 +3699,22 @@ export class Matrix4 {
         if (this.PROPERTY_IDENTITY)
             return dest.rotationTowardsXY(dirX, dirY);
         return dest.set(
-            this[0][0] * dirY + this[1][0] * dirX,
-            this[0][1] * dirY + this[1][1] * dirX,
-            this[0][2] * dirY + this[1][2] * dirX,
-            this[0][3] * dirY + this[1][3] * dirX,
-            this[1][0] * dirY - this[0][0] * dirX,
-            this[1][1] * dirY - this[0][1] * dirX,
-            this[1][2] * dirY - this[0][2] * dirX,
-            this[1][3] * dirY - this[0][3] * dirX,
-            this[2][0],
-            this[2][1],
-            this[2][2],
-            this[2][3],
-            this[3][0],
-            this[3][1],
-            this[3][2],
-            this[3][3],
+            this.m00 * dirY + this.m10 * dirX,
+            this.m01 * dirY + this.m11 * dirX,
+            this.m02 * dirY + this.m12 * dirX,
+            this.m03 * dirY + this.m13 * dirX,
+            this.m10 * dirY - this.m00 * dirX,
+            this.m11 * dirY - this.m01 * dirX,
+            this.m12 * dirY - this.m02 * dirX,
+            this.m13 * dirY - this.m03 * dirX,
+            this.m20,
+            this.m21,
+            this.m22,
+            this.m23,
+            this.m30,
+            this.m31,
+            this.m32,
+            this.m33,
         )
         //     ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
         // return dest;
@@ -3738,7 +3775,7 @@ export class Matrix4 {
         if (this.PROPERTY_IDENTITY)
             return dest.rotationXYZ(angleX, angleY, angleZ);
         else if (this.PROPERTY_TRANSLATION)
-            return dest.rotationXYZ(angleX, angleY, angleZ).setTranslation(this[3][0], this[3][1], this[3][2]);
+            return dest.rotationXYZ(angleX, angleY, angleZ).setTranslation(this.m30, this.m31, this.m32);
         else if (this.PROPERTY_AFFINE)
             return dest.rotateAffineXYZ(angleX, angleY, angleZ);
         return this.rotateXYZInternal(angleX, angleY, angleZ, dest);
@@ -3752,19 +3789,19 @@ export class Matrix4 {
         const cosZ = Math.cos(angleZ);
 
         // rotateX
-        const nm10 = this[1][0] * cosX + this[2][0] * sinX;
-        const nm11 = this[1][1] * cosX + this[2][1] * sinX;
-        const nm12 = this[1][2] * cosX + this[2][2] * sinX;
-        const nm13 = this[1][3] * cosX + this[2][3] * sinX;
-        const nm20 = this[2][0] * cosX - this[1][0] * sinX;
-        const nm21 = this[2][1] * cosX - this[1][1] * sinX;
-        const nm22 = this[2][2] * cosX - this[1][2] * sinX;
-        const nm23 = this[2][3] * cosX - this[1][3] * sinX;
+        const nm10 = this.m10 * cosX + this.m20 * sinX;
+        const nm11 = this.m11 * cosX + this.m21 * sinX;
+        const nm12 = this.m12 * cosX + this.m22 * sinX;
+        const nm13 = this.m13 * cosX + this.m23 * sinX;
+        const nm20 = this.m20 * cosX - this.m10 * sinX;
+        const nm21 = this.m21 * cosX - this.m11 * sinX;
+        const nm22 = this.m22 * cosX - this.m12 * sinX;
+        const nm23 = this.m23 * cosX - this.m13 * sinX;
         // rotateY
-        const nm00 = this[0][0] * cosY - nm20 * sinY;
-        const nm01 = this[0][1] * cosY - nm21 * sinY;
-        const nm02 = this[0][2] * cosY - nm22 * sinY;
-        const nm03 = this[0][3] * cosY - nm23 * sinY;
+        const nm00 = this.m00 * cosY - nm20 * sinY;
+        const nm01 = this.m01 * cosY - nm21 * sinY;
+        const nm02 = this.m02 * cosY - nm22 * sinY;
+        const nm03 = this.m03 * cosY - nm23 * sinY;
 
         return dest.set(
             nm00 * cosZ + nm10 * sinZ,
@@ -3775,14 +3812,14 @@ export class Matrix4 {
             nm11 * cosZ - nm01 * sinZ,
             nm12 * cosZ - nm02 * sinZ,
             nm13 * cosZ - nm03 * sinZ,
-            this[0][0] * sinY + nm20 * cosY,
-            this[0][1] * sinY + nm21 * cosY,
-            this[0][2] * sinY + nm22 * cosY,
-            this[0][3] * sinY + nm23 * cosY,
-            this[3][0],
-            this[3][1],
-            this[3][2],
-            this[3][3],
+            this.m00 * sinY + nm20 * cosY,
+            this.m01 * sinY + nm21 * cosY,
+            this.m02 * sinY + nm22 * cosY,
+            this.m03 * sinY + nm23 * cosY,
+            this.m30,
+            this.m31,
+            this.m32,
+            this.m33,
         )
         // _properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
         // return dest;
@@ -3819,7 +3856,7 @@ export class Matrix4 {
         if (this.PROPERTY_IDENTITY)
             return dest.rotationXYZ(angleX, angleY, angleZ);
         else if (this.PROPERTY_TRANSLATION)
-            return dest.rotationXYZ(angleX, angleY, angleZ).setTranslation(this[3][0], this[3][1], this[3][2]);
+            return dest.rotationXYZ(angleX, angleY, angleZ).setTranslation(this.m30, this.m31, this.m32);
         return this.rotateAffineXYZInternal(angleX, angleY, angleZ, dest);
     }
     private rotateAffineXYZInternal(angleX: number, angleY: number, angleZ: number, dest: Matrix4) {
@@ -3830,16 +3867,16 @@ export class Matrix4 {
         const sinZ = Math.sin(angleZ);
         const cosZ = Math.cos(angleZ);
         // rotateX
-        const nm10 = this[1][0] * cosX + this[2][0] * sinX;
-        const nm11 = this[1][1] * cosX + this[2][1] * sinX;
-        const nm12 = this[1][2] * cosX + this[2][2] * sinX;
-        const nm20 = this[2][0] * cosX - this[1][0] * sinX;
-        const nm21 = this[2][1] * cosX - this[1][1] * sinX;
-        const nm22 = this[2][2] * cosX - this[1][2] * sinX;
+        const nm10 = this.m10 * cosX + this.m20 * sinX;
+        const nm11 = this.m11 * cosX + this.m21 * sinX;
+        const nm12 = this.m12 * cosX + this.m22 * sinX;
+        const nm20 = this.m20 * cosX - this.m10 * sinX;
+        const nm21 = this.m21 * cosX - this.m11 * sinX;
+        const nm22 = this.m22 * cosX - this.m12 * sinX;
         // rotateY
-        const nm00 = this[0][0] * cosY - nm20 * sinY;
-        const nm01 = this[0][1] * cosY - nm21 * sinY;
-        const nm02 = this[0][2] * cosY - nm22 * sinY;
+        const nm00 = this.m00 * cosY - nm20 * sinY;
+        const nm01 = this.m01 * cosY - nm21 * sinY;
+        const nm02 = this.m02 * cosY - nm22 * sinY;
         return dest.set(
             nm00 * cosZ + nm10 * sinZ,
             nm01 * cosZ + nm11 * sinZ,
@@ -3849,14 +3886,14 @@ export class Matrix4 {
             nm11 * cosZ - nm01 * sinZ,
             nm12 * cosZ - nm02 * sinZ,
             0.0,
-            this[0][0] * sinY + nm20 * cosY,
-            this[0][1] * sinY + nm21 * cosY,
-            this[0][2] * sinY + nm22 * cosY,
+            this.m00 * sinY + nm20 * cosY,
+            this.m01 * sinY + nm21 * cosY,
+            this.m02 * sinY + nm22 * cosY,
             0.0,
-            this[3][0],
-            this[3][1],
-            this[3][2],
-            this[3][3],
+            this.m30,
+            this.m31,
+            this.m32,
+            this.m33,
         )
         // _properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
         // return dest;
@@ -3916,7 +3953,7 @@ export class Matrix4 {
         if (this.PROPERTY_IDENTITY)
             return dest.rotationZYX(angleZ, angleY, angleX);
         else if (this.PROPERTY_TRANSLATION)
-            return dest.rotationZYX(angleZ, angleY, angleX).setTranslation(this[3][0], this[3][1], this[3][2]);
+            return dest.rotationZYX(angleZ, angleY, angleX).setTranslation(this.m30, this.m31, this.m32);
         else if (this.PROPERTY_AFFINE)
             return dest.rotateAffineZYX(angleZ, angleY, angleX);
         return this.rotateZYXInternal(angleZ, angleY, angleX, dest);
@@ -3929,25 +3966,25 @@ export class Matrix4 {
         const sinZ = Math.sin(angleZ);
         const cosZ = Math.cos(angleZ);
         // rotateZ
-        const nm00 = this[0][0] * cosZ + this[1][0] * sinZ;
-        const nm01 = this[0][1] * cosZ + this[1][1] * sinZ;
-        const nm02 = this[0][2] * cosZ + this[1][2] * sinZ;
-        const nm03 = this[0][3] * cosZ + this[1][3] * sinZ;
-        const nm10 = this[1][0] * cosZ - this[0][0] * sinZ;
-        const nm11 = this[1][1] * cosZ - this[0][1] * sinZ;
-        const nm12 = this[1][2] * cosZ - this[0][2] * sinZ;
-        const nm13 = this[1][3] * cosZ - this[0][3] * sinZ;
+        const nm00 = this.m00 * cosZ + this.m10 * sinZ;
+        const nm01 = this.m01 * cosZ + this.m11 * sinZ;
+        const nm02 = this.m02 * cosZ + this.m12 * sinZ;
+        const nm03 = this.m03 * cosZ + this.m13 * sinZ;
+        const nm10 = this.m10 * cosZ - this.m00 * sinZ;
+        const nm11 = this.m11 * cosZ - this.m01 * sinZ;
+        const nm12 = this.m12 * cosZ - this.m02 * sinZ;
+        const nm13 = this.m13 * cosZ - this.m03 * sinZ;
         // rotateY
-        const nm20 = nm00 * sinY + this[2][0] * cosY;
-        const nm21 = nm01 * sinY + this[2][1] * cosY;
-        const nm22 = nm02 * sinY + this[2][2] * cosY;
-        const nm23 = nm03 * sinY + this[2][3] * cosY;
+        const nm20 = nm00 * sinY + this.m20 * cosY;
+        const nm21 = nm01 * sinY + this.m21 * cosY;
+        const nm22 = nm02 * sinY + this.m22 * cosY;
+        const nm23 = nm03 * sinY + this.m23 * cosY;
 
         return dest.set(
-            nm00 * cosY - this[2][0] * sinY,
-            nm01 * cosY - this[2][1] * sinY,
-            nm02 * cosY - this[2][2] * sinY,
-            nm03 * cosY - this[2][3] * sinY,
+            nm00 * cosY - this.m20 * sinY,
+            nm01 * cosY - this.m21 * sinY,
+            nm02 * cosY - this.m22 * sinY,
+            nm03 * cosY - this.m23 * sinY,
             nm10 * cosX + nm20 * sinX,
             nm11 * cosX + nm21 * sinX,
             nm12 * cosX + nm22 * sinX,
@@ -3956,10 +3993,10 @@ export class Matrix4 {
             nm21 * cosX - nm11 * sinX,
             nm22 * cosX - nm12 * sinX,
             nm23 * cosX - nm13 * sinX,
-            this[3][0],
-            this[3][1],
-            this[3][2],
-            this[3][3],
+            this.m30,
+            this.m31,
+            this.m32,
+            this.m33,
         )
         //     ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
         // return dest;
@@ -3998,21 +4035,21 @@ export class Matrix4 {
         const sinZ = Math.sin(angleZ);
         const cosZ = Math.cos(angleZ);
         // rotateZ
-        const nm00 = this[0][0] * cosZ + this[1][0] * sinZ;
-        const nm01 = this[0][1] * cosZ + this[1][1] * sinZ;
-        const nm02 = this[0][2] * cosZ + this[1][2] * sinZ;
-        const nm10 = this[1][0] * cosZ - this[0][0] * sinZ;
-        const nm11 = this[1][1] * cosZ - this[0][1] * sinZ;
-        const nm12 = this[1][2] * cosZ - this[0][2] * sinZ;
+        const nm00 = this.m00 * cosZ + this.m10 * sinZ;
+        const nm01 = this.m01 * cosZ + this.m11 * sinZ;
+        const nm02 = this.m02 * cosZ + this.m12 * sinZ;
+        const nm10 = this.m10 * cosZ - this.m00 * sinZ;
+        const nm11 = this.m11 * cosZ - this.m01 * sinZ;
+        const nm12 = this.m12 * cosZ - this.m02 * sinZ;
         // rotateY
-        const nm20 = nm00 * sinY + this[2][0] * cosY;
-        const nm21 = nm01 * sinY + this[2][1] * cosY;
-        const nm22 = nm02 * sinY + this[2][2] * cosY;
+        const nm20 = nm00 * sinY + this.m20 * cosY;
+        const nm21 = nm01 * sinY + this.m21 * cosY;
+        const nm22 = nm02 * sinY + this.m22 * cosY;
 
         return dest.set(
-            nm00 * cosY - this[2][0] * sinY,
-            nm01 * cosY - this[2][1] * sinY,
-            nm02 * cosY - this[2][2] * sinY,
+            nm00 * cosY - this.m20 * sinY,
+            nm01 * cosY - this.m21 * sinY,
+            nm02 * cosY - this.m22 * sinY,
             0.0,
             nm10 * cosX + nm20 * sinX,
             nm11 * cosX + nm21 * sinX,
@@ -4022,10 +4059,10 @@ export class Matrix4 {
             nm21 * cosX - nm11 * sinX,
             nm22 * cosX - nm12 * sinX,
             0.0,
-            this[3][0],
-            this[3][1],
-            this[3][2],
-            this[3][3],
+            this.m30,
+            this.m31,
+            this.m32,
+            this.m33,
         );
         //     ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
         // return dest;
@@ -4086,7 +4123,7 @@ export class Matrix4 {
         if (this.PROPERTY_IDENTITY)
             return dest.rotationYXZ(angleY, angleX, angleZ);
         else if (this.PROPERTY_TRANSLATION)
-            return dest.rotationYXZ(angleY, angleX, angleZ).setTranslation(this[3][0], this[3][1], this[3][2]);
+            return dest.rotationYXZ(angleY, angleX, angleZ).setTranslation(this.m30, this.m31, this.m32);
         else if (this.PROPERTY_AFFINE)
             return dest.rotateAffineYXZ(angleY, angleX, angleZ);
         return this.rotateYXZInternal(angleY, angleX, angleZ, dest);
@@ -4099,19 +4136,19 @@ export class Matrix4 {
         const sinZ = Math.sin(angleZ);
         const cosZ = Math.cos(angleZ);
         // rotateY
-        const nm20 = this[0][0] * sinY + this[2][0] * cosY;
-        const nm21 = this[0][1] * sinY + this[2][1] * cosY;
-        const nm22 = this[0][2] * sinY + this[2][2] * cosY;
-        const nm23 = this[0][3] * sinY + this[2][3] * cosY;
-        const nm00 = this[0][0] * cosY - this[2][0] * sinY;
-        const nm01 = this[0][1] * cosY - this[2][1] * sinY;
-        const nm02 = this[0][2] * cosY - this[2][2] * sinY;
-        const nm03 = this[0][3] * cosY - this[2][3] * sinY;
+        const nm20 = this.m00 * sinY + this.m20 * cosY;
+        const nm21 = this.m01 * sinY + this.m21 * cosY;
+        const nm22 = this.m02 * sinY + this.m22 * cosY;
+        const nm23 = this.m03 * sinY + this.m23 * cosY;
+        const nm00 = this.m00 * cosY - this.m20 * sinY;
+        const nm01 = this.m01 * cosY - this.m21 * sinY;
+        const nm02 = this.m02 * cosY - this.m22 * sinY;
+        const nm03 = this.m03 * cosY - this.m23 * sinY;
         // rotateX
-        const nm10 = this[1][0] * cosX + nm20 * sinX;
-        const nm11 = this[1][1] * cosX + nm21 * sinX;
-        const nm12 = this[1][2] * cosX + nm22 * sinX;
-        const nm13 = this[1][3] * cosX + nm23 * sinX;
+        const nm10 = this.m10 * cosX + nm20 * sinX;
+        const nm11 = this.m11 * cosX + nm21 * sinX;
+        const nm12 = this.m12 * cosX + nm22 * sinX;
+        const nm13 = this.m13 * cosX + nm23 * sinX;
         return dest.set(
             nm00 * cosZ + nm10 * sinZ,
             nm01 * cosZ + nm11 * sinZ,
@@ -4121,14 +4158,14 @@ export class Matrix4 {
             nm11 * cosZ - nm01 * sinZ,
             nm12 * cosZ - nm02 * sinZ,
             nm13 * cosZ - nm03 * sinZ,
-            nm20 * cosX - this[1][0] * sinX,
-            nm21 * cosX - this[1][1] * sinX,
-            nm22 * cosX - this[1][2] * sinX,
-            nm23 * cosX - this[1][3] * sinX,
-            this[3][0],
-            this[3][1],
-            this[3][2],
-            this[3][3],
+            nm20 * cosX - this.m10 * sinX,
+            nm21 * cosX - this.m11 * sinX,
+            nm22 * cosX - this.m12 * sinX,
+            nm23 * cosX - this.m13 * sinX,
+            this.m30,
+            this.m31,
+            this.m32,
+            this.m33,
         );
         //     ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
         // return dest;
@@ -4167,16 +4204,16 @@ export class Matrix4 {
         const sinZ = Math.sin(angleZ);
         const cosZ = Math.cos(angleZ);
         // rotateY
-        const nm20 = this[0][0] * sinY + this[2][0] * cosY;
-        const nm21 = this[0][1] * sinY + this[2][1] * cosY;
-        const nm22 = this[0][2] * sinY + this[2][2] * cosY;
-        const nm00 = this[0][0] * cosY - this[2][0] * sinY;
-        const nm01 = this[0][1] * cosY - this[2][1] * sinY;
-        const nm02 = this[0][2] * cosY - this[2][2] * sinY;
+        const nm20 = this.m00 * sinY + this.m20 * cosY;
+        const nm21 = this.m01 * sinY + this.m21 * cosY;
+        const nm22 = this.m02 * sinY + this.m22 * cosY;
+        const nm00 = this.m00 * cosY - this.m20 * sinY;
+        const nm01 = this.m01 * cosY - this.m21 * sinY;
+        const nm02 = this.m02 * cosY - this.m22 * sinY;
         // rotateX
-        const nm10 = this[1][0] * cosX + nm20 * sinX;
-        const nm11 = this[1][1] * cosX + nm21 * sinX;
-        const nm12 = this[1][2] * cosX + nm22 * sinX;
+        const nm10 = this.m10 * cosX + nm20 * sinX;
+        const nm11 = this.m11 * cosX + nm21 * sinX;
+        const nm12 = this.m12 * cosX + nm22 * sinX;
         return dest.set(
             nm00 * cosZ + nm10 * sinZ,
             nm01 * cosZ + nm11 * sinZ,
@@ -4186,14 +4223,14 @@ export class Matrix4 {
             nm11 * cosZ - nm01 * sinZ,
             nm12 * cosZ - nm02 * sinZ,
             0.0,
-            nm20 * cosX - this[1][0] * sinX,
-            nm21 * cosX - this[1][1] * sinX,
-            nm22 * cosX - this[1][2] * sinX,
+            nm20 * cosX - this.m10 * sinX,
+            nm21 * cosX - this.m11 * sinX,
+            nm22 * cosX - this.m12 * sinX,
             0.0,
-            this[3][0],
-            this[3][1],
-            this[3][2],
-            this[3][3],
+            this.m30,
+            this.m31,
+            this.m32,
+            this.m33,
         )
         //     ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
         // return dest;
@@ -4375,22 +4412,22 @@ export class Matrix4 {
         const q12 = dqy * qz;
         const q13 = dqy * qw;
         const q23 = dqz * qw;
-        this[0][0] = sx - (q11 + q22) * sx;
-        this[0][1] = (q01 + q23) * sx;
-        this[0][2] = (q02 - q13) * sx;
-        this[0][3] = 0.0;
-        this[1][0] = (q01 - q23) * sy;
-        this[1][1] = sy - (q22 + q00) * sy;
-        this[1][2] = (q12 + q03) * sy;
-        this[1][3] = 0.0;
-        this[2][0] = (q02 + q13) * sz;
-        this[2][1] = (q12 - q03) * sz;
-        this[2][2] = sz - (q11 + q00) * sz;
-        this[2][3] = 0.0;
-        this[3][0] = tx;
-        this[3][1] = ty;
-        this[3][2] = tz;
-        this[3][3] = 1.0;
+        this.m00 = sx - (q11 + q22) * sx;
+        this.m01 = (q01 + q23) * sx;
+        this.m02 = (q02 - q13) * sx;
+        this.m03 = 0.0;
+        this.m10 = (q01 - q23) * sy;
+        this.m11 = sy - (q22 + q00) * sy;
+        this.m12 = (q12 + q03) * sy;
+        this.m13 = 0.0;
+        this.m20 = (q02 + q13) * sz;
+        this.m21 = (q12 - q03) * sz;
+        this.m22 = sz - (q11 + q00) * sz;
+        this.m23 = 0.0;
+        this.m30 = tx;
+        this.m31 = ty;
+        this.m32 = tz;
+        this.m33 = 1.0;
         return this;
     }
 
@@ -4507,22 +4544,22 @@ export class Matrix4 {
         const q13 = dqy * qw;
         const q23 = dqz * qw;
         const isx = 1 / sx, isy = 1 / sy, isz = 1 / sz;
-        this[0][0] = isx * (1.0 - q11 - q22);
-        this[0][1] = isy * (q01 + q23);
-        this[0][2] = isz * (q02 - q13);
-        this[0][3] = 0.0;
-        this[1][0] = isx * (q01 - q23);
-        this[1][1] = isy * (1.0 - q22 - q00);
-        this[1][2] = isz * (q12 + q03);
-        this[1][3] = 0.0;
-        this[2][0] = isx * (q02 + q13);
-        this[2][1] = isy * (q12 - q03);
-        this[2][2] = isz * (1.0 - q11 - q00);
-        this[2][3] = 0.0;
-        this[3][0] = -this[0][0] * tx - this[1][0] * ty - this[2][0] * tz;
-        this[3][1] = -this[0][1] * tx - this[1][1] * ty - this[2][1] * tz;
-        this[3][2] = -this[0][2] * tx - this[1][2] * ty - this[2][2] * tz;
-        this[3][3] = 1.0;
+        this.m00 = isx * (1.0 - q11 - q22);
+        this.m01 = isy * (q01 + q23);
+        this.m02 = isz * (q02 - q13);
+        this.m03 = 0.0;
+        this.m10 = isx * (q01 - q23);
+        this.m11 = isy * (1.0 - q22 - q00);
+        this.m12 = isz * (q12 + q03);
+        this.m13 = 0.0;
+        this.m20 = isx * (q02 + q13);
+        this.m21 = isy * (q12 - q03);
+        this.m22 = isz * (1.0 - q11 - q00);
+        this.m23 = 0.0;
+        this.m30 = -this.m00 * tx - this.m10 * ty - this.m20 * tz;
+        this.m31 = -this.m01 * tx - this.m11 * ty - this.m21 * tz;
+        this.m32 = -this.m02 * tx - this.m12 * ty - this.m22 * tz;
+        this.m33 = 1.0;
         // properties = PROPERTY_AFFINE;
         return this;
     }
@@ -4645,30 +4682,30 @@ export class Matrix4 {
         const nm20 = yw + xz + xz + yw;
         const nm21 = yz + yz - xw - xw;
         const nm22 = z2 - y2 - x2 + w2;
-        const m00 = nm00 * m[0][0] + nm10 * m[0][1] + nm20 * m[0][2];
-        const m01 = nm01 * m[0][0] + nm11 * m[0][1] + nm21 * m[0][2];
-        this[0][2] = nm02 * m[0][0] + nm12 * m[0][1] + nm22 * m[0][2];
-        this[0][0] = m00;
-        this[0][1] = m01;
-        this[0][3] = 0.0;
-        const m10 = nm00 * m[1][0] + nm10 * m[1][1] + nm20 * m[1][2];
-        const m11 = nm01 * m[1][0] + nm11 * m[1][1] + nm21 * m[1][2];
-        this[1][2] = nm02 * m[1][0] + nm12 * m[1][1] + nm22 * m[1][2];
-        this[1][0] = m10;
-        this[1][1] = m11;
-        this[1][3] = 0.0;
-        const m20 = nm00 * m[2][0] + nm10 * m[2][1] + nm20 * m[2][2];
-        const m21 = nm01 * m[2][0] + nm11 * m[2][1] + nm21 * m[2][2];
-        this[2][2] = nm02 * m[2][0] + nm12 * m[2][1] + nm22 * m[2][2];
-        this[2][0] = m20;
-        this[2][1] = m21;
-        this[2][3] = 0.0;
-        const m30 = nm00 * m[3][0] + nm10 * m[3][1] + nm20 * m[3][2] + tx;
-        const m31 = nm01 * m[3][0] + nm11 * m[3][1] + nm21 * m[3][2] + ty;
-        this[3][2] = nm02 * m[3][0] + nm12 * m[3][1] + nm22 * m[3][2] + tz;
-        this[3][0] = m30;
-        this[3][1] = m31;
-        this[3][3] = 1.0;
+        const m00 = nm00 * m.m00 + nm10 * m.m01 + nm20 * m.m02;
+        const m01 = nm01 * m.m00 + nm11 * m.m01 + nm21 * m.m02;
+        this.m02 = nm02 * m.m00 + nm12 * m.m01 + nm22 * m.m02;
+        this.m00 = m00;
+        this.m01 = m01;
+        this.m03 = 0.0;
+        const m10 = nm00 * m.m10 + nm10 * m.m11 + nm20 * m.m12;
+        const m11 = nm01 * m.m10 + nm11 * m.m11 + nm21 * m.m12;
+        this.m12 = nm02 * m.m10 + nm12 * m.m11 + nm22 * m.m12;
+        this.m10 = m10;
+        this.m11 = m11;
+        this.m13 = 0.0;
+        const m20 = nm00 * m.m20 + nm10 * m.m21 + nm20 * m.m22;
+        const m21 = nm01 * m.m20 + nm11 * m.m21 + nm21 * m.m22;
+        this.m22 = nm02 * m.m20 + nm12 * m.m21 + nm22 * m.m22;
+        this.m20 = m20;
+        this.m21 = m21;
+        this.m23 = 0.0;
+        const m30 = nm00 * m.m30 + nm10 * m.m31 + nm20 * m.m32 + tx;
+        const m31 = nm01 * m.m30 + nm11 * m.m31 + nm21 * m.m32 + ty;
+        this.m32 = nm02 * m.m30 + nm12 * m.m31 + nm22 * m.m32 + tz;
+        this.m30 = m30;
+        this.m31 = m31;
+        this.m33 = 1.0;
         return this;
     }
 
@@ -4745,19 +4782,19 @@ export class Matrix4 {
         const yw = qy * qw;
         const yz = qy * qz;
         const xw = qx * qw;
-        this[0][0] = w2 + x2 - z2 - y2;
-        this[0][1] = xy + zw + zw + xy;
-        this[0][2] = xz - yw + xz - yw;
-        this[1][0] = -zw + xy - zw + xy;
-        this[1][1] = y2 - z2 + w2 - x2;
-        this[1][2] = yz + yz + xw + xw;
-        this[2][0] = yw + xz + xz + yw;
-        this[2][1] = yz + yz - xw - xw;
-        this[2][2] = z2 - y2 - x2 + w2;
-        this[3][0] = tx;
-        this[3][1] = ty;
-        this[3][2] = tz;
-        this[3][3] = 1.0;
+        this.m00 = w2 + x2 - z2 - y2;
+        this.m01 = xy + zw + zw + xy;
+        this.m02 = xz - yw + xz - yw;
+        this.m10 = -zw + xy - zw + xy;
+        this.m11 = y2 - z2 + w2 - x2;
+        this.m12 = yz + yz + xw + xw;
+        this.m20 = yw + xz + xz + yw;
+        this.m21 = yz + yz - xw - xw;
+        this.m22 = z2 - y2 - x2 + w2;
+        this.m30 = tx;
+        this.m31 = ty;
+        this.m32 = tz;
+        this.m33 = 1.0;
         // this.properties = PROPERTY_AFFINE | PROPERTY_ORTHONORMAL;
         return this;
     }
@@ -4814,22 +4851,22 @@ export class Matrix4 {
     //     const rm21 = dyz - dxw;
     //     const rm22 = z2 - y2 - x2 + w2;
     //     return dest.set(
-    //         this[0][0] * rm00 + this[1][0] * rm01 + this[2][0] * rm02,
-    //         this[0][1] * rm00 + this[1][1] * rm01 + this[2][1] * rm02,
-    //         this[0][2] * rm00 + this[1][2] * rm01 + this[2][2] * rm02,
-    //         this[0][3] * rm00 + this[1][3] * rm01 + this[2][3] * rm02,
-    //         this[0][0] * rm10 + this[1][0] * rm11 + this[2][0] * rm12,
-    //         this[0][1] * rm10 + this[1][1] * rm11 + this[2][1] * rm12,
-    //         this[0][2] * rm10 + this[1][2] * rm11 + this[2][2] * rm12,
-    //         this[0][3] * rm10 + this[1][3] * rm11 + this[2][3] * rm12,
-    //         this[0][0] * rm20 + this[1][0] * rm21 + this[2][0] * rm22,
-    //         this[0][1] * rm20 + this[1][1] * rm21 + this[2][1] * rm22,
-    //         this[0][2] * rm20 + this[1][2] * rm21 + this[2][2] * rm22,
-    //         this[0][3] * rm20 + this[1][3] * rm21 + this[2][3] * rm22,
-    //         this[3][0],
-    //         this[3][1],
-    //         this[3][2],
-    //         this[3][3],
+    //         this.m00 * rm00 + this.m10 * rm01 + this.m20 * rm02,
+    //         this.m01 * rm00 + this.m11 * rm01 + this.m21 * rm02,
+    //         this.m02 * rm00 + this.m12 * rm01 + this.m22 * rm02,
+    //         this.m03 * rm00 + this.m13 * rm01 + this.m23 * rm02,
+    //         this.m00 * rm10 + this.m10 * rm11 + this.m20 * rm12,
+    //         this.m01 * rm10 + this.m11 * rm11 + this.m21 * rm12,
+    //         this.m02 * rm10 + this.m12 * rm11 + this.m22 * rm12,
+    //         this.m03 * rm10 + this.m13 * rm11 + this.m23 * rm12,
+    //         this.m00 * rm20 + this.m10 * rm21 + this.m20 * rm22,
+    //         this.m01 * rm20 + this.m11 * rm21 + this.m21 * rm22,
+    //         this.m02 * rm20 + this.m12 * rm21 + this.m22 * rm22,
+    //         this.m03 * rm20 + this.m13 * rm21 + this.m23 * rm22,
+    //         this.m30,
+    //         this.m31,
+    //         this.m32,
+    //         this.m33,
     //     );
     //     //     ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
     //     // return dest;
@@ -4880,22 +4917,22 @@ export class Matrix4 {
     //     const rm21 = dyz - dxw;
     //     const rm22 = z2 - y2 - x2 + w2;
     //     return dest.set(
-    //         this[0][0] * rm00 + this[1][0] * rm01 + this[2][0] * rm02,
-    //         this[0][1] * rm00 + this[1][1] * rm01 + this[2][1] * rm02,
-    //         this[0][2] * rm00 + this[1][2] * rm01 + this[2][2] * rm02,
+    //         this.m00 * rm00 + this.m10 * rm01 + this.m20 * rm02,
+    //         this.m01 * rm00 + this.m11 * rm01 + this.m21 * rm02,
+    //         this.m02 * rm00 + this.m12 * rm01 + this.m22 * rm02,
     //         0.0,
-    //         this[0][0] * rm10 + this[1][0] * rm11 + this[2][0] * rm12,
-    //         this[0][1] * rm10 + this[1][1] * rm11 + this[2][1] * rm12,
-    //         this[0][2] * rm10 + this[1][2] * rm11 + this[2][2] * rm12,
+    //         this.m00 * rm10 + this.m10 * rm11 + this.m20 * rm12,
+    //         this.m01 * rm10 + this.m11 * rm11 + this.m21 * rm12,
+    //         this.m02 * rm10 + this.m12 * rm11 + this.m22 * rm12,
     //         0.0,
-    //         this[0][0] * rm20 + this[1][0] * rm21 + this[2][0] * rm22,
-    //         this[0][1] * rm20 + this[1][1] * rm21 + this[2][1] * rm22,
-    //         this[0][2] * rm20 + this[1][2] * rm21 + this[2][2] * rm22,
+    //         this.m00 * rm20 + this.m10 * rm21 + this.m20 * rm22,
+    //         this.m01 * rm20 + this.m11 * rm21 + this.m21 * rm22,
+    //         this.m02 * rm20 + this.m12 * rm21 + this.m22 * rm22,
     //         0.0,
-    //         this[3][0],
-    //         this[3][1],
-    //         this[3][2],
-    //         this[3][3],
+    //         this.m30,
+    //         this.m31,
+    //         this.m32,
+    //         this.m33,
     //     );
     //     //     ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
     //     // return dest;
@@ -4944,22 +4981,22 @@ export class Matrix4 {
     //     const rm20 = dyw + dxz;
     //     const rm21 = dyz - dxw;
     //     const rm22 = z2 - y2 - x2 + w2;
-    //     dest[2][0] = rm20;
-    //     dest[2][1] = rm21;
-    //     dest[2][2] = rm22;
-    //     dest[2][3] = 0.0;
-    //     dest[0][0] = rm00;
-    //     dest[0][1] = rm01;
-    //     dest[0][2] = rm02;
-    //     dest[0][3] = 0.0;
-    //     dest[1][0] = rm10;
-    //     dest[1][1] = rm11;
-    //     dest[1][2] = rm12;
-    //     dest[1][3] = 0.0;
-    //     dest[3][0] = this[3][0];
-    //     dest[3][1] = this[3][1];
-    //     dest[3][2] = this[3][2];
-    //     dest[3][3] = 1.0;
+    //     dest.m20 = rm20;
+    //     dest.m21 = rm21;
+    //     dest.m22 = rm22;
+    //     dest.m23 = 0.0;
+    //     dest.m00 = rm00;
+    //     dest.m01 = rm01;
+    //     dest.m02 = rm02;
+    //     dest.m03 = 0.0;
+    //     dest.m10 = rm10;
+    //     dest.m11 = rm11;
+    //     dest.m12 = rm12;
+    //     dest.m13 = 0.0;
+    //     dest.m30 = this.m30;
+    //     dest.m31 = this.m31;
+    //     dest.m32 = this.m32;
+    //     dest.m33 = 1.0;
     //     // ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
     //     return dest;
     // }
@@ -5007,22 +5044,22 @@ export class Matrix4 {
     //     const lm21 = dyz - dxw;
     //     const lm22 = zz - yy - xx + ww;
     //     return dest.set(
-    //         lm00 * this[0][0] + lm10 * this[0][1] + lm20 * this[0][2],
-    //         lm01 * this[0][0] + lm11 * this[0][1] + lm21 * this[0][2],
-    //         lm02 * this[0][0] + lm12 * this[0][1] + lm22 * this[0][2],
-    //         this[0][3],
-    //         lm00 * this[1][0] + lm10 * this[1][1] + lm20 * this[1][2],
-    //         lm01 * this[1][0] + lm11 * this[1][1] + lm21 * this[1][2],
-    //         lm02 * this[1][0] + lm12 * this[1][1] + lm22 * this[1][2],
-    //         this[1][3],
-    //         lm00 * this[2][0] + lm10 * this[2][1] + lm20 * this[2][2],
-    //         lm01 * this[2][0] + lm11 * this[2][1] + lm21 * this[2][2],
-    //         lm02 * this[2][0] + lm12 * this[2][1] + lm22 * this[2][2],
-    //         this[2][3],
-    //         lm00 * this[3][0] + lm10 * this[3][1] + lm20 * this[3][2],
-    //         lm01 * this[3][0] + lm11 * this[3][1] + lm21 * this[3][2],
-    //         lm02 * this[3][0] + lm12 * this[3][1] + lm22 * this[3][2],
-    //         this[3][3],
+    //         lm00 * this.m00 + lm10 * this.m01 + lm20 * this.m02,
+    //         lm01 * this.m00 + lm11 * this.m01 + lm21 * this.m02,
+    //         lm02 * this.m00 + lm12 * this.m01 + lm22 * this.m02,
+    //         this.m03,
+    //         lm00 * this.m10 + lm10 * this.m11 + lm20 * this.m12,
+    //         lm01 * this.m10 + lm11 * this.m11 + lm21 * this.m12,
+    //         lm02 * this.m10 + lm12 * this.m11 + lm22 * this.m12,
+    //         this.m13,
+    //         lm00 * this.m20 + lm10 * this.m21 + lm20 * this.m22,
+    //         lm01 * this.m20 + lm11 * this.m21 + lm21 * this.m22,
+    //         lm02 * this.m20 + lm12 * this.m21 + lm22 * this.m22,
+    //         this.m23,
+    //         lm00 * this.m30 + lm10 * this.m31 + lm20 * this.m32,
+    //         lm01 * this.m30 + lm11 * this.m31 + lm21 * this.m32,
+    //         lm02 * this.m30 + lm12 * this.m31 + lm22 * this.m32,
+    //         this.m33,
     //     );
     //     //     ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
     //     // return dest;
@@ -5064,32 +5101,32 @@ export class Matrix4 {
         dest = dest ?? new Vector4();
         switch (row) {
             case 0:
-                dest.x = this[0][0];
-                dest.y = this[1][0];
-                dest.z = this[2][0];
+                dest.x = this.m00;
+                dest.y = this.m10;
+                dest.z = this.m20;
                 if (dest instanceof Vector4)
-                    dest.w = this[3][0];
+                    dest.w = this.m30;
                 break;
             case 1:
-                dest.x = this[0][1];
-                dest.y = this[1][1];
-                dest.z = this[2][1];
+                dest.x = this.m01;
+                dest.y = this.m11;
+                dest.z = this.m21;
                 if (dest instanceof Vector4)
-                    dest.w = this[3][1];
+                    dest.w = this.m31;
                 break;
             case 2:
-                dest.x = this[0][2];
-                dest.y = this[1][2];
-                dest.z = this[2][2];
+                dest.x = this.m02;
+                dest.y = this.m12;
+                dest.z = this.m22;
                 if (dest instanceof Vector4)
-                    dest.w = this[3][2];
+                    dest.w = this.m32;
                 break;
             case 3:
-                dest.x = this[0][3];
-                dest.y = this[1][3];
-                dest.z = this[2][3];
+                dest.x = this.m03;
+                dest.y = this.m13;
+                dest.z = this.m23;
                 if (dest instanceof Vector4)
-                    dest.w = this[3][3];
+                    dest.w = this.m33;
                 break;
             default:
                 throw "IndexOutOfBoundsException";
@@ -5110,16 +5147,16 @@ export class Matrix4 {
     public setRow(row: number, src: Vector4): Matrix4 {
         switch (row) {
             case 0:
-                this[0][0] = src.x; this[1][0] = src.y; this[2][0] = src.z; this[3][0] = src.w;
+                this.m00 = src.x; this.m10 = src.y; this.m20 = src.z; this.m30 = src.w;
                 return this;
             case 1:
-                this[0][1] = src.x; this[1][1] = src.y; this[2][1] = src.z; this[3][1] = src.w;
+                this.m01 = src.x; this.m11 = src.y; this.m21 = src.z; this.m31 = src.w;
                 return this;
             case 2:
-                this[0][2] = src.x; this[1][2] = src.y; this[2][2] = src.z; this[3][2] = src.w;
+                this.m02 = src.x; this.m12 = src.y; this.m22 = src.z; this.m32 = src.w;
                 return this;
             case 3:
-                this[0][3] = src.x; this[1][3] = src.y; this[2][3] = src.z; this[3][3] = src.w;
+                this.m03 = src.x; this.m13 = src.y; this.m23 = src.z; this.m33 = src.w;
                 return this;
             default:
                 throw "IndexOutOfBoundsException";
@@ -5132,32 +5169,32 @@ export class Matrix4 {
         dest = dest ?? new Vector4();
         switch (column) {
             case 0:
-                dest.x = this[0][0];
-                dest.y = this[0][1];
-                dest.z = this[0][2];
+                dest.x = this.m00;
+                dest.y = this.m01;
+                dest.z = this.m02;
                 if (dest instanceof Vector4)
-                    dest.w = this[0][3];
+                    dest.w = this.m03;
                 break;
             case 1:
-                dest.x = this[1][0];
-                dest.y = this[1][1];
-                dest.z = this[1][2];
+                dest.x = this.m10;
+                dest.y = this.m11;
+                dest.z = this.m12;
                 if (dest instanceof Vector4)
-                    dest.w = this[1][3];
+                    dest.w = this.m13;
                 break;
             case 2:
-                dest.x = this[2][0];
-                dest.y = this[2][1];
-                dest.z = this[2][2];
+                dest.x = this.m20;
+                dest.y = this.m21;
+                dest.z = this.m22;
                 if (dest instanceof Vector4)
-                    dest.w = this[2][3];
+                    dest.w = this.m23;
                 break;
             case 3:
-                dest.x = this[3][0];
-                dest.y = this[3][1];
-                dest.z = this[3][2];
+                dest.x = this.m30;
+                dest.y = this.m31;
+                dest.z = this.m32;
                 if (dest instanceof Vector4)
-                    dest.w = this[3][3];
+                    dest.w = this.m33;
                 break;
             default:
                 throw "IndexOutOfBoundsException";
@@ -5178,16 +5215,16 @@ export class Matrix4 {
     public setColumn(column: number, src: Vector4): Matrix4 {
         switch (column) {
             case 0:
-                this[0][0] = src.x; this[0][1] = src.y; this[0][2] = src.z; this[0][3] = src.w;
+                this.m00 = src.x; this.m01 = src.y; this.m02 = src.z; this.m03 = src.w;
                 return this;
             case 1:
-                this[1][0] = src.x; this[1][1] = src.y; this[1][2] = src.z; this[1][3] = src.w;
+                this.m10 = src.x; this.m11 = src.y; this.m12 = src.z; this.m13 = src.w;
                 return this;
             case 2:
-                this[2][0] = src.x; this[2][1] = src.y; this[2][2] = src.z; this[2][3] = src.w;
+                this.m20 = src.x; this.m21 = src.y; this.m22 = src.z; this.m23 = src.w;
                 return this;
             case 3:
-                this[3][0] = src.x; this[3][1] = src.y; this[3][2] = src.z; this[3][3] = src.w;
+                this.m30 = src.x; this.m31 = src.y; this.m32 = src.z; this.m33 = src.w;
                 return this;
             default:
                 throw "IndexOutOfBoundsException";
@@ -5270,45 +5307,45 @@ export class Matrix4 {
         return dest.set(this);
     }
     private normalGeneric(dest: Matrix3 | Matrix4): Matrix3 | Matrix4 {
-        const m00m11 = this[0][0] * this[1][1];
-        const m01m10 = this[0][1] * this[1][0];
-        const m02m10 = this[0][2] * this[1][0];
-        const m00m12 = this[0][0] * this[1][2];
-        const m01m12 = this[0][1] * this[1][2];
-        const m02m11 = this[0][2] * this[1][1];
-        const det = (m00m11 - m01m10) * this[2][2] + (m02m10 - m00m12) * this[2][1] + (m01m12 - m02m11) * this[2][0];
+        const m00m11 = this.m00 * this.m11;
+        const m01m10 = this.m01 * this.m10;
+        const m02m10 = this.m02 * this.m10;
+        const m00m12 = this.m00 * this.m12;
+        const m01m12 = this.m01 * this.m12;
+        const m02m11 = this.m02 * this.m11;
+        const det = (m00m11 - m01m10) * this.m22 + (m02m10 - m00m12) * this.m21 + (m01m12 - m02m11) * this.m20;
         const s = 1.0 / det;
         /* Invert and transpose in one go */
-        const nm00 = (this[1][1] * this[2][2] - this[2][1] * this[1][2]) * s;
-        const nm01 = (this[2][0] * this[1][2] - this[1][0] * this[2][2]) * s;
-        const nm02 = (this[1][0] * this[2][1] - this[2][0] * this[1][1]) * s;
-        const nm10 = (this[2][1] * this[0][2] - this[0][1] * this[2][2]) * s;
-        const nm11 = (this[0][0] * this[2][2] - this[2][0] * this[0][2]) * s;
-        const nm12 = (this[2][0] * this[0][1] - this[0][0] * this[2][1]) * s;
+        const nm00 = (this.m11 * this.m22 - this.m21 * this.m12) * s;
+        const nm01 = (this.m20 * this.m12 - this.m10 * this.m22) * s;
+        const nm02 = (this.m10 * this.m21 - this.m20 * this.m11) * s;
+        const nm10 = (this.m21 * this.m02 - this.m01 * this.m22) * s;
+        const nm11 = (this.m00 * this.m22 - this.m20 * this.m02) * s;
+        const nm12 = (this.m20 * this.m01 - this.m00 * this.m21) * s;
         const nm20 = (m01m12 - m02m11) * s;
         const nm21 = (m02m10 - m00m12) * s;
         const nm22 = (m00m11 - m01m10) * s;
 
-        dest[0][0] = nm00;
-        dest[0][1] = nm01;
-        dest[0][2] = nm02;
-        dest[1][0] = nm10;
-        dest[1][1] = nm11;
-        dest[1][2] = nm12;
-        dest[2][0] = nm20;
-        dest[2][1] = nm21;
-        dest[2][2] = nm22;
+        dest.m00 = nm00;
+        dest.m01 = nm01;
+        dest.m02 = nm02;
+        dest.m10 = nm10;
+        dest.m11 = nm11;
+        dest.m12 = nm12;
+        dest.m20 = nm20;
+        dest.m21 = nm21;
+        dest.m22 = nm22;
         if (dest instanceof Matrix3) {
             return dest;
         }
-        dest[0][3] = 0.0;
-        dest[1][3] = 0.0;
-        dest[2][3] = 0.0;
+        dest.m03 = 0.0;
+        dest.m13 = 0.0;
+        dest.m23 = 0.0;
 
-        dest[3][0] = 0.0;
-        dest[3][1] = 0.0;
-        dest[3][2] = 0.0;
-        dest[3][3] = 1.0;
+        dest.m30 = 0.0;
+        dest.m31 = 0.0;
+        dest.m32 = 0.0;
+        dest.m33 = 1.0;
         return dest;
         // ._properties((properties | PROPERTY_AFFINE) & ~(PROPERTY_TRANSLATION | PROPERTY_PERSPECTIVE));
     }
@@ -5341,30 +5378,30 @@ export class Matrix4 {
     public cofactor3x3(dest?: Matrix4): Matrix4;
     public cofactor3x3(dest?: Matrix3 | Matrix4): Matrix3 | Matrix4 {
         dest = dest ?? this;
-        const nm10 = this[2][1] * this[0][2] - this[0][1] * this[2][2];
-        const nm11 = this[0][0] * this[2][2] - this[2][0] * this[0][2];
-        const nm12 = this[2][0] * this[0][1] - this[0][0] * this[2][1];
-        const nm20 = this[0][1] * this[1][2] - this[1][1] * this[0][2];
-        const nm21 = this[0][2] * this[1][0] - this[1][2] * this[0][0];
-        const nm22 = this[0][0] * this[1][1] - this[1][0] * this[0][1];
+        const nm10 = this.m21 * this.m02 - this.m01 * this.m22;
+        const nm11 = this.m00 * this.m22 - this.m20 * this.m02;
+        const nm12 = this.m20 * this.m01 - this.m00 * this.m21;
+        const nm20 = this.m01 * this.m12 - this.m11 * this.m02;
+        const nm21 = this.m02 * this.m10 - this.m12 * this.m00;
+        const nm22 = this.m00 * this.m11 - this.m10 * this.m01;
 
-        dest[0][0] = (this[1][1] * this[2][2] - this[2][1] * this[1][2])
-        dest[0][1] = (this[2][0] * this[1][2] - this[1][0] * this[2][2])
-        dest[0][2] = (this[1][0] * this[2][1] - this[2][0] * this[1][1])
-        dest[1][0] = (nm10)
-        dest[1][1] = (nm11)
-        dest[1][2] = (nm12)
-        dest[2][0] = (nm20)
-        dest[2][1] = (nm21)
-        dest[2][2] = (nm22)
+        dest.m00 = (this.m11 * this.m22 - this.m21 * this.m12)
+        dest.m01 = (this.m20 * this.m12 - this.m10 * this.m22)
+        dest.m02 = (this.m10 * this.m21 - this.m20 * this.m11)
+        dest.m10 = (nm10)
+        dest.m11 = (nm11)
+        dest.m12 = (nm12)
+        dest.m20 = (nm20)
+        dest.m21 = (nm21)
+        dest.m22 = (nm22)
         if (dest instanceof Matrix3) return dest;
-        dest[0][3] = (0.0)
-        dest[1][3] = (0.0)
-        dest[2][3] = (0.0)
-        dest[3][0] = (0.0)
-        dest[3][1] = (0.0)
-        dest[3][2] = (0.0)
-        dest[3][3] = (1.0)
+        dest.m03 = (0.0)
+        dest.m13 = (0.0)
+        dest.m23 = (0.0)
+        dest.m30 = (0.0)
+        dest.m31 = (0.0)
+        dest.m32 = (0.0)
+        dest.m33 = (1.0)
         return dest;
         // ._properties((properties | PROPERTY_AFFINE) & ~(PROPERTY_TRANSLATION | PROPERTY_PERSPECTIVE));
     }
@@ -5384,24 +5421,24 @@ export class Matrix4 {
     public normalize3x3(dest?: Matrix3 | Matrix4): Matrix3 | Matrix4 {
         dest = dest ?? this;
 
-        const invXlen = 1 / Math.sqrt(this[0][0] * this[0][0] + this[0][1] * this[0][1] + this[0][2] * this[0][2]);
-        const invYlen = 1 / Math.sqrt(this[1][0] * this[1][0] + this[1][1] * this[1][1] + this[1][2] * this[1][2]);
-        const invZlen = 1 / Math.sqrt(this[2][0] * this[2][0] + this[2][1] * this[2][1] + this[2][2] * this[2][2]);
+        const invXlen = 1 / Math.sqrt(this.m00 * this.m00 + this.m01 * this.m01 + this.m02 * this.m02);
+        const invYlen = 1 / Math.sqrt(this.m10 * this.m10 + this.m11 * this.m11 + this.m12 * this.m12);
+        const invZlen = 1 / Math.sqrt(this.m20 * this.m20 + this.m21 * this.m21 + this.m22 * this.m22);
 
 
-        dest[0][0] = this[0][0] * invXlen;
-        dest[0][1] = this[0][1] * invXlen;
-        dest[0][2] = this[0][2] * invXlen;
-        dest[1][0] = this[1][0] * invYlen;
-        dest[1][1] = this[1][1] * invYlen;
-        dest[1][2] = this[1][2] * invYlen;
-        dest[2][0] = this[2][0] * invZlen;
-        dest[2][1] = this[2][1] * invZlen;
-        dest[2][2] = this[2][2] * invZlen;
+        dest.m00 = this.m00 * invXlen;
+        dest.m01 = this.m01 * invXlen;
+        dest.m02 = this.m02 * invXlen;
+        dest.m10 = this.m10 * invYlen;
+        dest.m11 = this.m11 * invYlen;
+        dest.m12 = this.m12 * invYlen;
+        dest.m20 = this.m20 * invZlen;
+        dest.m21 = this.m21 * invZlen;
+        dest.m22 = this.m22 * invZlen;
         if (dest instanceof Matrix3) return dest;
-        dest[3][1] = this[3][1];
-        dest[3][2] = this[3][2];
-        dest[3][3] = this[3][3];
+        dest.m31 = this.m31;
+        dest.m32 = this.m32;
+        dest.m33 = this.m33;
         return dest;
     }
 
@@ -5423,35 +5460,35 @@ export class Matrix4 {
             winZ = winZ as number;
         }
 
-        const a = this[0][0] * this[1][1] - this[0][1] * this[1][0];
-        const b = this[0][0] * this[1][2] - this[0][2] * this[1][0];
-        const c = this[0][0] * this[1][3] - this[0][3] * this[1][0];
-        const d = this[0][1] * this[1][2] - this[0][2] * this[1][1];
-        const e = this[0][1] * this[1][3] - this[0][3] * this[1][1];
-        const f = this[0][2] * this[1][3] - this[0][3] * this[1][2];
-        const g = this[2][0] * this[3][1] - this[2][1] * this[3][0];
-        const h = this[2][0] * this[3][2] - this[2][2] * this[3][0];
-        const i = this[2][0] * this[3][3] - this[2][3] * this[3][0];
-        const j = this[2][1] * this[3][2] - this[2][2] * this[3][1];
-        const k = this[2][1] * this[3][3] - this[2][3] * this[3][1];
-        const l = this[2][2] * this[3][3] - this[2][3] * this[3][2];
+        const a = this.m00 * this.m11 - this.m01 * this.m10;
+        const b = this.m00 * this.m12 - this.m02 * this.m10;
+        const c = this.m00 * this.m13 - this.m03 * this.m10;
+        const d = this.m01 * this.m12 - this.m02 * this.m11;
+        const e = this.m01 * this.m13 - this.m03 * this.m11;
+        const f = this.m02 * this.m13 - this.m03 * this.m12;
+        const g = this.m20 * this.m31 - this.m21 * this.m30;
+        const h = this.m20 * this.m32 - this.m22 * this.m30;
+        const i = this.m20 * this.m33 - this.m23 * this.m30;
+        const j = this.m21 * this.m32 - this.m22 * this.m31;
+        const k = this.m21 * this.m33 - this.m23 * this.m31;
+        const l = this.m22 * this.m33 - this.m23 * this.m32;
         const det = 1 / (a * l - b * k + c * j + d * i - e * h + f * g);
-        const im00 = (+this[1][1] * l - this[1][2] * k + this[1][3] * j) * det;
-        const im01 = (-this[0][1] * l + this[0][2] * k - this[0][3] * j) * det;
-        const im02 = (+this[3][1] * f - this[3][2] * e + this[3][3] * d) * det;
-        const im03 = (-this[2][1] * f + this[2][2] * e - this[2][3] * d) * det;
-        const im10 = (-this[1][0] * l + this[1][2] * i - this[1][3] * h) * det;
-        const im11 = (+this[0][0] * l - this[0][2] * i + this[0][3] * h) * det;
-        const im12 = (-this[3][0] * f + this[3][2] * c - this[3][3] * b) * det;
-        const im13 = (+this[2][0] * f - this[2][2] * c + this[2][3] * b) * det;
-        const im20 = (+this[1][0] * k - this[1][1] * i + this[1][3] * g) * det;
-        const im21 = (-this[0][0] * k + this[0][1] * i - this[0][3] * g) * det;
-        const im22 = (+this[3][0] * e - this[3][1] * c + this[3][3] * a) * det;
-        const im23 = (-this[2][0] * e + this[2][1] * c - this[2][3] * a) * det;
-        const im30 = (-this[1][0] * j + this[1][1] * h - this[1][2] * g) * det;
-        const im31 = (+this[0][0] * j - this[0][1] * h + this[0][2] * g) * det;
-        const im32 = (-this[3][0] * d + this[3][1] * b - this[3][2] * a) * det;
-        const im33 = (+this[2][0] * d - this[2][1] * b + this[2][2] * a) * det;
+        const im00 = (+this.m11 * l - this.m12 * k + this.m13 * j) * det;
+        const im01 = (-this.m01 * l + this.m02 * k - this.m03 * j) * det;
+        const im02 = (+this.m31 * f - this.m32 * e + this.m33 * d) * det;
+        const im03 = (-this.m21 * f + this.m22 * e - this.m23 * d) * det;
+        const im10 = (-this.m10 * l + this.m12 * i - this.m13 * h) * det;
+        const im11 = (+this.m00 * l - this.m02 * i + this.m03 * h) * det;
+        const im12 = (-this.m30 * f + this.m32 * c - this.m33 * b) * det;
+        const im13 = (+this.m20 * f - this.m22 * c + this.m23 * b) * det;
+        const im20 = (+this.m10 * k - this.m11 * i + this.m13 * g) * det;
+        const im21 = (-this.m00 * k + this.m01 * i - this.m03 * g) * det;
+        const im22 = (+this.m30 * e - this.m31 * c + this.m33 * a) * det;
+        const im23 = (-this.m20 * e + this.m21 * c - this.m23 * a) * det;
+        const im30 = (-this.m10 * j + this.m11 * h - this.m12 * g) * det;
+        const im31 = (+this.m00 * j - this.m01 * h + this.m02 * g) * det;
+        const im32 = (-this.m30 * d + this.m31 * b - this.m32 * a) * det;
+        const im33 = (+this.m20 * d - this.m21 * b + this.m22 * a) * det;
         const ndcX = (winX - viewport[0]) / viewport[2] * 2.0 - 1.0;
         const ndcY = (winY - viewport[1]) / viewport[3] * 2.0 - 1.0;
         const ndcZ = winZ + winZ - 1.0;
@@ -5465,35 +5502,35 @@ export class Matrix4 {
     }
 
     public unprojectRay(winX: number, winY: number, viewport: number[], originDest: Vector3, dirDest: Vector3): Matrix4 {
-        const a = this[0][0] * this[1][1] - this[0][1] * this[1][0];
-        const b = this[0][0] * this[1][2] - this[0][2] * this[1][0];
-        const c = this[0][0] * this[1][3] - this[0][3] * this[1][0];
-        const d = this[0][1] * this[1][2] - this[0][2] * this[1][1];
-        const e = this[0][1] * this[1][3] - this[0][3] * this[1][1];
-        const f = this[0][2] * this[1][3] - this[0][3] * this[1][2];
-        const g = this[2][0] * this[3][1] - this[2][1] * this[3][0];
-        const h = this[2][0] * this[3][2] - this[2][2] * this[3][0];
-        const i = this[2][0] * this[3][3] - this[2][3] * this[3][0];
-        const j = this[2][1] * this[3][2] - this[2][2] * this[3][1];
-        const k = this[2][1] * this[3][3] - this[2][3] * this[3][1];
-        const l = this[2][2] * this[3][3] - this[2][3] * this[3][2];
+        const a = this.m00 * this.m11 - this.m01 * this.m10;
+        const b = this.m00 * this.m12 - this.m02 * this.m10;
+        const c = this.m00 * this.m13 - this.m03 * this.m10;
+        const d = this.m01 * this.m12 - this.m02 * this.m11;
+        const e = this.m01 * this.m13 - this.m03 * this.m11;
+        const f = this.m02 * this.m13 - this.m03 * this.m12;
+        const g = this.m20 * this.m31 - this.m21 * this.m30;
+        const h = this.m20 * this.m32 - this.m22 * this.m30;
+        const i = this.m20 * this.m33 - this.m23 * this.m30;
+        const j = this.m21 * this.m32 - this.m22 * this.m31;
+        const k = this.m21 * this.m33 - this.m23 * this.m31;
+        const l = this.m22 * this.m33 - this.m23 * this.m32;
         const det = 1 / (a * l - b * k + c * j + d * i - e * h + f * g);
-        const im00 = (+this[1][1] * l - this[1][2] * k + this[1][3] * j) * det;
-        const im01 = (-this[0][1] * l + this[0][2] * k - this[0][3] * j) * det;
-        const im02 = (+this[3][1] * f - this[3][2] * e + this[3][3] * d) * det;
-        const im03 = (-this[2][1] * f + this[2][2] * e - this[2][3] * d) * det;
-        const im10 = (-this[1][0] * l + this[1][2] * i - this[1][3] * h) * det;
-        const im11 = (+this[0][0] * l - this[0][2] * i + this[0][3] * h) * det;
-        const im12 = (-this[3][0] * f + this[3][2] * c - this[3][3] * b) * det;
-        const im13 = (+this[2][0] * f - this[2][2] * c + this[2][3] * b) * det;
-        const im20 = (+this[1][0] * k - this[1][1] * i + this[1][3] * g) * det;
-        const im21 = (-this[0][0] * k + this[0][1] * i - this[0][3] * g) * det;
-        const im22 = (+this[3][0] * e - this[3][1] * c + this[3][3] * a) * det;
-        const im23 = (-this[2][0] * e + this[2][1] * c - this[2][3] * a) * det;
-        const im30 = (-this[1][0] * j + this[1][1] * h - this[1][2] * g) * det;
-        const im31 = (+this[0][0] * j - this[0][1] * h + this[0][2] * g) * det;
-        const im32 = (-this[3][0] * d + this[3][1] * b - this[3][2] * a) * det;
-        const im33 = (+this[2][0] * d - this[2][1] * b + this[2][2] * a) * det;
+        const im00 = (+this.m11 * l - this.m12 * k + this.m13 * j) * det;
+        const im01 = (-this.m01 * l + this.m02 * k - this.m03 * j) * det;
+        const im02 = (+this.m31 * f - this.m32 * e + this.m33 * d) * det;
+        const im03 = (-this.m21 * f + this.m22 * e - this.m23 * d) * det;
+        const im10 = (-this.m10 * l + this.m12 * i - this.m13 * h) * det;
+        const im11 = (+this.m00 * l - this.m02 * i + this.m03 * h) * det;
+        const im12 = (-this.m30 * f + this.m32 * c - this.m33 * b) * det;
+        const im13 = (+this.m20 * f - this.m22 * c + this.m23 * b) * det;
+        const im20 = (+this.m10 * k - this.m11 * i + this.m13 * g) * det;
+        const im21 = (-this.m00 * k + this.m01 * i - this.m03 * g) * det;
+        const im22 = (+this.m30 * e - this.m31 * c + this.m33 * a) * det;
+        const im23 = (-this.m20 * e + this.m21 * c - this.m23 * a) * det;
+        const im30 = (-this.m10 * j + this.m11 * h - this.m12 * g) * det;
+        const im31 = (+this.m00 * j - this.m01 * h + this.m02 * g) * det;
+        const im32 = (-this.m30 * d + this.m31 * b - this.m32 * a) * det;
+        const im33 = (+this.m20 * d - this.m21 * b + this.m22 * a) * det;
         const ndcX = (winX - viewport[0]) / viewport[2] * 2.0 - 1.0;
         const ndcY = (winY - viewport[1]) / viewport[3] * 2.0 - 1.0;
         const px = im00 * ndcX + im10 * ndcY + im30;
@@ -5533,10 +5570,10 @@ export class Matrix4 {
         const ndcX = (winX - viewport[0]) / viewport[2] * 2.0 - 1.0;
         const ndcY = (winY - viewport[1]) / viewport[3] * 2.0 - 1.0;
         const ndcZ = winZ + winZ - 1.0;
-        const invW = 1.0 / (this[0][3] * ndcX + this[1][3] * ndcY + this[2][3] * ndcZ + this[3][3]);
-        dest.x = (this[0][0] * ndcX + this[1][0] * ndcY + this[2][0] * ndcZ + this[3][0]) * invW;
-        dest.y = (this[0][1] * ndcX + this[1][1] * ndcY + this[2][1] * ndcZ + this[3][1]) * invW;
-        dest.z = (this[0][2] * ndcX + this[1][2] * ndcY + this[2][2] * ndcZ + this[3][2]) * invW;
+        const invW = 1.0 / (this.m03 * ndcX + this.m13 * ndcY + this.m23 * ndcZ + this.m33);
+        dest.x = (this.m00 * ndcX + this.m10 * ndcY + this.m20 * ndcZ + this.m30) * invW;
+        dest.y = (this.m01 * ndcX + this.m11 * ndcY + this.m21 * ndcZ + this.m31) * invW;
+        dest.z = (this.m02 * ndcX + this.m12 * ndcY + this.m22 * ndcZ + this.m32) * invW;
         if (dest instanceof Vector4) dest.w = 1;
         return dest;
     }
@@ -5544,14 +5581,14 @@ export class Matrix4 {
     public unprojectInvRay(winX: number, winY: number, viewport: number[], originDest: Vector3, dirDest: Vector3): Matrix4 {
         const ndcX = (winX - viewport[0]) / viewport[2] * 2.0 - 1.0;
         const ndcY = (winY - viewport[1]) / viewport[3] * 2.0 - 1.0;
-        const px = this[0][0] * ndcX + this[1][0] * ndcY + this[3][0];
-        const py = this[0][1] * ndcX + this[1][1] * ndcY + this[3][1];
-        const pz = this[0][2] * ndcX + this[1][2] * ndcY + this[3][2];
-        const invNearW = 1.0 / (this[0][3] * ndcX + this[1][3] * ndcY - this[2][3] + this[3][3]);
-        const nearX = (px - this[2][0]) * invNearW;
-        const nearY = (py - this[2][1]) * invNearW;
-        const nearZ = (pz - this[2][2]) * invNearW;
-        const invW0 = 1.0 / (this[0][3] * ndcX + this[1][3] * ndcY + this[3][3]);
+        const px = this.m00 * ndcX + this.m10 * ndcY + this.m30;
+        const py = this.m01 * ndcX + this.m11 * ndcY + this.m31;
+        const pz = this.m02 * ndcX + this.m12 * ndcY + this.m32;
+        const invNearW = 1.0 / (this.m03 * ndcX + this.m13 * ndcY - this.m23 + this.m33);
+        const nearX = (px - this.m20) * invNearW;
+        const nearY = (py - this.m21) * invNearW;
+        const nearZ = (pz - this.m22) * invNearW;
+        const invW0 = 1.0 / (this.m03 * ndcX + this.m13 * ndcY + this.m33);
         const x0 = px * invW0;
         const y0 = py * invW0;
         const z0 = pz * invW0;
@@ -5571,10 +5608,10 @@ export class Matrix4 {
             y = y as number;
             z = z as number;
         }
-        const invW = 1.0 / (this[0][3] * x + this[1][3] * y + this[2][3] * z + this[3][3]);
-        const nx = (this[0][0] * x + this[1][0] * y + this[2][0] * z + this[3][0]) * invW;
-        const ny = (this[0][1] * x + this[1][1] * y + this[2][1] * z + this[3][1]) * invW;
-        const nz = (this[0][2] * x + this[1][2] * y + this[2][2] * z + this[3][2]) * invW;
+        const invW = 1.0 / (this.m03 * x + this.m13 * y + this.m23 * z + this.m33);
+        const nx = (this.m00 * x + this.m10 * y + this.m20 * z + this.m30) * invW;
+        const ny = (this.m01 * x + this.m11 * y + this.m21 * z + this.m31) * invW;
+        const nz = (this.m02 * x + this.m12 * y + this.m22 * z + this.m32) * invW;
         dest.x = (nx * 0.5 + 0.5) * viewport[2] + viewport[0];
         dest.y = (ny * 0.5 + 0.5) * viewport[3] + viewport[1];
         dest.z = 0.5 * nz + 0.5;
@@ -5696,22 +5733,22 @@ export class Matrix4 {
         const rm32 = -dd * c;
         // matrix multiplication
         return dest.set(
-            this[0][0] * rm00 + this[1][0] * rm01 + this[2][0] * rm02,
-            this[0][1] * rm00 + this[1][1] * rm01 + this[2][1] * rm02,
-            this[0][2] * rm00 + this[1][2] * rm01 + this[2][2] * rm02,
+            this.m00 * rm00 + this.m10 * rm01 + this.m20 * rm02,
+            this.m01 * rm00 + this.m11 * rm01 + this.m21 * rm02,
+            this.m02 * rm00 + this.m12 * rm01 + this.m22 * rm02,
             0,
-            this[0][0] * rm10 + this[1][0] * rm11 + this[2][0] * rm12,
-            this[0][1] * rm10 + this[1][1] * rm11 + this[2][1] * rm12,
-            this[0][2] * rm10 + this[1][2] * rm11 + this[2][2] * rm12,
+            this.m00 * rm10 + this.m10 * rm11 + this.m20 * rm12,
+            this.m01 * rm10 + this.m11 * rm11 + this.m21 * rm12,
+            this.m02 * rm10 + this.m12 * rm11 + this.m22 * rm12,
             0,
-            this[0][0] * rm20 + this[1][0] * rm21 + this[2][0] * rm22,
-            this[0][1] * rm20 + this[1][1] * rm21 + this[2][1] * rm22,
-            this[0][2] * rm20 + this[1][2] * rm21 + this[2][2] * rm22,
+            this.m00 * rm20 + this.m10 * rm21 + this.m20 * rm22,
+            this.m01 * rm20 + this.m11 * rm21 + this.m21 * rm22,
+            this.m02 * rm20 + this.m12 * rm21 + this.m22 * rm22,
             0,
-            this[0][0] * rm30 + this[1][0] * rm31 + this[2][0] * rm32 + this[3][0],
-            this[0][1] * rm30 + this[1][1] * rm31 + this[2][1] * rm32 + this[3][1],
-            this[0][2] * rm30 + this[1][2] * rm31 + this[2][2] * rm32 + this[3][2],
-            this[3][3],
+            this.m00 * rm30 + this.m10 * rm31 + this.m20 * rm32 + this.m30,
+            this.m01 * rm30 + this.m11 * rm31 + this.m21 * rm32 + this.m31,
+            this.m02 * rm30 + this.m12 * rm31 + this.m22 * rm32 + this.m32,
+            this.m33,
         );
     }
     private reflectGeneric(a: number, b: number, c: number, d: number, dest: Matrix4): Matrix4 {
@@ -5730,22 +5767,22 @@ export class Matrix4 {
         const rm32 = -dd * c;
         // matrix multiplication
         return dest.set(
-            this[0][0] * rm00 + this[1][0] * rm01 + this[2][0] * rm02,
-            this[0][1] * rm00 + this[1][1] * rm01 + this[2][1] * rm02,
-            this[0][2] * rm00 + this[1][2] * rm01 + this[2][2] * rm02,
-            this[0][3] * rm00 + this[1][3] * rm01 + this[2][3] * rm02,
-            this[0][0] * rm10 + this[1][0] * rm11 + this[2][0] * rm12,
-            this[0][1] * rm10 + this[1][1] * rm11 + this[2][1] * rm12,
-            this[0][2] * rm10 + this[1][2] * rm11 + this[2][2] * rm12,
-            this[0][3] * rm10 + this[1][3] * rm11 + this[2][3] * rm12,
-            this[0][0] * rm20 + this[1][0] * rm21 + this[2][0] * rm22,
-            this[0][1] * rm20 + this[1][1] * rm21 + this[2][1] * rm22,
-            this[0][2] * rm20 + this[1][2] * rm21 + this[2][2] * rm22,
-            this[0][3] * rm20 + this[1][3] * rm21 + this[2][3] * rm22,
-            this[0][0] * rm30 + this[1][0] * rm31 + this[2][0] * rm32 + this[3][0],
-            this[0][1] * rm30 + this[1][1] * rm31 + this[2][1] * rm32 + this[3][1],
-            this[0][2] * rm30 + this[1][2] * rm31 + this[2][2] * rm32 + this[3][2],
-            this[0][3] * rm30 + this[1][3] * rm31 + this[2][3] * rm32 + this[3][3],
+            this.m00 * rm00 + this.m10 * rm01 + this.m20 * rm02,
+            this.m01 * rm00 + this.m11 * rm01 + this.m21 * rm02,
+            this.m02 * rm00 + this.m12 * rm01 + this.m22 * rm02,
+            this.m03 * rm00 + this.m13 * rm01 + this.m23 * rm02,
+            this.m00 * rm10 + this.m10 * rm11 + this.m20 * rm12,
+            this.m01 * rm10 + this.m11 * rm11 + this.m21 * rm12,
+            this.m02 * rm10 + this.m12 * rm11 + this.m22 * rm12,
+            this.m03 * rm10 + this.m13 * rm11 + this.m23 * rm12,
+            this.m00 * rm20 + this.m10 * rm21 + this.m20 * rm22,
+            this.m01 * rm20 + this.m11 * rm21 + this.m21 * rm22,
+            this.m02 * rm20 + this.m12 * rm21 + this.m22 * rm22,
+            this.m03 * rm20 + this.m13 * rm21 + this.m23 * rm22,
+            this.m00 * rm30 + this.m10 * rm31 + this.m20 * rm32 + this.m30,
+            this.m01 * rm30 + this.m11 * rm31 + this.m21 * rm32 + this.m31,
+            this.m02 * rm30 + this.m12 * rm31 + this.m22 * rm32 + this.m32,
+            this.m03 * rm30 + this.m13 * rm31 + this.m23 * rm32 + this.m33,
         );
     }
 
@@ -5851,22 +5888,22 @@ export class Matrix4 {
             d = -a * px - b * py - c * pz;
         }
         const da = a + a, db = b + b, dc = c + c, dd = d + d;
-        this[0][0] = 1.0 - da * a;
-        this[0][1] = -da * b;
-        this[0][2] = -da * c;
-        this[0][3] = 0.0;
-        this[1][0] = -db * a;
-        this[1][1] = 1.0 - db * b;
-        this[1][2] = -db * c;
-        this[1][3] = 0.0;
-        this[2][0] = -dc * a;
-        this[2][1] = -dc * b;
-        this[2][2] = 1.0 - dc * c;
-        this[2][3] = 0.0;
-        this[3][0] = -dd * a;
-        this[3][1] = -dd * b;
-        this[3][2] = -dd * c;
-        this[3][3] = 1.0;
+        this.m00 = 1.0 - da * a;
+        this.m01 = -da * b;
+        this.m02 = -da * c;
+        this.m03 = 0.0;
+        this.m10 = -db * a;
+        this.m11 = 1.0 - db * b;
+        this.m12 = -db * c;
+        this.m13 = 0.0;
+        this.m20 = -dc * a;
+        this.m21 = -dc * b;
+        this.m22 = 1.0 - dc * c;
+        this.m23 = 0.0;
+        this.m30 = -dd * a;
+        this.m31 = -dd * b;
+        this.m32 = -dd * c;
+        this.m33 = 1.0;
         return this;
     }
 
@@ -5981,22 +6018,22 @@ export class Matrix4 {
         const rm32 = (zZeroToOne ? zNear : (zFar + zNear)) / (zNear - zFar);
         // perform optimized multiplication
         // compute the last column first, because other columns do not depend on it
-        dest[3][0] = this[0][0] * rm30 + this[1][0] * rm31 + this[2][0] * rm32 + this[3][0];
-        dest[3][1] = this[0][1] * rm30 + this[1][1] * rm31 + this[2][1] * rm32 + this[3][1];
-        dest[3][2] = this[0][2] * rm30 + this[1][2] * rm31 + this[2][2] * rm32 + this[3][2];
-        dest[3][3] = this[0][3] * rm30 + this[1][3] * rm31 + this[2][3] * rm32 + this[3][3];
-        dest[0][0] = this[0][0] * rm00;
-        dest[0][1] = this[0][1] * rm00;
-        dest[0][2] = this[0][2] * rm00;
-        dest[0][3] = this[0][3] * rm00;
-        dest[1][0] = this[1][0] * rm11;
-        dest[1][1] = this[1][1] * rm11;
-        dest[1][2] = this[1][2] * rm11;
-        dest[1][3] = this[1][3] * rm11;
-        dest[2][0] = this[2][0] * rm22;
-        dest[2][1] = this[2][1] * rm22;
-        dest[2][2] = this[2][2] * rm22;
-        dest[2][3] = this[2][3] * rm22;
+        dest.m30 = this.m00 * rm30 + this.m10 * rm31 + this.m20 * rm32 + this.m30;
+        dest.m31 = this.m01 * rm30 + this.m11 * rm31 + this.m21 * rm32 + this.m31;
+        dest.m32 = this.m02 * rm30 + this.m12 * rm31 + this.m22 * rm32 + this.m32;
+        dest.m33 = this.m03 * rm30 + this.m13 * rm31 + this.m23 * rm32 + this.m33;
+        dest.m00 = this.m00 * rm00;
+        dest.m01 = this.m01 * rm00;
+        dest.m02 = this.m02 * rm00;
+        dest.m03 = this.m03 * rm00;
+        dest.m10 = this.m10 * rm11;
+        dest.m11 = this.m11 * rm11;
+        dest.m12 = this.m12 * rm11;
+        dest.m13 = this.m13 * rm11;
+        dest.m20 = this.m20 * rm22;
+        dest.m21 = this.m21 * rm22;
+        dest.m22 = this.m22 * rm22;
+        dest.m23 = this.m23 * rm22;
         // ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION | PROPERTY_ORTHONORMAL));
         return dest;
     }
@@ -6089,22 +6126,22 @@ export class Matrix4 {
         const rm32 = (zZeroToOne ? zNear : (zFar + zNear)) / (zNear - zFar);
         // perform optimized multiplication
         // compute the last column first, because other columns do not depend on it
-        dest[3][0] = this[0][0] * rm30 + this[1][0] * rm31 + this[2][0] * rm32 + this[3][0];
-        dest[3][1] = this[0][1] * rm30 + this[1][1] * rm31 + this[2][1] * rm32 + this[3][1];
-        dest[3][2] = this[0][2] * rm30 + this[1][2] * rm31 + this[2][2] * rm32 + this[3][2];
-        dest[3][3] = this[0][3] * rm30 + this[1][3] * rm31 + this[2][3] * rm32 + this[3][3];
-        dest[0][0] = this[0][0] * rm00;
-        dest[0][1] = this[0][1] * rm00;
-        dest[0][2] = this[0][2] * rm00;
-        dest[0][3] = this[0][3] * rm00;
-        dest[1][0] = this[1][0] * rm11;
-        dest[1][1] = this[1][1] * rm11;
-        dest[1][2] = this[1][2] * rm11;
-        dest[1][3] = this[1][3] * rm11;
-        dest[2][0] = this[2][0] * rm22;
-        dest[2][1] = this[2][1] * rm22;
-        dest[2][2] = this[2][2] * rm22;
-        dest[2][3] = this[2][3] * rm22;
+        dest.m30 = this.m00 * rm30 + this.m10 * rm31 + this.m20 * rm32 + this.m30;
+        dest.m31 = this.m01 * rm30 + this.m11 * rm31 + this.m21 * rm32 + this.m31;
+        dest.m32 = this.m02 * rm30 + this.m12 * rm31 + this.m22 * rm32 + this.m32;
+        dest.m33 = this.m03 * rm30 + this.m13 * rm31 + this.m23 * rm32 + this.m33;
+        dest.m00 = this.m00 * rm00;
+        dest.m01 = this.m01 * rm00;
+        dest.m02 = this.m02 * rm00;
+        dest.m03 = this.m03 * rm00;
+        dest.m10 = this.m10 * rm11;
+        dest.m11 = this.m11 * rm11;
+        dest.m12 = this.m12 * rm11;
+        dest.m13 = this.m13 * rm11;
+        dest.m20 = this.m20 * rm22;
+        dest.m21 = this.m21 * rm22;
+        dest.m22 = this.m22 * rm22;
+        dest.m23 = this.m23 * rm22;
         // ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION | PROPERTY_ORTHONORMAL));
         return dest;
     }
@@ -6142,12 +6179,12 @@ export class Matrix4 {
         zZeroToOne = zZeroToOne ?? false;
         if (!this.PROPERTY_IDENTITY)
             this.identity();
-        this[0][0] = 2.0 / (right - left);
-        this[1][1] = 2.0 / (top - bottom);
-        this[2][2] = (zZeroToOne ? 1.0 : 2.0) / (zNear - zFar);
-        this[3][0] = (right + left) / (left - right);
-        this[3][1] = (top + bottom) / (bottom - top);
-        this[3][2] = (zZeroToOne ? zNear : (zFar + zNear)) / (zNear - zFar);
+        this.m00 = 2.0 / (right - left);
+        this.m11 = 2.0 / (top - bottom);
+        this.m22 = (zZeroToOne ? 1.0 : 2.0) / (zNear - zFar);
+        this.m30 = (right + left) / (left - right);
+        this.m31 = (top + bottom) / (bottom - top);
+        this.m32 = (zZeroToOne ? zNear : (zFar + zNear)) / (zNear - zFar);
         // properties = PROPERTY_AFFINE;
         return this;
     }
@@ -6184,12 +6221,12 @@ export class Matrix4 {
         zZeroToOne = zZeroToOne ?? false;
         if (!this.PROPERTY_IDENTITY)
             this.identity();
-        this[0][0] = 2.0 / (right - left);
-        this[1][1] = 2.0 / (top - bottom);
-        this[2][2] = (zZeroToOne ? 1.0 : 2.0) / (zFar - zNear);
-        this[3][0] = (right + left) / (left - right);
-        this[3][1] = (top + bottom) / (bottom - top);
-        this[3][2] = (zZeroToOne ? zNear : (zFar + zNear)) / (zNear - zFar);
+        this.m00 = 2.0 / (right - left);
+        this.m11 = 2.0 / (top - bottom);
+        this.m22 = (zZeroToOne ? 1.0 : 2.0) / (zFar - zNear);
+        this.m30 = (right + left) / (left - right);
+        this.m31 = (top + bottom) / (bottom - top);
+        this.m32 = (zZeroToOne ? zNear : (zFar + zNear)) / (zNear - zFar);
         // properties = PROPERTY_AFFINE;
         return this;
     }
@@ -6277,22 +6314,22 @@ export class Matrix4 {
         const rm32 = (zZeroToOne ? zNear : (zFar + zNear)) / (zNear - zFar);
         // perform optimized multiplication
         // compute the last column first, because other columns do not depend on it
-        dest[3][0] = this[2][0] * rm32 + this[3][0];
-        dest[3][1] = this[2][1] * rm32 + this[3][1];
-        dest[3][2] = this[2][2] * rm32 + this[3][2];
-        dest[3][3] = this[2][3] * rm32 + this[3][3];
-        dest[0][0] = this[0][0] * rm00;
-        dest[0][1] = this[0][1] * rm00;
-        dest[0][2] = this[0][2] * rm00;
-        dest[0][3] = this[0][3] * rm00;
-        dest[1][0] = this[1][0] * rm11;
-        dest[1][1] = this[1][1] * rm11;
-        dest[1][2] = this[1][2] * rm11;
-        dest[1][3] = this[1][3] * rm11;
-        dest[2][0] = this[2][0] * rm22;
-        dest[2][1] = this[2][1] * rm22;
-        dest[2][2] = this[2][2] * rm22;
-        dest[2][3] = this[2][3] * rm22;
+        dest.m30 = this.m20 * rm32 + this.m30;
+        dest.m31 = this.m21 * rm32 + this.m31;
+        dest.m32 = this.m22 * rm32 + this.m32;
+        dest.m33 = this.m23 * rm32 + this.m33;
+        dest.m00 = this.m00 * rm00;
+        dest.m01 = this.m01 * rm00;
+        dest.m02 = this.m02 * rm00;
+        dest.m03 = this.m03 * rm00;
+        dest.m10 = this.m10 * rm11;
+        dest.m11 = this.m11 * rm11;
+        dest.m12 = this.m12 * rm11;
+        dest.m13 = this.m13 * rm11;
+        dest.m20 = this.m20 * rm22;
+        dest.m21 = this.m21 * rm22;
+        dest.m22 = this.m22 * rm22;
+        dest.m23 = this.m23 * rm22;
         // ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION | PROPERTY_ORTHONORMAL));
         return dest;
     }
@@ -6381,22 +6418,22 @@ export class Matrix4 {
         const rm32 = (zZeroToOne ? zNear : (zFar + zNear)) / (zNear - zFar);
         // perform optimized multiplication
         // compute the last column first, because other columns do not depend on it
-        dest[3][0] = this[2][0] * rm32 + this[3][0];
-        dest[3][1] = this[2][1] * rm32 + this[3][1];
-        dest[3][2] = this[2][2] * rm32 + this[3][2];
-        dest[3][3] = this[2][3] * rm32 + this[3][3];
-        dest[0][0] = this[0][0] * rm00;
-        dest[0][1] = this[0][1] * rm00;
-        dest[0][2] = this[0][2] * rm00;
-        dest[0][3] = this[0][3] * rm00;
-        dest[1][0] = this[1][0] * rm11;
-        dest[1][1] = this[1][1] * rm11;
-        dest[1][2] = this[1][2] * rm11;
-        dest[1][3] = this[1][3] * rm11;
-        dest[2][0] = this[2][0] * rm22;
-        dest[2][1] = this[2][1] * rm22;
-        dest[2][2] = this[2][2] * rm22;
-        dest[2][3] = this[2][3] * rm22;
+        dest.m30 = this.m20 * rm32 + this.m30;
+        dest.m31 = this.m21 * rm32 + this.m31;
+        dest.m32 = this.m22 * rm32 + this.m32;
+        dest.m33 = this.m23 * rm32 + this.m33;
+        dest.m00 = this.m00 * rm00;
+        dest.m01 = this.m01 * rm00;
+        dest.m02 = this.m02 * rm00;
+        dest.m03 = this.m03 * rm00;
+        dest.m10 = this.m10 * rm11;
+        dest.m11 = this.m11 * rm11;
+        dest.m12 = this.m12 * rm11;
+        dest.m13 = this.m13 * rm11;
+        dest.m20 = this.m20 * rm22;
+        dest.m21 = this.m21 * rm22;
+        dest.m22 = this.m22 * rm22;
+        dest.m23 = this.m23 * rm22;
         // ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION | PROPERTY_ORTHONORMAL));
         return dest;
     }
@@ -6432,10 +6469,10 @@ export class Matrix4 {
         zZeroToOne = zZeroToOne ?? false;
         if (!this.PROPERTY_IDENTITY)
             this.identity();
-        this[0][0] = (2.0 / width)
-        this[1][1] = (2.0 / height)
-        this[2][2] = ((zZeroToOne ? 1.0 : 2.0) / (zNear - zFar))
-        this[3][2] = ((zZeroToOne ? zNear : (zFar + zNear)) / (zNear - zFar))
+        this.m00 = (2.0 / width)
+        this.m11 = (2.0 / height)
+        this.m22 = ((zZeroToOne ? 1.0 : 2.0) / (zNear - zFar))
+        this.m32 = ((zZeroToOne ? zNear : (zFar + zNear)) / (zNear - zFar))
         // properties = PROPERTY_AFFINE;
         return this;
     }
@@ -6470,10 +6507,10 @@ export class Matrix4 {
         zZeroToOne = zZeroToOne ?? false;
         if (!this.PROPERTY_IDENTITY)
             this.identity();
-        this[0][0] = 2.0 / width;
-        this[1][1] = 2.0 / height;
-        this[2][2] = (zZeroToOne ? 1.0 : 2.0) / (zFar - zNear);
-        this[3][2] = (zZeroToOne ? zNear : (zFar + zNear)) / (zNear - zFar);
+        this.m00 = 2.0 / width;
+        this.m11 = 2.0 / height;
+        this.m22 = (zZeroToOne ? 1.0 : 2.0) / (zFar - zNear);
+        this.m32 = (zZeroToOne ? zNear : (zFar + zNear)) / (zNear - zFar);
         // properties = PROPERTY_AFFINE;
         return this;
     }
@@ -6524,22 +6561,22 @@ export class Matrix4 {
         const rm31 = (top + bottom) / (bottom - top);
         // perform optimized multiplication
         // compute the last column first, because other columns do not depend on it
-        dest[3][0] = this[0][0] * rm30 + this[1][0] * rm31 + this[3][0];
-        dest[3][1] = this[0][1] * rm30 + this[1][1] * rm31 + this[3][1];
-        dest[3][2] = this[0][2] * rm30 + this[1][2] * rm31 + this[3][2];
-        dest[3][3] = this[0][3] * rm30 + this[1][3] * rm31 + this[3][3];
-        dest[0][0] = this[0][0] * rm00;
-        dest[0][1] = this[0][1] * rm00;
-        dest[0][2] = this[0][2] * rm00;
-        dest[0][3] = this[0][3] * rm00;
-        dest[1][0] = this[1][0] * rm11;
-        dest[1][1] = this[1][1] * rm11;
-        dest[1][2] = this[1][2] * rm11;
-        dest[1][3] = this[1][3] * rm11;
-        dest[2][0] = -this[2][0];
-        dest[2][1] = -this[2][1];
-        dest[2][2] = -this[2][2];
-        dest[2][3] = -this[2][3];
+        dest.m30 = this.m00 * rm30 + this.m10 * rm31 + this.m30;
+        dest.m31 = this.m01 * rm30 + this.m11 * rm31 + this.m31;
+        dest.m32 = this.m02 * rm30 + this.m12 * rm31 + this.m32;
+        dest.m33 = this.m03 * rm30 + this.m13 * rm31 + this.m33;
+        dest.m00 = this.m00 * rm00;
+        dest.m01 = this.m01 * rm00;
+        dest.m02 = this.m02 * rm00;
+        dest.m03 = this.m03 * rm00;
+        dest.m10 = this.m10 * rm11;
+        dest.m11 = this.m11 * rm11;
+        dest.m12 = this.m12 * rm11;
+        dest.m13 = this.m13 * rm11;
+        dest.m20 = -this.m20;
+        dest.m21 = -this.m21;
+        dest.m22 = -this.m22;
+        dest.m23 = -this.m23;
         // ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION | PROPERTY_ORTHONORMAL));
         return dest;
     }
@@ -6589,22 +6626,22 @@ export class Matrix4 {
         const rm31 = (top + bottom) / (bottom - top);
         // perform optimized multiplication
         // compute the last column first, because other columns do not depend on it
-        dest[3][0] = this[0][0] * rm30 + this[1][0] * rm31 + this[3][0];
-        dest[3][1] = this[0][1] * rm30 + this[1][1] * rm31 + this[3][1];
-        dest[3][2] = this[0][2] * rm30 + this[1][2] * rm31 + this[3][2];
-        dest[3][3] = this[0][3] * rm30 + this[1][3] * rm31 + this[3][3];
-        dest[0][0] = this[0][0] * rm00;
-        dest[0][1] = this[0][1] * rm00;
-        dest[0][2] = this[0][2] * rm00;
-        dest[0][3] = this[0][3] * rm00;
-        dest[1][0] = this[1][0] * rm11;
-        dest[1][1] = this[1][1] * rm11;
-        dest[1][2] = this[1][2] * rm11;
-        dest[1][3] = this[1][3] * rm11;
-        dest[2][0] = this[2][0];
-        dest[2][1] = this[2][1];
-        dest[2][2] = this[2][2];
-        dest[2][3] = this[2][3];
+        dest.m30 = this.m00 * rm30 + this.m10 * rm31 + this.m30;
+        dest.m31 = this.m01 * rm30 + this.m11 * rm31 + this.m31;
+        dest.m32 = this.m02 * rm30 + this.m12 * rm31 + this.m32;
+        dest.m33 = this.m03 * rm30 + this.m13 * rm31 + this.m33;
+        dest.m00 = this.m00 * rm00;
+        dest.m01 = this.m01 * rm00;
+        dest.m02 = this.m02 * rm00;
+        dest.m03 = this.m03 * rm00;
+        dest.m10 = this.m10 * rm11;
+        dest.m11 = this.m11 * rm11;
+        dest.m12 = this.m12 * rm11;
+        dest.m13 = this.m13 * rm11;
+        dest.m20 = this.m20;
+        dest.m21 = this.m21;
+        dest.m22 = this.m22;
+        dest.m23 = this.m23;
         // ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION | PROPERTY_ORTHONORMAL));
         return dest;
     }
@@ -6636,11 +6673,11 @@ export class Matrix4 {
     public setOrtho2D(left: number, right: number, bottom: number, top: number): Matrix4 {
         if (!this.PROPERTY_IDENTITY)
             this.identity();
-        this[0][0] = 2.0 / (right - left);
-        this[1][1] = 2.0 / (top - bottom);
-        this[2][2] = -1.0;
-        this[3][0] = (right + left) / (left - right);
-        this[3][1] = (top + bottom) / (bottom - top);
+        this.m00 = 2.0 / (right - left);
+        this.m11 = 2.0 / (top - bottom);
+        this.m22 = -1.0;
+        this.m30 = (right + left) / (left - right);
+        this.m31 = (top + bottom) / (bottom - top);
         // properties = PROPERTY_AFFINE;
         return this;
     }
@@ -6672,10 +6709,10 @@ export class Matrix4 {
     public setOrtho2DLH(left: number, right: number, bottom: number, top: number): Matrix4 {
         if (!this.PROPERTY_IDENTITY)
             this.identity();
-        this[0][0] = 2.0 / (right - left);
-        this[1][1] = 2.0 / (top - bottom);
-        this[3][0] = (right + left) / (left - right);
-        this[3][1] = (top + bottom) / (bottom - top);
+        this.m00 = 2.0 / (right - left);
+        this.m11 = 2.0 / (top - bottom);
+        this.m30 = (right + left) / (left - right);
+        this.m31 = (top + bottom) / (bottom - top);
         // properties = PROPERTY_AFFINE;
         return this;
     }
@@ -6797,31 +6834,31 @@ export class Matrix4 {
         const rm22 = dirZ;
         // perform optimized matrix multiplication
         // introduce temporaries for dependent results
-        const nm00 = this[0][0] * rm00 + this[1][0] * rm01 + this[2][0] * rm02;
-        const nm01 = this[0][1] * rm00 + this[1][1] * rm01 + this[2][1] * rm02;
-        const nm02 = this[0][2] * rm00 + this[1][2] * rm01 + this[2][2] * rm02;
-        const nm03 = this[0][3] * rm00 + this[1][3] * rm01 + this[2][3] * rm02;
-        const nm10 = this[0][0] * rm10 + this[1][0] * rm11 + this[2][0] * rm12;
-        const nm11 = this[0][1] * rm10 + this[1][1] * rm11 + this[2][1] * rm12;
-        const nm12 = this[0][2] * rm10 + this[1][2] * rm11 + this[2][2] * rm12;
-        const nm13 = this[0][3] * rm10 + this[1][3] * rm11 + this[2][3] * rm12;
-        dest[2][0] = this[0][0] * rm20 + this[1][0] * rm21 + this[2][0] * rm22;
-        dest[2][1] = this[0][1] * rm20 + this[1][1] * rm21 + this[2][1] * rm22;
-        dest[2][2] = this[0][2] * rm20 + this[1][2] * rm21 + this[2][2] * rm22;
-        dest[2][3] = this[0][3] * rm20 + this[1][3] * rm21 + this[2][3] * rm22;
+        const nm00 = this.m00 * rm00 + this.m10 * rm01 + this.m20 * rm02;
+        const nm01 = this.m01 * rm00 + this.m11 * rm01 + this.m21 * rm02;
+        const nm02 = this.m02 * rm00 + this.m12 * rm01 + this.m22 * rm02;
+        const nm03 = this.m03 * rm00 + this.m13 * rm01 + this.m23 * rm02;
+        const nm10 = this.m00 * rm10 + this.m10 * rm11 + this.m20 * rm12;
+        const nm11 = this.m01 * rm10 + this.m11 * rm11 + this.m21 * rm12;
+        const nm12 = this.m02 * rm10 + this.m12 * rm11 + this.m22 * rm12;
+        const nm13 = this.m03 * rm10 + this.m13 * rm11 + this.m23 * rm12;
+        dest.m20 = this.m00 * rm20 + this.m10 * rm21 + this.m20 * rm22;
+        dest.m21 = this.m01 * rm20 + this.m11 * rm21 + this.m21 * rm22;
+        dest.m22 = this.m02 * rm20 + this.m12 * rm21 + this.m22 * rm22;
+        dest.m23 = this.m03 * rm20 + this.m13 * rm21 + this.m23 * rm22;
         // set the rest of the matrix elements
-        dest[0][0] = nm00;
-        dest[0][1] = nm01;
-        dest[0][2] = nm02;
-        dest[0][3] = nm03;
-        dest[1][0] = nm10;
-        dest[1][1] = nm11;
-        dest[1][2] = nm12;
-        dest[1][3] = nm13;
-        dest[3][0] = this[3][0];
-        dest[3][1] = this[3][1];
-        dest[3][2] = this[3][2];
-        dest[3][3] = this[3][3];
+        dest.m00 = nm00;
+        dest.m01 = nm01;
+        dest.m02 = nm02;
+        dest.m03 = nm03;
+        dest.m10 = nm10;
+        dest.m11 = nm11;
+        dest.m12 = nm12;
+        dest.m13 = nm13;
+        dest.m30 = this.m30;
+        dest.m31 = this.m31;
+        dest.m32 = this.m32;
+        dest.m33 = this.m33;
         // ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
         return dest;
     }
@@ -6910,22 +6947,22 @@ export class Matrix4 {
         const upnX = dirY * leftZ - dirZ * leftY;
         const upnY = dirZ * leftX - dirX * leftZ;
         const upnZ = dirX * leftY - dirY * leftX;
-        this[0][0] = leftX;
-        this[0][1] = upnX;
-        this[0][2] = dirX;
-        this[0][3] = 0.0;
-        this[1][0] = leftY;
-        this[1][1] = upnY;
-        this[1][2] = dirY;
-        this[1][3] = 0.0;
-        this[2][0] = leftZ;
-        this[2][1] = upnZ;
-        this[2][2] = dirZ;
-        this[2][3] = 0.0;
-        this[3][0] = 0.0;
-        this[3][1] = 0.0;
-        this[3][2] = 0.0;
-        this[3][3] = 1.0;
+        this.m00 = leftX;
+        this.m01 = upnX;
+        this.m02 = dirX;
+        this.m03 = 0.0;
+        this.m10 = leftY;
+        this.m11 = upnY;
+        this.m12 = dirY;
+        this.m13 = 0.0;
+        this.m20 = leftZ;
+        this.m21 = upnZ;
+        this.m22 = dirZ;
+        this.m23 = 0.0;
+        this.m30 = 0.0;
+        this.m31 = 0.0;
+        this.m32 = 0.0;
+        this.m33 = 1.0;
         // properties = PROPERTY_AFFINE | PROPERTY_ORTHONORMAL;
         return this;
     }
@@ -7028,22 +7065,22 @@ export class Matrix4 {
         const upnX = dirY * leftZ - dirZ * leftY;
         const upnY = dirZ * leftX - dirX * leftZ;
         const upnZ = dirX * leftY - dirY * leftX;
-        this[0][0] = leftX;
-        this[0][1] = upnX;
-        this[0][2] = dirX;
-        this[0][3] = 0.0;
-        this[1][0] = leftY;
-        this[1][1] = upnY;
-        this[1][2] = dirY;
-        this[1][3] = 0.0;
-        this[2][0] = leftZ;
-        this[2][1] = upnZ;
-        this[2][2] = dirZ;
-        this[2][3] = 0.0;
-        this[3][0] = -(leftX * eyeX + leftY * eyeY + leftZ * eyeZ);
-        this[3][1] = -(upnX * eyeX + upnY * eyeY + upnZ * eyeZ);
-        this[3][2] = -(dirX * eyeX + dirY * eyeY + dirZ * eyeZ);
-        this[3][3] = 1.0;
+        this.m00 = leftX;
+        this.m01 = upnX;
+        this.m02 = dirX;
+        this.m03 = 0.0;
+        this.m10 = leftY;
+        this.m11 = upnY;
+        this.m12 = dirY;
+        this.m13 = 0.0;
+        this.m20 = leftZ;
+        this.m21 = upnZ;
+        this.m22 = dirZ;
+        this.m23 = 0.0;
+        this.m30 = -(leftX * eyeX + leftY * eyeY + leftZ * eyeZ);
+        this.m31 = -(upnX * eyeX + upnY * eyeY + upnZ * eyeZ);
+        this.m32 = -(dirX * eyeX + dirY * eyeY + dirZ * eyeZ);
+        this.m33 = 1.0;
         return this;
         // _properties(PROPERTY_AFFINE | PROPERTY_ORTHONORMAL);
     }
@@ -7177,22 +7214,22 @@ export class Matrix4 {
         const rm31 = -(upnX * eyeX + upnY * eyeY + upnZ * eyeZ);
         const rm32 = -(dirX * eyeX + dirY * eyeY + dirZ * eyeZ);
         return dest.set(
-            this[0][0] * rm00 + this[1][0] * rm01 + this[2][0] * rm02,
-            this[0][1] * rm00 + this[1][1] * rm01 + this[2][1] * rm02,
-            this[0][2] * rm00 + this[1][2] * rm01 + this[2][2] * rm02,
-            this[0][3] * rm00 + this[1][3] * rm01 + this[2][3] * rm02,
-            this[0][0] * rm10 + this[1][0] * rm11 + this[2][0] * rm12,
-            this[0][1] * rm10 + this[1][1] * rm11 + this[2][1] * rm12,
-            this[0][2] * rm10 + this[1][2] * rm11 + this[2][2] * rm12,
-            this[0][3] * rm10 + this[1][3] * rm11 + this[2][3] * rm12,
-            this[0][0] * rm20 + this[1][0] * rm21 + this[2][0] * rm22,
-            this[0][1] * rm20 + this[1][1] * rm21 + this[2][1] * rm22,
-            this[0][2] * rm20 + this[1][2] * rm21 + this[2][2] * rm22,
-            this[0][3] * rm20 + this[1][3] * rm21 + this[2][3] * rm22,
-            this[0][0] * rm30 + this[1][0] * rm31 + this[2][0] * rm32 + this[3][0],
-            this[0][1] * rm30 + this[1][1] * rm31 + this[2][1] * rm32 + this[3][1],
-            this[0][2] * rm30 + this[1][2] * rm31 + this[2][2] * rm32 + this[3][2],
-            this[0][3] * rm30 + this[1][3] * rm31 + this[2][3] * rm32 + this[3][3],
+            this.m00 * rm00 + this.m10 * rm01 + this.m20 * rm02,
+            this.m01 * rm00 + this.m11 * rm01 + this.m21 * rm02,
+            this.m02 * rm00 + this.m12 * rm01 + this.m22 * rm02,
+            this.m03 * rm00 + this.m13 * rm01 + this.m23 * rm02,
+            this.m00 * rm10 + this.m10 * rm11 + this.m20 * rm12,
+            this.m01 * rm10 + this.m11 * rm11 + this.m21 * rm12,
+            this.m02 * rm10 + this.m12 * rm11 + this.m22 * rm12,
+            this.m03 * rm10 + this.m13 * rm11 + this.m23 * rm12,
+            this.m00 * rm20 + this.m10 * rm21 + this.m20 * rm22,
+            this.m01 * rm20 + this.m11 * rm21 + this.m21 * rm22,
+            this.m02 * rm20 + this.m12 * rm21 + this.m22 * rm22,
+            this.m03 * rm20 + this.m13 * rm21 + this.m23 * rm22,
+            this.m00 * rm30 + this.m10 * rm31 + this.m20 * rm32 + this.m30,
+            this.m01 * rm30 + this.m11 * rm31 + this.m21 * rm32 + this.m31,
+            this.m02 * rm30 + this.m12 * rm31 + this.m22 * rm32 + this.m32,
+            this.m03 * rm30 + this.m13 * rm31 + this.m23 * rm32 + this.m33,
         )
         // ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
         // return dest;
@@ -7268,30 +7305,30 @@ export class Matrix4 {
         const rm30 = -(leftX * eyeX + leftY * eyeY + leftZ * eyeZ);
         const rm31 = -(upnX * eyeX + upnY * eyeY + upnZ * eyeZ);
         const rm32 = -(dirX * eyeX + dirY * eyeY + dirZ * eyeZ);
-        const nm10 = this[0][0] * leftY;
-        const nm20 = this[0][0] * leftZ;
-        const nm21 = this[1][1] * upnZ;
-        const nm30 = this[0][0] * rm30;
-        const nm31 = this[1][1] * rm31;
-        const nm32 = this[2][2] * rm32 + this[3][2];
-        const nm33 = this[2][3] * rm32;
+        const nm10 = this.m00 * leftY;
+        const nm20 = this.m00 * leftZ;
+        const nm21 = this.m11 * upnZ;
+        const nm30 = this.m00 * rm30;
+        const nm31 = this.m11 * rm31;
+        const nm32 = this.m22 * rm32 + this.m32;
+        const nm33 = this.m23 * rm32;
 
-        dest[0][0] = this[0][0] * leftX;
-        dest[0][1] = this[1][1] * upnX;
-        dest[0][2] = this[2][2] * dirX;
-        dest[0][3] = this[2][3] * dirX;
-        dest[1][0] = nm10;
-        dest[1][1] = this[1][1] * upnY;
-        dest[1][2] = this[2][2] * dirY;
-        dest[1][3] = this[2][3] * dirY;
-        dest[2][0] = nm20;
-        dest[2][1] = nm21;
-        dest[2][2] = this[2][2] * dirZ;
-        dest[2][3] = this[2][3] * dirZ;
-        dest[3][0] = nm30;
-        dest[3][1] = nm31;
-        dest[3][2] = nm32;
-        dest[3][3] = nm33;
+        dest.m00 = this.m00 * leftX;
+        dest.m01 = this.m11 * upnX;
+        dest.m02 = this.m22 * dirX;
+        dest.m03 = this.m23 * dirX;
+        dest.m10 = nm10;
+        dest.m11 = this.m11 * upnY;
+        dest.m12 = this.m22 * dirY;
+        dest.m13 = this.m23 * dirY;
+        dest.m20 = nm20;
+        dest.m21 = nm21;
+        dest.m22 = this.m22 * dirZ;
+        dest.m23 = this.m23 * dirZ;
+        dest.m30 = nm30;
+        dest.m31 = nm31;
+        dest.m32 = nm32;
+        dest.m33 = nm33;
         // ._properties(0);
         return dest;
     }
@@ -7395,22 +7432,22 @@ export class Matrix4 {
         const upnX = dirY * leftZ - dirZ * leftY;
         const upnY = dirZ * leftX - dirX * leftZ;
         const upnZ = dirX * leftY - dirY * leftX;
-        this[0][0] = leftX;
-        this[0][1] = upnX;
-        this[0][2] = dirX;
-        this[0][3] = 0.0;
-        this[1][0] = leftY;
-        this[1][1] = upnY;
-        this[1][2] = dirY;
-        this[1][3] = 0.0;
-        this[2][0] = leftZ;
-        this[2][1] = upnZ;
-        this[2][2] = dirZ;
-        this[2][3] = 0.0;
-        this[3][0] = -(leftX * eyeX + leftY * eyeY + leftZ * eyeZ);
-        this[3][1] = -(upnX * eyeX + upnY * eyeY + upnZ * eyeZ);
-        this[3][2] = -(dirX * eyeX + dirY * eyeY + dirZ * eyeZ);
-        this[3][3] = 1.0;
+        this.m00 = leftX;
+        this.m01 = upnX;
+        this.m02 = dirX;
+        this.m03 = 0.0;
+        this.m10 = leftY;
+        this.m11 = upnY;
+        this.m12 = dirY;
+        this.m13 = 0.0;
+        this.m20 = leftZ;
+        this.m21 = upnZ;
+        this.m22 = dirZ;
+        this.m23 = 0.0;
+        this.m30 = -(leftX * eyeX + leftY * eyeY + leftZ * eyeZ);
+        this.m31 = -(upnX * eyeX + upnY * eyeY + upnZ * eyeZ);
+        this.m32 = -(dirX * eyeX + dirY * eyeY + dirZ * eyeZ);
+        this.m33 = 1.0;
         // properties = PROPERTY_AFFINE | PROPERTY_ORTHONORMAL;
         return this;
     }
@@ -7549,22 +7586,22 @@ export class Matrix4 {
         const rm32 = -(dirX * eyeX + dirY * eyeY + dirZ * eyeZ);
         // introduce temporaries for dependent results
         return dest.set(
-            this[0][0] * rm00 + this[1][0] * rm01 + this[2][0] * rm02,
-            this[0][1] * rm00 + this[1][1] * rm01 + this[2][1] * rm02,
-            this[0][2] * rm00 + this[1][2] * rm01 + this[2][2] * rm02,
-            this[0][3] * rm00 + this[1][3] * rm01 + this[2][3] * rm02,
-            this[0][0] * rm10 + this[1][0] * rm11 + this[2][0] * rm12,
-            this[0][1] * rm10 + this[1][1] * rm11 + this[2][1] * rm12,
-            this[0][2] * rm10 + this[1][2] * rm11 + this[2][2] * rm12,
-            this[0][3] * rm10 + this[1][3] * rm11 + this[2][3] * rm12,
-            this[0][0] * rm20 + this[1][0] * rm21 + this[2][0] * rm22,
-            this[0][1] * rm20 + this[1][1] * rm21 + this[2][1] * rm22,
-            this[0][2] * rm20 + this[1][2] * rm21 + this[2][2] * rm22,
-            this[0][3] * rm20 + this[1][3] * rm21 + this[2][3] * rm22,
-            this[0][0] * rm30 + this[1][0] * rm31 + this[2][0] * rm32 + this[3][0],
-            this[0][1] * rm30 + this[1][1] * rm31 + this[2][1] * rm32 + this[3][1],
-            this[0][2] * rm30 + this[1][2] * rm31 + this[2][2] * rm32 + this[3][2],
-            this[0][3] * rm30 + this[1][3] * rm31 + this[2][3] * rm32 + this[3][3],
+            this.m00 * rm00 + this.m10 * rm01 + this.m20 * rm02,
+            this.m01 * rm00 + this.m11 * rm01 + this.m21 * rm02,
+            this.m02 * rm00 + this.m12 * rm01 + this.m22 * rm02,
+            this.m03 * rm00 + this.m13 * rm01 + this.m23 * rm02,
+            this.m00 * rm10 + this.m10 * rm11 + this.m20 * rm12,
+            this.m01 * rm10 + this.m11 * rm11 + this.m21 * rm12,
+            this.m02 * rm10 + this.m12 * rm11 + this.m22 * rm12,
+            this.m03 * rm10 + this.m13 * rm11 + this.m23 * rm12,
+            this.m00 * rm20 + this.m10 * rm21 + this.m20 * rm22,
+            this.m01 * rm20 + this.m11 * rm21 + this.m21 * rm22,
+            this.m02 * rm20 + this.m12 * rm21 + this.m22 * rm22,
+            this.m03 * rm20 + this.m13 * rm21 + this.m23 * rm22,
+            this.m00 * rm30 + this.m10 * rm31 + this.m20 * rm32 + this.m30,
+            this.m01 * rm30 + this.m11 * rm31 + this.m21 * rm32 + this.m31,
+            this.m02 * rm30 + this.m12 * rm31 + this.m22 * rm32 + this.m32,
+            this.m03 * rm30 + this.m13 * rm31 + this.m23 * rm32 + this.m33,
         )
         // ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
         // return dest;
@@ -7653,22 +7690,22 @@ export class Matrix4 {
         const rm32 = -(dirX * eyeX + dirY * eyeY + dirZ * eyeZ);
 
         return dest.set(
-            this[0][0] * rm00,
-            this[1][1] * rm01,
-            this[2][2] * rm02,
-            this[2][3] * rm02,
-            this[0][0] * rm10,
-            this[1][1] * rm11,
-            this[2][2] * rm12,
-            this[2][3] * rm12,
-            this[0][0] * rm20,
-            this[1][1] * rm21,
-            this[2][2] * rm22,
-            this[2][3] * rm22,
-            this[0][0] * rm30,
-            this[1][1] * rm31,
-            this[2][2] * rm32 + this[3][2],
-            this[2][3] * rm32,
+            this.m00 * rm00,
+            this.m11 * rm01,
+            this.m22 * rm02,
+            this.m23 * rm02,
+            this.m00 * rm10,
+            this.m11 * rm11,
+            this.m22 * rm12,
+            this.m23 * rm12,
+            this.m00 * rm20,
+            this.m11 * rm21,
+            this.m22 * rm22,
+            this.m23 * rm22,
+            this.m00 * rm30,
+            this.m11 * rm31,
+            this.m22 * rm32 + this.m32,
+            this.m23 * rm32,
         );
         // ._properties(0);
 
@@ -7697,22 +7734,22 @@ export class Matrix4 {
         dest = dest ?? this;
         const tx = w - 1 - (x << 1), ty = h - 1 - (y << 1);
         // return dest
-        dest[3][0] = this[0][0] * tx + this[1][0] * ty + this[3][0];
-        dest[3][1] = this[0][1] * tx + this[1][1] * ty + this[3][1];
-        dest[3][2] = this[0][2] * tx + this[1][2] * ty + this[3][2];
-        dest[3][3] = this[0][3] * tx + this[1][3] * ty + this[3][3];
-        dest[0][0] = this[0][0] * w;
-        dest[0][1] = this[0][1] * w;
-        dest[0][2] = this[0][2] * w;
-        dest[0][3] = this[0][3] * w;
-        dest[1][0] = this[1][0] * h;
-        dest[1][1] = this[1][1] * h;
-        dest[1][2] = this[1][2] * h;
-        dest[1][3] = this[1][3] * h;
-        dest[2][0] = this[2][0];
-        dest[2][1] = this[2][1];
-        dest[2][2] = this[2][2];
-        dest[2][3] = this[2][3];
+        dest.m30 = this.m00 * tx + this.m10 * ty + this.m30;
+        dest.m31 = this.m01 * tx + this.m11 * ty + this.m31;
+        dest.m32 = this.m02 * tx + this.m12 * ty + this.m32;
+        dest.m33 = this.m03 * tx + this.m13 * ty + this.m33;
+        dest.m00 = this.m00 * w;
+        dest.m01 = this.m01 * w;
+        dest.m02 = this.m02 * w;
+        dest.m03 = this.m03 * w;
+        dest.m10 = this.m10 * h;
+        dest.m11 = this.m11 * h;
+        dest.m12 = this.m12 * h;
+        dest.m13 = this.m13 * h;
+        dest.m20 = this.m20;
+        dest.m21 = this.m21;
+        dest.m22 = this.m22;
+        dest.m23 = this.m23;
         return dest;
         // ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION | PROPERTY_ORTHONORMAL));
     }
@@ -7784,26 +7821,26 @@ export class Matrix4 {
             rm32 = (zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar);
         }
         // perform optimized matrix multiplication
-        const nm20 = this[2][0] * rm22 - this[3][0];
-        const nm21 = this[2][1] * rm22 - this[3][1];
-        const nm22 = this[2][2] * rm22 - this[3][2];
-        const nm23 = this[2][3] * rm22 - this[3][3];
-        dest[0][0] = this[0][0] * rm00;
-        dest[0][1] = this[0][1] * rm00;
-        dest[0][2] = this[0][2] * rm00;
-        dest[0][3] = this[0][3] * rm00;
-        dest[1][0] = this[1][0] * rm11;
-        dest[1][1] = this[1][1] * rm11;
-        dest[1][2] = this[1][2] * rm11;
-        dest[1][3] = this[1][3] * rm11;
-        dest[3][0] = this[2][0] * rm32;
-        dest[3][1] = this[2][1] * rm32;
-        dest[3][2] = this[2][2] * rm32;
-        dest[3][3] = this[2][3] * rm32;
-        dest[2][0] = nm20;
-        dest[2][1] = nm21;
-        dest[2][2] = nm22;
-        dest[2][3] = nm23;
+        const nm20 = this.m20 * rm22 - this.m30;
+        const nm21 = this.m21 * rm22 - this.m31;
+        const nm22 = this.m22 * rm22 - this.m32;
+        const nm23 = this.m23 * rm22 - this.m33;
+        dest.m00 = this.m00 * rm00;
+        dest.m01 = this.m01 * rm00;
+        dest.m02 = this.m02 * rm00;
+        dest.m03 = this.m03 * rm00;
+        dest.m10 = this.m10 * rm11;
+        dest.m11 = this.m11 * rm11;
+        dest.m12 = this.m12 * rm11;
+        dest.m13 = this.m13 * rm11;
+        dest.m30 = this.m20 * rm32;
+        dest.m31 = this.m21 * rm32;
+        dest.m32 = this.m22 * rm32;
+        dest.m33 = this.m23 * rm32;
+        dest.m20 = nm20;
+        dest.m21 = nm21;
+        dest.m22 = nm22;
+        dest.m23 = nm23;
         // ._properties(properties & ~(PROPERTY_AFFINE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION | PROPERTY_ORTHONORMAL));
         return dest;
     }
@@ -7871,26 +7908,26 @@ export class Matrix4 {
             rm32 = (zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar);
         }
         // perform optimized matrix multiplication
-        const nm20 = this[2][0] * rm22 - this[3][0];
-        const nm21 = this[2][1] * rm22 - this[3][1];
-        const nm22 = this[2][2] * rm22 - this[3][2];
-        const nm23 = this[2][3] * rm22 - this[3][3];
-        dest[0][0] = this[0][0] * rm00;
-        dest[0][1] = this[0][1] * rm00;
-        dest[0][2] = this[0][2] * rm00;
-        dest[0][3] = this[0][3] * rm00;
-        dest[1][0] = this[1][0] * rm11;
-        dest[1][1] = this[1][1] * rm11;
-        dest[1][2] = this[1][2] * rm11;
-        dest[1][3] = this[1][3] * rm11;
-        dest[3][0] = this[2][0] * rm32;
-        dest[3][1] = this[2][1] * rm32;
-        dest[3][2] = this[2][2] * rm32;
-        dest[3][3] = this[2][3] * rm32;
-        dest[2][0] = nm20;
-        dest[2][1] = nm21;
-        dest[2][2] = nm22;
-        dest[2][3] = nm23;
+        const nm20 = this.m20 * rm22 - this.m30;
+        const nm21 = this.m21 * rm22 - this.m31;
+        const nm22 = this.m22 * rm22 - this.m32;
+        const nm23 = this.m23 * rm22 - this.m33;
+        dest.m00 = this.m00 * rm00;
+        dest.m01 = this.m01 * rm00;
+        dest.m02 = this.m02 * rm00;
+        dest.m03 = this.m03 * rm00;
+        dest.m10 = this.m10 * rm11;
+        dest.m11 = this.m11 * rm11;
+        dest.m12 = this.m12 * rm11;
+        dest.m13 = this.m13 * rm11;
+        dest.m30 = this.m20 * rm32;
+        dest.m31 = this.m21 * rm32;
+        dest.m32 = this.m22 * rm32;
+        dest.m33 = this.m23 * rm32;
+        dest.m20 = nm20;
+        dest.m21 = nm21;
+        dest.m22 = nm22;
+        dest.m23 = nm23;
         // ._properties(properties & ~(PROPERTY_AFFINE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION | PROPERTY_ORTHONORMAL));
         return dest;
     }
@@ -7975,26 +8012,26 @@ export class Matrix4 {
             rm32 = (zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar);
         }
         // perform optimized matrix multiplication
-        const nm20 = this[0][0] * rm20 + this[1][0] * rm21 + this[2][0] * rm22 - this[3][0];
-        const nm21 = this[0][1] * rm20 + this[1][1] * rm21 + this[2][1] * rm22 - this[3][1];
-        const nm22 = this[0][2] * rm20 + this[1][2] * rm21 + this[2][2] * rm22 - this[3][2];
-        const nm23 = this[0][3] * rm20 + this[1][3] * rm21 + this[2][3] * rm22 - this[3][3];
-        dest[0][0] = this[0][0] * rm00;
-        dest[0][1] = this[0][1] * rm00;
-        dest[0][2] = this[0][2] * rm00;
-        dest[0][3] = this[0][3] * rm00;
-        dest[1][0] = this[1][0] * rm11;
-        dest[1][1] = this[1][1] * rm11;
-        dest[1][2] = this[1][2] * rm11;
-        dest[1][3] = this[1][3] * rm11;
-        dest[3][0] = this[2][0] * rm32;
-        dest[3][1] = this[2][1] * rm32;
-        dest[3][2] = this[2][2] * rm32;
-        dest[3][3] = this[2][3] * rm32;
-        dest[2][0] = nm20;
-        dest[2][1] = nm21;
-        dest[2][2] = nm22;
-        dest[2][3] = nm23;
+        const nm20 = this.m00 * rm20 + this.m10 * rm21 + this.m20 * rm22 - this.m30;
+        const nm21 = this.m01 * rm20 + this.m11 * rm21 + this.m21 * rm22 - this.m31;
+        const nm22 = this.m02 * rm20 + this.m12 * rm21 + this.m22 * rm22 - this.m32;
+        const nm23 = this.m03 * rm20 + this.m13 * rm21 + this.m23 * rm22 - this.m33;
+        dest.m00 = this.m00 * rm00;
+        dest.m01 = this.m01 * rm00;
+        dest.m02 = this.m02 * rm00;
+        dest.m03 = this.m03 * rm00;
+        dest.m10 = this.m10 * rm11;
+        dest.m11 = this.m11 * rm11;
+        dest.m12 = this.m12 * rm11;
+        dest.m13 = this.m13 * rm11;
+        dest.m30 = this.m20 * rm32;
+        dest.m31 = this.m21 * rm32;
+        dest.m32 = this.m22 * rm32;
+        dest.m33 = this.m23 * rm32;
+        dest.m20 = nm20;
+        dest.m21 = nm21;
+        dest.m22 = nm22;
+        dest.m23 = nm23;
         // ._properties(properties & ~(PROPERTY_AFFINE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION
         //     | PROPERTY_ORTHONORMAL | (rm20 == 0.0 && rm21 == 0.0 ? 0 : PROPERTY_PERSPECTIVE)));
         return dest;
@@ -8029,35 +8066,35 @@ export class Matrix4 {
     public setPerspective(fovy: number, aspect: number, zNear: number, zFar: number, zZeroToOne?: boolean): Matrix4 {
         zZeroToOne = zZeroToOne ?? false;
         const h = Math.tan(fovy * 0.5);
-        this[0][0] = 1 / (h * aspect);
-        this[0][1] = 0;
-        this[0][2] = 0;
-        this[0][3] = 0;
-        this[1][0] = 0;
-        this[1][1] = 1 / h;
-        this[1][2] = 0;
-        this[1][3] = 0;
-        this[2][0] = 0;
-        this[2][1] = 0;
+        this.m00 = 1 / (h * aspect);
+        this.m01 = 0;
+        this.m02 = 0;
+        this.m03 = 0;
+        this.m10 = 0;
+        this.m11 = 1 / h;
+        this.m12 = 0;
+        this.m13 = 0;
+        this.m20 = 0;
+        this.m21 = 0;
         const farInf = zFar > 0 && !isFinite(zFar);
         const nearInf = zNear > 0 && !isFinite(zNear);
         if (farInf) {
             // See: "Infinite Projection Matrix" (http://www.terathon.com/gdc07_lengyel.pdf)
             const e = 1E-6;
-            this[2][2] = (e - 1.0);
-            this[3][2] = ((e - (zZeroToOne ? 1.0 : 2.0)) * zNear);
+            this.m22 = (e - 1.0);
+            this.m32 = ((e - (zZeroToOne ? 1.0 : 2.0)) * zNear);
         } else if (nearInf) {
             const e = 1E-6;
-            this[2][2] = ((zZeroToOne ? 0.0 : 1.0) - e);
-            this[3][2] = (((zZeroToOne ? 1.0 : 2.0) - e) * zFar);
+            this.m22 = ((zZeroToOne ? 0.0 : 1.0) - e);
+            this.m32 = (((zZeroToOne ? 1.0 : 2.0) - e) * zFar);
         } else {
-            this[2][2] = ((zZeroToOne ? zFar : zFar + zNear) / (zNear - zFar));
-            this[3][2] = ((zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar));
+            this.m22 = ((zZeroToOne ? zFar : zFar + zNear) / (zNear - zFar));
+            this.m32 = ((zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar));
         }
-        this[2][3] = -1;
-        this[3][0] = 0;
-        this[3][1] = 0;
-        this[3][3] = 0;
+        this.m23 = -1;
+        this.m30 = 0;
+        this.m31 = 0;
+        this.m33 = 0;
         // properties = PROPERTY_PERSPECTIVE;
         return this;
     }
@@ -8091,24 +8128,24 @@ export class Matrix4 {
     public setPerspectiveRect(width: number, height: number, zNear: number, zFar: number, zZeroToOne?: boolean): Matrix4 {
         zZeroToOne = zZeroToOne ?? false;
         this.zero();
-        this[0][0] = (zNear + zNear) / width;
-        this[1][1] = (zNear + zNear) / height;
+        this.m00 = (zNear + zNear) / width;
+        this.m11 = (zNear + zNear) / height;
         const farInf = zFar > 0 && !isFinite(zFar);
         const nearInf = zNear > 0 && !isFinite(zNear);
         if (farInf) {
             // See: "Infinite Projection Matrix" (http://www.terathon.com/gdc07_lengyel.pdf)
             const e = 1E-6;
-            this[2][2] = (e - 1.0);
-            this[3][2] = ((e - (zZeroToOne ? 1.0 : 2.0)) * zNear);
+            this.m22 = (e - 1.0);
+            this.m32 = ((e - (zZeroToOne ? 1.0 : 2.0)) * zNear);
         } else if (nearInf) {
             const e = 1E-6;
-            this[2][2] = ((zZeroToOne ? 0.0 : 1.0) - e);
-            this[3][2] = (((zZeroToOne ? 1.0 : 2.0) - e) * zFar);
+            this.m22 = ((zZeroToOne ? 0.0 : 1.0) - e);
+            this.m32 = (((zZeroToOne ? 1.0 : 2.0) - e) * zFar);
         } else {
-            this[2][2] = ((zZeroToOne ? zFar : zFar + zNear) / (zNear - zFar));
-            this[3][2] = ((zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar));
+            this.m22 = ((zZeroToOne ? zFar : zFar + zNear) / (zNear - zFar));
+            this.m32 = ((zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar));
         }
-        this[2][3] = (-1.0);
+        this.m23 = (-1.0);
         // properties = PROPERTY_PERSPECTIVE;
         return this;
     }
@@ -8154,30 +8191,30 @@ export class Matrix4 {
         this.zero();
         const h = Math.tan(fovy * 0.5);
         const xScale = 1.0 / (h * aspect), yScale = 1.0 / h;
-        this[0][0] = xScale;
-        this[1][1] = yScale;
+        this.m00 = xScale;
+        this.m11 = yScale;
         const offX = Math.tan(offAngleX), offY = Math.tan(offAngleY);
-        this[2][0] = offX * xScale;
-        this[2][1] = offY * yScale;
+        this.m20 = offX * xScale;
+        this.m21 = offY * yScale;
         const farInf = zFar > 0 && !isFinite(zFar);
         const nearInf = zNear > 0 && !isFinite(zNear);
         if (farInf) {
             // See: "Infinite Projection Matrix" (http://www.terathon.com/gdc07_lengyel.pdf)
             const e = 1E-6;
-            this[2][2] = (e - 1.0)
-            this[3][2] = (e - (zZeroToOne ? 1.0 : 2.0)) * zNear
+            this.m22 = (e - 1.0)
+            this.m32 = (e - (zZeroToOne ? 1.0 : 2.0)) * zNear
         } else if (nearInf) {
             const e = 1E-6;
-            this[2][2] = ((zZeroToOne ? 0.0 : 1.0) - e)
-            this[3][2] = ((zZeroToOne ? 1.0 : 2.0) - e) * zFar
+            this.m22 = ((zZeroToOne ? 0.0 : 1.0) - e)
+            this.m32 = ((zZeroToOne ? 1.0 : 2.0) - e) * zFar
         } else {
-            this[2][2] = (zZeroToOne ? zFar : zFar + zNear) / (zNear - zFar)
-            this[3][2] = (zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar)
+            this.m22 = (zZeroToOne ? zFar : zFar + zNear) / (zNear - zFar)
+            this.m32 = (zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar)
         }
-        this[2][3] = -1;
-        this[3][0] = 0;
-        this[3][1] = 0;
-        this[3][3] = 0;
+        this.m23 = -1;
+        this.m30 = 0;
+        this.m31 = 0;
+        this.m33 = 0;
         // properties = offAngleX == 0.0 && offAngleY == 0.0 ? PROPERTY_PERSPECTIVE : 0;
         return this;
     }
@@ -8248,26 +8285,26 @@ export class Matrix4 {
             rm32 = (zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar);
         }
         // perform optimized matrix multiplication
-        const nm20 = this[2][0] * rm22 + this[3][0];
-        const nm21 = this[2][1] * rm22 + this[3][1];
-        const nm22 = this[2][2] * rm22 + this[3][2];
-        const nm23 = this[2][3] * rm22 + this[3][3];
-        dest[0][0] = this[0][0] * rm00;
-        dest[0][1] = this[0][1] * rm00;
-        dest[0][2] = this[0][2] * rm00;
-        dest[0][3] = this[0][3] * rm00;
-        dest[1][0] = this[1][0] * rm11;
-        dest[1][1] = this[1][1] * rm11;
-        dest[1][2] = this[1][2] * rm11;
-        dest[1][3] = this[1][3] * rm11;
-        dest[3][0] = this[2][0] * rm32;
-        dest[3][1] = this[2][1] * rm32;
-        dest[3][2] = this[2][2] * rm32;
-        dest[3][3] = this[2][3] * rm32;
-        dest[2][0] = nm20;
-        dest[2][1] = nm21;
-        dest[2][2] = nm22;
-        dest[2][3] = nm23;
+        const nm20 = this.m20 * rm22 + this.m30;
+        const nm21 = this.m21 * rm22 + this.m31;
+        const nm22 = this.m22 * rm22 + this.m32;
+        const nm23 = this.m23 * rm22 + this.m33;
+        dest.m00 = this.m00 * rm00;
+        dest.m01 = this.m01 * rm00;
+        dest.m02 = this.m02 * rm00;
+        dest.m03 = this.m03 * rm00;
+        dest.m10 = this.m10 * rm11;
+        dest.m11 = this.m11 * rm11;
+        dest.m12 = this.m12 * rm11;
+        dest.m13 = this.m13 * rm11;
+        dest.m30 = this.m20 * rm32;
+        dest.m31 = this.m21 * rm32;
+        dest.m32 = this.m22 * rm32;
+        dest.m33 = this.m23 * rm32;
+        dest.m20 = nm20;
+        dest.m21 = nm21;
+        dest.m22 = nm22;
+        dest.m23 = nm23;
         // ._properties(properties & ~(PROPERTY_AFFINE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION | PROPERTY_ORTHONORMAL));
         return dest;
     }
@@ -8301,35 +8338,35 @@ export class Matrix4 {
     public setPerspectiveLH(fovy: number, aspect: number, zNear: number, zFar: number, zZeroToOne?: boolean): Matrix4 {
         zZeroToOne = zZeroToOne ?? false;
         const h = Math.tan(fovy * 0.5);
-        this[0][0] = 1 / (h * aspect);
-        this[0][1] = 0;
-        this[0][2] = 0;
-        this[0][3] = 0;
-        this[1][0] = 0;
-        this[1][1] = 1 / h;
-        this[1][2] = 0;
-        this[1][3] = 0;
-        this[2][0] = 0;
-        this[2][1] = 0;
+        this.m00 = 1 / (h * aspect);
+        this.m01 = 0;
+        this.m02 = 0;
+        this.m03 = 0;
+        this.m10 = 0;
+        this.m11 = 1 / h;
+        this.m12 = 0;
+        this.m13 = 0;
+        this.m20 = 0;
+        this.m21 = 0;
         const farInf = zFar > 0 && !isFinite(zFar);
         const nearInf = zNear > 0 && !isFinite(zNear);
         if (farInf) {
             // See: "Infinite Projection Matrix" (http://www.terathon.com/gdc07_lengyel.pdf)
             const e = 1E-6;
-            this[2][2] = (1.0 - e)
-            this[3][2] = ((e - (zZeroToOne ? 1.0 : 2.0)) * zNear);
+            this.m22 = (1.0 - e)
+            this.m32 = ((e - (zZeroToOne ? 1.0 : 2.0)) * zNear);
         } else if (nearInf) {
             const e = 1E-6;
-            this[2][2] = ((zZeroToOne ? 0.0 : 1.0) - e)
-            this[3][2] = (((zZeroToOne ? 1.0 : 2.0) - e) * zFar);
+            this.m22 = ((zZeroToOne ? 0.0 : 1.0) - e)
+            this.m32 = (((zZeroToOne ? 1.0 : 2.0) - e) * zFar);
         } else {
-            this[2][2] = ((zZeroToOne ? zFar : zFar + zNear) / (zFar - zNear))
-            this[3][2] = ((zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar));
+            this.m22 = ((zZeroToOne ? zFar : zFar + zNear) / (zFar - zNear))
+            this.m32 = ((zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar));
         }
-        this[2][3] = (1.0)
-        this[3][0] = (0.0)
-        this[3][1] = (0.0)
-        this[3][3] = (0.0)
+        this.m23 = (1.0)
+        this.m30 = (0.0)
+        this.m31 = (0.0)
+        this.m33 = (0.0)
         // properties = PROPERTY_PERSPECTIVE;
         return this;
     }
@@ -8407,26 +8444,26 @@ export class Matrix4 {
             rm32 = (zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar);
         }
         // perform optimized matrix multiplication
-        const nm20 = this[0][0] * rm20 + this[1][0] * rm21 + this[2][0] * rm22 - this[3][0];
-        const nm21 = this[0][1] * rm20 + this[1][1] * rm21 + this[2][1] * rm22 - this[3][1];
-        const nm22 = this[0][2] * rm20 + this[1][2] * rm21 + this[2][2] * rm22 - this[3][2];
-        const nm23 = this[0][3] * rm20 + this[1][3] * rm21 + this[2][3] * rm22 - this[3][3];
-        dest[0][0] = this[0][0] * rm00;
-        dest[0][1] = this[0][1] * rm00;
-        dest[0][2] = this[0][2] * rm00;
-        dest[0][3] = this[0][3] * rm00;
-        dest[1][0] = this[1][0] * rm11;
-        dest[1][1] = this[1][1] * rm11;
-        dest[1][2] = this[1][2] * rm11;
-        dest[1][3] = this[1][3] * rm11;
-        dest[3][0] = this[2][0] * rm32;
-        dest[3][1] = this[2][1] * rm32;
-        dest[3][2] = this[2][2] * rm32;
-        dest[3][3] = this[2][3] * rm32;
-        dest[2][0] = nm20;
-        dest[2][1] = nm21;
-        dest[2][2] = nm22;
-        dest[2][3] = nm23;
+        const nm20 = this.m00 * rm20 + this.m10 * rm21 + this.m20 * rm22 - this.m30;
+        const nm21 = this.m01 * rm20 + this.m11 * rm21 + this.m21 * rm22 - this.m31;
+        const nm22 = this.m02 * rm20 + this.m12 * rm21 + this.m22 * rm22 - this.m32;
+        const nm23 = this.m03 * rm20 + this.m13 * rm21 + this.m23 * rm22 - this.m33;
+        dest.m00 = this.m00 * rm00;
+        dest.m01 = this.m01 * rm00;
+        dest.m02 = this.m02 * rm00;
+        dest.m03 = this.m03 * rm00;
+        dest.m10 = this.m10 * rm11;
+        dest.m11 = this.m11 * rm11;
+        dest.m12 = this.m12 * rm11;
+        dest.m13 = this.m13 * rm11;
+        dest.m30 = this.m20 * rm32;
+        dest.m31 = this.m21 * rm32;
+        dest.m32 = this.m22 * rm32;
+        dest.m33 = this.m23 * rm32;
+        dest.m20 = nm20;
+        dest.m21 = nm21;
+        dest.m22 = nm22;
+        dest.m23 = nm23;
         // ._properties(0);
         return dest;
     }
@@ -8467,27 +8504,27 @@ export class Matrix4 {
         zZeroToOne = zZeroToOne ?? false;
         if (!this.PROPERTY_IDENTITY)
             this.identity();
-        this[0][0] = (zNear + zNear) / (right - left);
-        this[1][1] = (zNear + zNear) / (top - bottom);
-        this[2][0] = (right + left) / (right - left);
-        this[2][1] = (top + bottom) / (top - bottom);
+        this.m00 = (zNear + zNear) / (right - left);
+        this.m11 = (zNear + zNear) / (top - bottom);
+        this.m20 = (right + left) / (right - left);
+        this.m21 = (top + bottom) / (top - bottom);
         const farInf = zFar > 0 && !isFinite(zFar);
         const nearInf = zNear > 0 && !isFinite(zNear);
         if (farInf) {
             // See: "Infinite Projection Matrix" (http://www.terathon.com/gdc07_lengyel.pdf)
             const e = 1E-6;
-            this[2][2] = (e - 1.0);
-            this[3][2] = ((e - (zZeroToOne ? 1.0 : 2.0)) * zNear);
+            this.m22 = (e - 1.0);
+            this.m32 = ((e - (zZeroToOne ? 1.0 : 2.0)) * zNear);
         } else if (nearInf) {
             const e = 1E-6;
-            this[2][2] = ((zZeroToOne ? 0.0 : 1.0) - e);
-            this[3][2] = (((zZeroToOne ? 1.0 : 2.0) - e) * zFar);
+            this.m22 = ((zZeroToOne ? 0.0 : 1.0) - e);
+            this.m32 = (((zZeroToOne ? 1.0 : 2.0) - e) * zFar);
         } else {
-            this[2][2] = ((zZeroToOne ? zFar : zFar + zNear) / (zNear - zFar));
-            this[3][2] = ((zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar));
+            this.m22 = ((zZeroToOne ? zFar : zFar + zNear) / (zNear - zFar));
+            this.m32 = ((zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar));
         }
-        this[2][3] = (-1.0)
-        this[3][3] = (0.0)
+        this.m23 = (-1.0)
+        this.m33 = (0.0)
         // properties = this.m20 == 0.0 && this.m21 == 0.0 ? PROPERTY_PERSPECTIVE : 0;
         return this;
     }
@@ -8565,26 +8602,26 @@ export class Matrix4 {
             rm32 = (zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar);
         }
         // perform optimized matrix multiplication
-        const nm20 = this[0][0] * rm20 + this[1][0] * rm21 + this[2][0] * rm22 + this[3][0];
-        const nm21 = this[0][1] * rm20 + this[1][1] * rm21 + this[2][1] * rm22 + this[3][1];
-        const nm22 = this[0][2] * rm20 + this[1][2] * rm21 + this[2][2] * rm22 + this[3][2];
-        const nm23 = this[0][3] * rm20 + this[1][3] * rm21 + this[2][3] * rm22 + this[3][3];
-        dest[0][0] = this[0][0] * rm00;
-        dest[0][1] = this[0][1] * rm00;
-        dest[0][2] = this[0][2] * rm00;
-        dest[0][3] = this[0][3] * rm00;
-        dest[1][0] = this[1][0] * rm11;
-        dest[1][1] = this[1][1] * rm11;
-        dest[1][2] = this[1][2] * rm11;
-        dest[1][3] = this[1][3] * rm11;
-        dest[3][0] = this[2][0] * rm32;
-        dest[3][1] = this[2][1] * rm32;
-        dest[3][2] = this[2][2] * rm32;
-        dest[3][3] = this[2][3] * rm32;
-        dest[2][0] = nm20;
-        dest[2][1] = nm21;
-        dest[2][2] = nm22;
-        dest[2][3] = nm23;
+        const nm20 = this.m00 * rm20 + this.m10 * rm21 + this.m20 * rm22 + this.m30;
+        const nm21 = this.m01 * rm20 + this.m11 * rm21 + this.m21 * rm22 + this.m31;
+        const nm22 = this.m02 * rm20 + this.m12 * rm21 + this.m22 * rm22 + this.m32;
+        const nm23 = this.m03 * rm20 + this.m13 * rm21 + this.m23 * rm22 + this.m33;
+        dest.m00 = this.m00 * rm00;
+        dest.m01 = this.m01 * rm00;
+        dest.m02 = this.m02 * rm00;
+        dest.m03 = this.m03 * rm00;
+        dest.m10 = this.m10 * rm11;
+        dest.m11 = this.m11 * rm11;
+        dest.m12 = this.m12 * rm11;
+        dest.m13 = this.m13 * rm11;
+        dest.m30 = this.m20 * rm32;
+        dest.m31 = this.m21 * rm32;
+        dest.m32 = this.m22 * rm32;
+        dest.m33 = this.m23 * rm32;
+        dest.m20 = nm20;
+        dest.m21 = nm21;
+        dest.m22 = nm22;
+        dest.m23 = nm23;
         // ._properties(0);
         return dest;
     }
@@ -8625,27 +8662,27 @@ export class Matrix4 {
         zZeroToOne = zZeroToOne ?? false;
         if (!this.PROPERTY_IDENTITY)
             this.identity();
-        this[0][0] = (zNear + zNear) / (right - left);
-        this[1][1] = (zNear + zNear) / (top - bottom);
-        this[2][0] = (right + left) / (right - left);
-        this[2][1] = (top + bottom) / (top - bottom);
+        this.m00 = (zNear + zNear) / (right - left);
+        this.m11 = (zNear + zNear) / (top - bottom);
+        this.m20 = (right + left) / (right - left);
+        this.m21 = (top + bottom) / (top - bottom);
         const farInf = zFar > 0 && !isFinite(zFar);
         const nearInf = zNear > 0 && !isFinite(zNear);
         if (farInf) {
             // See: "Infinite Projection Matrix" (http://www.terathon.com/gdc07_lengyel.pdf)
             const e = 1E-6;
-            this[2][2] = (1.0 - e)
-            this[3][2] = ((e - (zZeroToOne ? 1.0 : 2.0)) * zNear);
+            this.m22 = (1.0 - e)
+            this.m32 = ((e - (zZeroToOne ? 1.0 : 2.0)) * zNear);
         } else if (nearInf) {
             const e = 1E-6;
-            this[2][2] = ((zZeroToOne ? 0.0 : 1.0) - e)
-            this[3][2] = (((zZeroToOne ? 1.0 : 2.0) - e) * zFar);
+            this.m22 = ((zZeroToOne ? 0.0 : 1.0) - e)
+            this.m32 = (((zZeroToOne ? 1.0 : 2.0) - e) * zFar);
         } else {
-            this[2][2] = ((zZeroToOne ? zFar : zFar + zNear) / (zFar - zNear))
-            this[3][2] = ((zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar));
+            this.m22 = ((zZeroToOne ? zFar : zFar + zNear) / (zFar - zNear))
+            this.m32 = ((zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar));
         }
-        this[2][3] = (1.0);
-        this[3][3] = (0.0);
+        this.m23 = (1.0);
+        this.m33 = (0.0);
         // properties = this.m20 == 0.0 && this.m21 == 0.0 ? PROPERTY_PERSPECTIVE : 0;
         return this;
     }
@@ -8682,22 +8719,22 @@ export class Matrix4 {
         const l00 = 2.0 / imgWidth;
         const l11 = 2.0 / imgHeight;
         const l22 = 2.0 / (near - far);
-        this[0][0] = l00 * alphaX;
-        this[0][1] = 0.0;
-        this[0][2] = 0.0;
-        this[0][3] = 0.0;
-        this[1][0] = l00 * gamma;
-        this[1][1] = l11 * alphaY;
-        this[1][2] = 0.0;
-        this[1][3] = 0.0;
-        this[2][0] = l00 * u0 - 1.0;
-        this[2][1] = l11 * v0 - 1.0;
-        this[2][2] = l22 * -(near + far) + (far + near) / (near - far);
-        this[2][3] = -1.0;
-        this[3][0] = 0.0;
-        this[3][1] = 0.0;
-        this[3][2] = l22 * -near * far;
-        this[3][3] = 0.0;
+        this.m00 = l00 * alphaX;
+        this.m01 = 0.0;
+        this.m02 = 0.0;
+        this.m03 = 0.0;
+        this.m10 = l00 * gamma;
+        this.m11 = l11 * alphaY;
+        this.m12 = 0.0;
+        this.m13 = 0.0;
+        this.m20 = l00 * u0 - 1.0;
+        this.m21 = l11 * v0 - 1.0;
+        this.m22 = l22 * -(near + far) + (far + near) / (near - far);
+        this.m23 = -1.0;
+        this.m30 = 0.0;
+        this.m31 = 0.0;
+        this.m32 = l22 * -near * far;
+        this.m33 = 0.0;
         // this.properties = PROPERTY_PERSPECTIVE;
         return this;
     }
@@ -8707,22 +8744,22 @@ export class Matrix4 {
     // public frustumPlane(plane: number, dest: Vector4): Vector4 {
     //     switch (plane) {
     //         case PLANE_NX:
-    //             dest.set(this[0][3] + this[0][0], this[1][3] + this[1][0], this[2][3] + this[2][0], this[3][3] + this[3][0]).normalize3();
+    //             dest.set(this.m03 + this.m00, this.m13 + this.m10, this.m23 + this.m20, this.m33 + this.m30).normalize3();
     //             break;
     //         case PLANE_PX:
-    //             dest.set(this[0][3] - this[0][0], this[1][3] - this[1][0], this[2][3] - this[2][0], this[3][3] - this[3][0]).normalize3();
+    //             dest.set(this.m03 - this.m00, this.m13 - this.m10, this.m23 - this.m20, this.m33 - this.m30).normalize3();
     //             break;
     //         case PLANE_NY:
-    //             dest.set(this[0][3] + this[0][1], this[1][3] + this[1][1], this[2][3] + this[2][1], this[3][3] + this[3][1]).normalize3();
+    //             dest.set(this.m03 + this.m01, this.m13 + this.m11, this.m23 + this.m21, this.m33 + this.m31).normalize3();
     //             break;
     //         case PLANE_PY:
-    //             dest.set(this[0][3] - this[0][1], this[1][3] - this[1][1], this[2][3] - this[2][1], this[3][3] - this[3][1]).normalize3();
+    //             dest.set(this.m03 - this.m01, this.m13 - this.m11, this.m23 - this.m21, this.m33 - this.m31).normalize3();
     //             break;
     //         case PLANE_NZ:
-    //             dest.set(this[0][3] + this[0][2], this[1][3] + this[1][2], this[2][3] + this[2][2], this[3][3] + this[3][2]).normalize3();
+    //             dest.set(this.m03 + this.m02, this.m13 + this.m12, this.m23 + this.m22, this.m33 + this.m32).normalize3();
     //             break;
     //         case PLANE_PZ:
-    //             dest.set(this[0][3] - this[0][2], this[1][3] - this[1][2], this[2][3] - this[2][2], this[3][3] - this[3][2]).normalize3();
+    //             dest.set(this.m03 - this.m02, this.m13 - this.m12, this.m23 - this.m22, this.m33 - this.m32).normalize3();
     //             break;
     //         default:
     //             throw new IllegalArgumentException("dest"); //$NON-NLS-1$
@@ -8735,44 +8772,44 @@ export class Matrix4 {
     //     let n1x, n1y, n1z, n2x, n2y, n2z, n3x, n3y, n3z;
     //     switch (corner) {
     //         case CORNER_NXNYNZ: // left, bottom, near
-    //             n1x = this[0][3] + this[0][0]; n1y = this[1][3] + this[1][0]; n1z = this[2][3] + this[2][0]; d1 = this[3][3] + this[3][0]; // left
-    //             n2x = this[0][3] + this[0][1]; n2y = this[1][3] + this[1][1]; n2z = this[2][3] + this[2][1]; d2 = this[3][3] + this[3][1]; // bottom
-    //             n3x = this[0][3] + this[0][2]; n3y = this[1][3] + this[1][2]; n3z = this[2][3] + this[2][2]; d3 = this[3][3] + this[3][2]; // near
+    //             n1x = this.m03 + this.m00; n1y = this.m13 + this.m10; n1z = this.m23 + this.m20; d1 = this.m33 + this.m30; // left
+    //             n2x = this.m03 + this.m01; n2y = this.m13 + this.m11; n2z = this.m23 + this.m21; d2 = this.m33 + this.m31; // bottom
+    //             n3x = this.m03 + this.m02; n3y = this.m13 + this.m12; n3z = this.m23 + this.m22; d3 = this.m33 + this.m32; // near
     //             break;
     //         case CORNER_PXNYNZ: // right, bottom, near
-    //             n1x = this[0][3] - this[0][0]; n1y = this[1][3] - this[1][0]; n1z = this[2][3] - this[2][0]; d1 = this[3][3] - this[3][0]; // right
-    //             n2x = this[0][3] + this[0][1]; n2y = this[1][3] + this[1][1]; n2z = this[2][3] + this[2][1]; d2 = this[3][3] + this[3][1]; // bottom
-    //             n3x = this[0][3] + this[0][2]; n3y = this[1][3] + this[1][2]; n3z = this[2][3] + this[2][2]; d3 = this[3][3] + this[3][2]; // near
+    //             n1x = this.m03 - this.m00; n1y = this.m13 - this.m10; n1z = this.m23 - this.m20; d1 = this.m33 - this.m30; // right
+    //             n2x = this.m03 + this.m01; n2y = this.m13 + this.m11; n2z = this.m23 + this.m21; d2 = this.m33 + this.m31; // bottom
+    //             n3x = this.m03 + this.m02; n3y = this.m13 + this.m12; n3z = this.m23 + this.m22; d3 = this.m33 + this.m32; // near
     //             break;
     //         case CORNER_PXPYNZ: // right, top, near
-    //             n1x = this[0][3] - this[0][0]; n1y = this[1][3] - this[1][0]; n1z = this[2][3] - this[2][0]; d1 = this[3][3] - this[3][0]; // right
-    //             n2x = this[0][3] - this[0][1]; n2y = this[1][3] - this[1][1]; n2z = this[2][3] - this[2][1]; d2 = this[3][3] - this[3][1]; // top
-    //             n3x = this[0][3] + this[0][2]; n3y = this[1][3] + this[1][2]; n3z = this[2][3] + this[2][2]; d3 = this[3][3] + this[3][2]; // near
+    //             n1x = this.m03 - this.m00; n1y = this.m13 - this.m10; n1z = this.m23 - this.m20; d1 = this.m33 - this.m30; // right
+    //             n2x = this.m03 - this.m01; n2y = this.m13 - this.m11; n2z = this.m23 - this.m21; d2 = this.m33 - this.m31; // top
+    //             n3x = this.m03 + this.m02; n3y = this.m13 + this.m12; n3z = this.m23 + this.m22; d3 = this.m33 + this.m32; // near
     //             break;
     //         case CORNER_NXPYNZ: // left, top, near
-    //             n1x = this[0][3] + this[0][0]; n1y = this[1][3] + this[1][0]; n1z = this[2][3] + this[2][0]; d1 = this[3][3] + this[3][0]; // left
-    //             n2x = this[0][3] - this[0][1]; n2y = this[1][3] - this[1][1]; n2z = this[2][3] - this[2][1]; d2 = this[3][3] - this[3][1]; // top
-    //             n3x = this[0][3] + this[0][2]; n3y = this[1][3] + this[1][2]; n3z = this[2][3] + this[2][2]; d3 = this[3][3] + this[3][2]; // near
+    //             n1x = this.m03 + this.m00; n1y = this.m13 + this.m10; n1z = this.m23 + this.m20; d1 = this.m33 + this.m30; // left
+    //             n2x = this.m03 - this.m01; n2y = this.m13 - this.m11; n2z = this.m23 - this.m21; d2 = this.m33 - this.m31; // top
+    //             n3x = this.m03 + this.m02; n3y = this.m13 + this.m12; n3z = this.m23 + this.m22; d3 = this.m33 + this.m32; // near
     //             break;
     //         case CORNER_PXNYPZ: // right, bottom, far
-    //             n1x = this[0][3] - this[0][0]; n1y = this[1][3] - this[1][0]; n1z = this[2][3] - this[2][0]; d1 = this[3][3] - this[3][0]; // right
-    //             n2x = this[0][3] + this[0][1]; n2y = this[1][3] + this[1][1]; n2z = this[2][3] + this[2][1]; d2 = this[3][3] + this[3][1]; // bottom
-    //             n3x = this[0][3] - this[0][2]; n3y = this[1][3] - this[1][2]; n3z = this[2][3] - this[2][2]; d3 = this[3][3] - this[3][2]; // far
+    //             n1x = this.m03 - this.m00; n1y = this.m13 - this.m10; n1z = this.m23 - this.m20; d1 = this.m33 - this.m30; // right
+    //             n2x = this.m03 + this.m01; n2y = this.m13 + this.m11; n2z = this.m23 + this.m21; d2 = this.m33 + this.m31; // bottom
+    //             n3x = this.m03 - this.m02; n3y = this.m13 - this.m12; n3z = this.m23 - this.m22; d3 = this.m33 - this.m32; // far
     //             break;
     //         case CORNER_NXNYPZ: // left, bottom, far
-    //             n1x = this[0][3] + this[0][0]; n1y = this[1][3] + this[1][0]; n1z = this[2][3] + this[2][0]; d1 = this[3][3] + this[3][0]; // left
-    //             n2x = this[0][3] + this[0][1]; n2y = this[1][3] + this[1][1]; n2z = this[2][3] + this[2][1]; d2 = this[3][3] + this[3][1]; // bottom
-    //             n3x = this[0][3] - this[0][2]; n3y = this[1][3] - this[1][2]; n3z = this[2][3] - this[2][2]; d3 = this[3][3] - this[3][2]; // far
+    //             n1x = this.m03 + this.m00; n1y = this.m13 + this.m10; n1z = this.m23 + this.m20; d1 = this.m33 + this.m30; // left
+    //             n2x = this.m03 + this.m01; n2y = this.m13 + this.m11; n2z = this.m23 + this.m21; d2 = this.m33 + this.m31; // bottom
+    //             n3x = this.m03 - this.m02; n3y = this.m13 - this.m12; n3z = this.m23 - this.m22; d3 = this.m33 - this.m32; // far
     //             break;
     //         case CORNER_NXPYPZ: // left, top, far
-    //             n1x = this[0][3] + this[0][0]; n1y = this[1][3] + this[1][0]; n1z = this[2][3] + this[2][0]; d1 = this[3][3] + this[3][0]; // left
-    //             n2x = this[0][3] - this[0][1]; n2y = this[1][3] - this[1][1]; n2z = this[2][3] - this[2][1]; d2 = this[3][3] - this[3][1]; // top
-    //             n3x = this[0][3] - this[0][2]; n3y = this[1][3] - this[1][2]; n3z = this[2][3] - this[2][2]; d3 = this[3][3] - this[3][2]; // far
+    //             n1x = this.m03 + this.m00; n1y = this.m13 + this.m10; n1z = this.m23 + this.m20; d1 = this.m33 + this.m30; // left
+    //             n2x = this.m03 - this.m01; n2y = this.m13 - this.m11; n2z = this.m23 - this.m21; d2 = this.m33 - this.m31; // top
+    //             n3x = this.m03 - this.m02; n3y = this.m13 - this.m12; n3z = this.m23 - this.m22; d3 = this.m33 - this.m32; // far
     //             break;
     //         case CORNER_PXPYPZ: // right, top, far
-    //             n1x = this[0][3] - this[0][0]; n1y = this[1][3] - this[1][0]; n1z = this[2][3] - this[2][0]; d1 = this[3][3] - this[3][0]; // right
-    //             n2x = this[0][3] - this[0][1]; n2y = this[1][3] - this[1][1]; n2z = this[2][3] - this[2][1]; d2 = this[3][3] - this[3][1]; // top
-    //             n3x = this[0][3] - this[0][2]; n3y = this[1][3] - this[1][2]; n3z = this[2][3] - this[2][2]; d3 = this[3][3] - this[3][2]; // far
+    //             n1x = this.m03 - this.m00; n1y = this.m13 - this.m10; n1z = this.m23 - this.m20; d1 = this.m33 - this.m30; // right
+    //             n2x = this.m03 - this.m01; n2y = this.m13 - this.m11; n2z = this.m23 - this.m21; d2 = this.m33 - this.m31; // top
+    //             n3x = this.m03 - this.m02; n3y = this.m13 - this.m12; n3z = this.m23 - this.m22; d3 = this.m33 - this.m32; // far
     //             break;
     //         default:
     //             throw new IllegalArgumentException("corner"); //$NON-NLS-1$
@@ -8800,9 +8837,9 @@ export class Matrix4 {
         /*
          * Simply compute the intersection point of the left, right and top frustum plane.
          */
-        const n1x = this[0][3] + this[0][0], n1y = this[1][3] + this[1][0], n1z = this[2][3] + this[2][0], d1 = this[3][3] + this[3][0]; // left
-        const n2x = this[0][3] - this[0][0], n2y = this[1][3] - this[1][0], n2z = this[2][3] - this[2][0], d2 = this[3][3] - this[3][0]; // right
-        const n3x = this[0][3] - this[0][1], n3y = this[1][3] - this[1][1], n3z = this[2][3] - this[2][1], d3 = this[3][3] - this[3][1]; // top
+        const n1x = this.m03 + this.m00, n1y = this.m13 + this.m10, n1z = this.m23 + this.m20, d1 = this.m33 + this.m30; // left
+        const n2x = this.m03 - this.m00, n2y = this.m13 - this.m10, n2z = this.m23 - this.m20, d2 = this.m33 - this.m30; // right
+        const n3x = this.m03 - this.m01, n3y = this.m13 - this.m11, n3z = this.m23 - this.m21, d3 = this.m33 - this.m31; // top
 
         const c23x = n2y * n3z - n2z * n3y;
         const c23y = n2z * n3x - n2x * n3z;
@@ -8824,10 +8861,10 @@ export class Matrix4 {
     }
 
     public perspectiveInvOrigin(dest: Vector3): Vector3 {
-        const invW = 1.0 / this[2][3];
-        dest.x = this[2][0] * invW;
-        dest.y = this[2][1] * invW;
-        dest.z = this[2][2] * invW;
+        const invW = 1.0 / this.m23;
+        dest.x = this.m20 * invW;
+        dest.y = this.m21 * invW;
+        dest.z = this.m22 * invW;
         return dest;
     }
 
@@ -8835,19 +8872,19 @@ export class Matrix4 {
         /*
          * Compute the angle between the bottom and top frustum plane normals.
          */
-        const n1x = this[0][3] + this[0][1]; const n1y = this[1][3] + this[1][1]; const n1z = this[2][3] + this[2][1]; // bottom
-        const n2x = this[0][1] - this[0][3]; const n2y = this[1][1] - this[1][3]; const n2z = this[2][1] - this[2][3]; // top
+        const n1x = this.m03 + this.m01; const n1y = this.m13 + this.m11; const n1z = this.m23 + this.m21; // bottom
+        const n2x = this.m01 - this.m03; const n2y = this.m11 - this.m13; const n2z = this.m21 - this.m23; // top
         const n1len = Math.sqrt(n1x * n1x + n1y * n1y + n1z * n1z);
         const n2len = Math.sqrt(n2x * n2x + n2y * n2y + n2z * n2z);
         return Math.acos((n1x * n2x + n1y * n2y + n1z * n2z) / (n1len * n2len));
     }
 
     public perspectiveNear(): number {
-        return this[3][2] / (this[2][3] + this[2][2]);
+        return this.m32 / (this.m23 + this.m22);
     }
 
     public perspectiveFar(): number {
-        return this[3][2] / (this[2][2] - this[2][3]);
+        return this.m32 / (this.m22 - this.m23);
     }
 
     public frustumRayDir(x: number, y: number, dest: Vector3): Vector3 {
@@ -8858,9 +8895,9 @@ export class Matrix4 {
          * The code below uses a condense form of doing all this making use 
          * of some mathematical identities to simplify the overall expression.
          */
-        const a = this[1][0] * this[2][3], b = this[1][3] * this[2][1], c = this[1][0] * this[2][1], d = this[1][1] * this[2][3], e = this[1][3] * this[2][0], f = this[1][1] * this[2][0];
-        const g = this[0][3] * this[2][0], h = this[0][1] * this[2][3], i = this[0][1] * this[2][0], j = this[0][3] * this[2][1], k = this[0][0] * this[2][3], l = this[0][0] * this[2][1];
-        const m = this[0][0] * this[1][3], n = this[0][3] * this[1][1], o = this[0][0] * this[1][1], p = this[0][1] * this[1][3], q = this[0][3] * this[1][0], r = this[0][1] * this[1][0];
+        const a = this.m10 * this.m23, b = this.m13 * this.m21, c = this.m10 * this.m21, d = this.m11 * this.m23, e = this.m13 * this.m20, f = this.m11 * this.m20;
+        const g = this.m03 * this.m20, h = this.m01 * this.m23, i = this.m01 * this.m20, j = this.m03 * this.m21, k = this.m00 * this.m23, l = this.m00 * this.m21;
+        const m = this.m00 * this.m13, n = this.m03 * this.m11, o = this.m00 * this.m11, p = this.m01 * this.m13, q = this.m03 * this.m10, r = this.m01 * this.m10;
 
         const m1x = (d + e + f - a - b - c) * (1.0 - y) + (a - b - c + d - e + f) * y;
         const m1y = (j + k + l - g - h - i) * (1.0 - y) + (g - h - i + j - k + l) * y;
@@ -8882,13 +8919,13 @@ export class Matrix4 {
     }
     private positiveZGeneric(dir: Vector3): Vector3 {
         return dir.set(
-            this[1][0] * this[2][1] - this[1][1] * this[2][0],
-            this[2][0] * this[0][1] - this[2][1] * this[0][0],
-            this[0][0] * this[1][1] - this[0][1] * this[1][0]).normalize();
+            this.m10 * this.m21 - this.m11 * this.m20,
+            this.m20 * this.m01 - this.m21 * this.m00,
+            this.m00 * this.m11 - this.m01 * this.m10).normalize();
     }
 
     public normalizedPositiveZ(dir: Vector3): Vector3 {
-        return dir.set(this[0][2], this[1][2], this[2][2]);
+        return dir.set(this.m02, this.m12, this.m22);
     }
 
     public positiveX(dir: Vector3): Vector3 {
@@ -8898,13 +8935,13 @@ export class Matrix4 {
     }
     private positiveXGeneric(dir: Vector3): Vector3 {
         return dir.set(
-            this[1][1] * this[2][2] - this[1][2] * this[2][1],
-            this[0][2] * this[2][1] - this[0][1] * this[2][2],
-            this[0][1] * this[1][2] - this[0][2] * this[1][1]).normalize();
+            this.m11 * this.m22 - this.m12 * this.m21,
+            this.m02 * this.m21 - this.m01 * this.m22,
+            this.m01 * this.m12 - this.m02 * this.m11).normalize();
     }
 
     public normalizedPositiveX(dir: Vector3): Vector3 {
-        return dir.set(this[0][0], this[1][0], this[2][0]);
+        return dir.set(this.m00, this.m10, this.m20);
     }
 
     public positiveY(dir: Vector3): Vector3 {
@@ -8914,25 +8951,25 @@ export class Matrix4 {
     }
     private positiveYGeneric(dir: Vector3): Vector3 {
         return dir.set(
-            this[1][2] * this[2][0] - this[1][0] * this[2][2],
-            this[0][0] * this[2][2] - this[0][2] * this[2][0],
-            this[0][2] * this[1][0] - this[0][0] * this[1][2]).normalize();
+            this.m12 * this.m20 - this.m10 * this.m22,
+            this.m00 * this.m22 - this.m02 * this.m20,
+            this.m02 * this.m10 - this.m00 * this.m12).normalize();
     }
 
     public normalizedPositiveY(dir: Vector3): Vector3 {
-        return dir.set(this[0][1], this[1][1], this[2][1]);
+        return dir.set(this.m01, this.m11, this.m21);
     }
 
     public originAffine(dest: Vector3): Vector3 {
-        const a = this[0][0] * this[1][1] - this[0][1] * this[1][0];
-        const b = this[0][0] * this[1][2] - this[0][2] * this[1][0];
-        const d = this[0][1] * this[1][2] - this[0][2] * this[1][1];
-        const g = this[2][0] * this[3][1] - this[2][1] * this[3][0];
-        const h = this[2][0] * this[3][2] - this[2][2] * this[3][0];
-        const j = this[2][1] * this[3][2] - this[2][2] * this[3][1];
-        dest.x = -this[1][0] * j + this[1][1] * h - this[1][2] * g;
-        dest.y = +this[0][0] * j - this[0][1] * h + this[0][2] * g;
-        dest.z = -this[3][0] * d + this[3][1] * b - this[3][2] * a;
+        const a = this.m00 * this.m11 - this.m01 * this.m10;
+        const b = this.m00 * this.m12 - this.m02 * this.m10;
+        const d = this.m01 * this.m12 - this.m02 * this.m11;
+        const g = this.m20 * this.m31 - this.m21 * this.m30;
+        const h = this.m20 * this.m32 - this.m22 * this.m30;
+        const j = this.m21 * this.m32 - this.m22 * this.m31;
+        dest.x = -this.m10 * j + this.m11 * h - this.m12 * g;
+        dest.y = +this.m00 * j - this.m01 * h + this.m02 * g;
+        dest.z = -this.m30 * d + this.m31 * b - this.m32 * a;
         return dest;
     }
 
@@ -8942,24 +8979,24 @@ export class Matrix4 {
         return this.originGeneric(dest);
     }
     private originGeneric(dest: Vector3): Vector3 {
-        const a = this[0][0] * this[1][1] - this[0][1] * this[1][0];
-        const b = this[0][0] * this[1][2] - this[0][2] * this[1][0];
-        const c = this[0][0] * this[1][3] - this[0][3] * this[1][0];
-        const d = this[0][1] * this[1][2] - this[0][2] * this[1][1];
-        const e = this[0][1] * this[1][3] - this[0][3] * this[1][1];
-        const f = this[0][2] * this[1][3] - this[0][3] * this[1][2];
-        const g = this[2][0] * this[3][1] - this[2][1] * this[3][0];
-        const h = this[2][0] * this[3][2] - this[2][2] * this[3][0];
-        const i = this[2][0] * this[3][3] - this[2][3] * this[3][0];
-        const j = this[2][1] * this[3][2] - this[2][2] * this[3][1];
-        const k = this[2][1] * this[3][3] - this[2][3] * this[3][1];
-        const l = this[2][2] * this[3][3] - this[2][3] * this[3][2];
+        const a = this.m00 * this.m11 - this.m01 * this.m10;
+        const b = this.m00 * this.m12 - this.m02 * this.m10;
+        const c = this.m00 * this.m13 - this.m03 * this.m10;
+        const d = this.m01 * this.m12 - this.m02 * this.m11;
+        const e = this.m01 * this.m13 - this.m03 * this.m11;
+        const f = this.m02 * this.m13 - this.m03 * this.m12;
+        const g = this.m20 * this.m31 - this.m21 * this.m30;
+        const h = this.m20 * this.m32 - this.m22 * this.m30;
+        const i = this.m20 * this.m33 - this.m23 * this.m30;
+        const j = this.m21 * this.m32 - this.m22 * this.m31;
+        const k = this.m21 * this.m33 - this.m23 * this.m31;
+        const l = this.m22 * this.m33 - this.m23 * this.m32;
         const det = a * l - b * k + c * j + d * i - e * h + f * g;
         const invDet = 1.0 / det;
-        const nm30 = (-this[1][0] * j + this[1][1] * h - this[1][2] * g) * invDet;
-        const nm31 = (+this[0][0] * j - this[0][1] * h + this[0][2] * g) * invDet;
-        const nm32 = (-this[3][0] * d + this[3][1] * b - this[3][2] * a) * invDet;
-        const nm33 = det / (this[2][0] * d - this[2][1] * b + this[2][2] * a);
+        const nm30 = (-this.m10 * j + this.m11 * h - this.m12 * g) * invDet;
+        const nm31 = (+this.m00 * j - this.m01 * h + this.m02 * g) * invDet;
+        const nm32 = (-this.m30 * d + this.m31 * b - this.m32 * a) * invDet;
+        const nm33 = det / (this.m20 * d - this.m21 * b + this.m22 * a);
         const x = nm30 * nm33;
         const y = nm31 * nm33;
         const z = nm32 * nm33;
@@ -9065,22 +9102,22 @@ export class Matrix4 {
 
         // matrix multiplication
         return dest.set(
-            this[0][0] * rm00 + this[1][0] * rm01 + this[2][0] * rm02 + this[3][0] * rm03,
-            this[0][1] * rm00 + this[1][1] * rm01 + this[2][1] * rm02 + this[3][1] * rm03,
-            this[0][2] * rm00 + this[1][2] * rm01 + this[2][2] * rm02 + this[3][2] * rm03,
-            this[0][3] * rm00 + this[1][3] * rm01 + this[2][3] * rm02 + this[3][3] * rm03,
-            this[0][0] * rm10 + this[1][0] * rm11 + this[2][0] * rm12 + this[3][0] * rm13,
-            this[0][1] * rm10 + this[1][1] * rm11 + this[2][1] * rm12 + this[3][1] * rm13,
-            this[0][2] * rm10 + this[1][2] * rm11 + this[2][2] * rm12 + this[3][2] * rm13,
-            this[0][3] * rm10 + this[1][3] * rm11 + this[2][3] * rm12 + this[3][3] * rm13,
-            this[0][0] * rm20 + this[1][0] * rm21 + this[2][0] * rm22 + this[3][0] * rm23,
-            this[0][1] * rm20 + this[1][1] * rm21 + this[2][1] * rm22 + this[3][1] * rm23,
-            this[0][2] * rm20 + this[1][2] * rm21 + this[2][2] * rm22 + this[3][2] * rm23,
-            this[0][3] * rm20 + this[1][3] * rm21 + this[2][3] * rm22 + this[3][3] * rm23,
-            this[0][0] * rm30 + this[1][0] * rm31 + this[2][0] * rm32 + this[3][0] * rm33,
-            this[0][1] * rm30 + this[1][1] * rm31 + this[2][1] * rm32 + this[3][1] * rm33,
-            this[0][2] * rm30 + this[1][2] * rm31 + this[2][2] * rm32 + this[3][2] * rm33,
-            this[0][3] * rm30 + this[1][3] * rm31 + this[2][3] * rm32 + this[3][3] * rm33,
+            this.m00 * rm00 + this.m10 * rm01 + this.m20 * rm02 + this.m30 * rm03,
+            this.m01 * rm00 + this.m11 * rm01 + this.m21 * rm02 + this.m31 * rm03,
+            this.m02 * rm00 + this.m12 * rm01 + this.m22 * rm02 + this.m32 * rm03,
+            this.m03 * rm00 + this.m13 * rm01 + this.m23 * rm02 + this.m33 * rm03,
+            this.m00 * rm10 + this.m10 * rm11 + this.m20 * rm12 + this.m30 * rm13,
+            this.m01 * rm10 + this.m11 * rm11 + this.m21 * rm12 + this.m31 * rm13,
+            this.m02 * rm10 + this.m12 * rm11 + this.m22 * rm12 + this.m32 * rm13,
+            this.m03 * rm10 + this.m13 * rm11 + this.m23 * rm12 + this.m33 * rm13,
+            this.m00 * rm20 + this.m10 * rm21 + this.m20 * rm22 + this.m30 * rm23,
+            this.m01 * rm20 + this.m11 * rm21 + this.m21 * rm22 + this.m31 * rm23,
+            this.m02 * rm20 + this.m12 * rm21 + this.m22 * rm22 + this.m32 * rm23,
+            this.m03 * rm20 + this.m13 * rm21 + this.m23 * rm22 + this.m33 * rm23,
+            this.m00 * rm30 + this.m10 * rm31 + this.m20 * rm32 + this.m30 * rm33,
+            this.m01 * rm30 + this.m11 * rm31 + this.m21 * rm32 + this.m31 * rm33,
+            this.m02 * rm30 + this.m12 * rm31 + this.m22 * rm32 + this.m32 * rm33,
+            this.m03 * rm30 + this.m13 * rm31 + this.m23 * rm32 + this.m33 * rm33,
         )
         //     ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION | PROPERTY_ORTHONORMAL));
         // return dest;
@@ -9088,10 +9125,10 @@ export class Matrix4 {
 
     // public shadow(light: Vector4, planeTransform: Matrix4, dest: Matrix4): Matrix4 {
     //     // compute plane equation by transforming (y = 0)
-    //     const a = planeTransform[1][0];
-    //     const b = planeTransform[1][1];
-    //     const c = planeTransform[1][2];
-    //     const d = -a * planeTransform[3][0] - b * planeTransform[3][1] - c * planeTransform[3][2];
+    //     const a = planeTransform.m10;
+    //     const b = planeTransform.m11;
+    //     const c = planeTransform.m12;
+    //     const d = -a * planeTransform.m30 - b * planeTransform.m31 - c * planeTransform.m32;
     //     return shadow(light.x, light.y, light.z, light.w, a, b, c, d, dest);
     // }
 
@@ -9120,10 +9157,10 @@ export class Matrix4 {
 
     // public shadow(lightX: number, lightY: number, lightZ: number, lightW: number, planeTransform: Matrix4, dest: Matrix4): Matrix4 {
     //     // compute plane equation by transforming (y = 0)
-    //     const a = planeTransform[1][0];
-    //     const b = planeTransform[1][1];
-    //     const c = planeTransform[1][2];
-    //     const d = -a * planeTransform[3][0] - b * planeTransform[3][1] - c * planeTransform[3][2];
+    //     const a = planeTransform.m10;
+    //     const b = planeTransform.m11;
+    //     const c = planeTransform.m12;
+    //     const d = -a * planeTransform.m30 - b * planeTransform.m31 - c * planeTransform.m32;
     //     return shadow(lightX, lightY, lightZ, lightW, a, b, c, d, dest);
     // }
 
@@ -9195,22 +9232,22 @@ export class Matrix4 {
         dirY *= invDirLen;
         dirZ *= invDirLen;
         // set matrix elements
-        this[0][0] = leftX;
-        this[0][1] = leftY;
-        this[0][2] = leftZ;
-        this[0][3] = 0.0;
-        this[1][0] = up.x;
-        this[1][1] = up.y;
-        this[1][2] = up.z;
-        this[1][3] = 0.0;
-        this[2][0] = dirX;
-        this[2][1] = dirY;
-        this[2][2] = dirZ;
-        this[2][3] = 0.0;
-        this[3][0] = objPos.x;
-        this[3][1] = objPos.y;
-        this[3][2] = objPos.z;
-        this[3][3] = 1.0;
+        this.m00 = leftX;
+        this.m01 = leftY;
+        this.m02 = leftZ;
+        this.m03 = 0.0;
+        this.m10 = up.x;
+        this.m11 = up.y;
+        this.m12 = up.z;
+        this.m13 = 0.0;
+        this.m20 = dirX;
+        this.m21 = dirY;
+        this.m22 = dirZ;
+        this.m23 = 0.0;
+        this.m30 = objPos.x;
+        this.m31 = objPos.y;
+        this.m32 = objPos.z;
+        this.m33 = 1.0;
         // properties = PROPERTY_AFFINE | PROPERTY_ORTHONORMAL;
         return this;
     }
@@ -9280,22 +9317,22 @@ export class Matrix4 {
             const upY = dirZ * leftX - dirX * leftZ;
             const upZ = dirX * leftY - dirY * leftX;
             // set matrix elements
-            this[0][0] = leftX;
-            this[0][1] = leftY;
-            this[0][2] = leftZ;
-            this[0][3] = 0.0;
-            this[1][0] = upX;
-            this[1][1] = upY;
-            this[1][2] = upZ;
-            this[1][3] = 0.0;
-            this[2][0] = dirX;
-            this[2][1] = dirY;
-            this[2][2] = dirZ;
-            this[2][3] = 0.0;
-            this[3][0] = objPos.x;
-            this[3][1] = objPos.y;
-            this[3][2] = objPos.z;
-            this[3][3] = 1.0;
+            this.m00 = leftX;
+            this.m01 = leftY;
+            this.m02 = leftZ;
+            this.m03 = 0.0;
+            this.m10 = upX;
+            this.m11 = upY;
+            this.m12 = upZ;
+            this.m13 = 0.0;
+            this.m20 = dirX;
+            this.m21 = dirY;
+            this.m22 = dirZ;
+            this.m23 = 0.0;
+            this.m30 = objPos.x;
+            this.m31 = objPos.y;
+            this.m32 = objPos.z;
+            this.m33 = 1.0;
             // properties = PROPERTY_AFFINE | PROPERTY_ORTHONORMAL;
             return this;
         } else {
@@ -9311,22 +9348,22 @@ export class Matrix4 {
             const q01 = (x + x) * y;
             const q03 = (x + x) * w;
             const q13 = (y + y) * w;
-            this[0][0] = 1.0 - q11;
-            this[0][1] = q01;
-            this[0][2] = -q13;
-            this[0][3] = 0.0;
-            this[1][0] = q01;
-            this[1][1] = 1.0 - q00;
-            this[1][2] = q03;
-            this[1][3] = 0.0;
-            this[2][0] = q13;
-            this[2][1] = -q03;
-            this[2][2] = 1.0 - q11 - q00;
-            this[2][3] = 0.0;
-            this[3][0] = objPos.x;
-            this[3][1] = objPos.y;
-            this[3][2] = objPos.z;
-            this[3][3] = 1.0;
+            this.m00 = 1.0 - q11;
+            this.m01 = q01;
+            this.m02 = -q13;
+            this.m03 = 0.0;
+            this.m10 = q01;
+            this.m11 = 1.0 - q00;
+            this.m12 = q03;
+            this.m13 = 0.0;
+            this.m20 = q13;
+            this.m21 = -q03;
+            this.m22 = 1.0 - q11 - q00;
+            this.m23 = 0.0;
+            this.m30 = objPos.x;
+            this.m31 = objPos.y;
+            this.m32 = objPos.z;
+            this.m33 = 1.0;
             // properties = PROPERTY_AFFINE | PROPERTY_ORTHONORMAL;
             return this;
         }
@@ -9421,22 +9458,22 @@ export class Matrix4 {
             return false;
         if (!(m instanceof Matrix4))
             return false;
-        if (Math.abs(this[0][0] - m[0][0]) < delta) return false;
-        if (Math.abs(this[0][1] - m[0][1]) < delta) return false;
-        if (Math.abs(this[0][2] - m[0][2]) < delta) return false;
-        if (Math.abs(this[0][3] - m[0][3]) < delta) return false;
-        if (Math.abs(this[1][0] - m[1][0]) < delta) return false;
-        if (Math.abs(this[1][1] - m[1][1]) < delta) return false;
-        if (Math.abs(this[1][2] - m[1][2]) < delta) return false;
-        if (Math.abs(this[1][3] - m[1][3]) < delta) return false;
-        if (Math.abs(this[2][0] - m[2][0]) < delta) return false;
-        if (Math.abs(this[2][1] - m[2][1]) < delta) return false;
-        if (Math.abs(this[2][2] - m[2][2]) < delta) return false;
-        if (Math.abs(this[2][3] - m[2][3]) < delta) return false;
-        if (Math.abs(this[3][0] - m[3][0]) < delta) return false;
-        if (Math.abs(this[3][1] - m[3][1]) < delta) return false;
-        if (Math.abs(this[3][2] - m[3][2]) < delta) return false;
-        if (Math.abs(this[3][3] - m[3][3]) < delta) return false;
+        if (Math.abs(this.m00 - m.m00) < delta) return false;
+        if (Math.abs(this.m01 - m.m01) < delta) return false;
+        if (Math.abs(this.m02 - m.m02) < delta) return false;
+        if (Math.abs(this.m03 - m.m03) < delta) return false;
+        if (Math.abs(this.m10 - m.m10) < delta) return false;
+        if (Math.abs(this.m11 - m.m11) < delta) return false;
+        if (Math.abs(this.m12 - m.m12) < delta) return false;
+        if (Math.abs(this.m13 - m.m13) < delta) return false;
+        if (Math.abs(this.m20 - m.m20) < delta) return false;
+        if (Math.abs(this.m21 - m.m21) < delta) return false;
+        if (Math.abs(this.m22 - m.m22) < delta) return false;
+        if (Math.abs(this.m23 - m.m23) < delta) return false;
+        if (Math.abs(this.m30 - m.m30) < delta) return false;
+        if (Math.abs(this.m31 - m.m31) < delta) return false;
+        if (Math.abs(this.m32 - m.m32) < delta) return false;
+        if (Math.abs(this.m33 - m.m33) < delta) return false;
         return true;
     }
 
@@ -9446,23 +9483,23 @@ export class Matrix4 {
         const sy = viewport[3] / height;
         const tx = (viewport[2] + 2.0 * (viewport[0] - x)) / width;
         const ty = (viewport[3] + 2.0 * (viewport[1] - y)) / height;
-        dest[3][0] = this[0][0] * tx + this[1][0] * ty + this[3][0];
-        dest[3][1] = this[0][1] * tx + this[1][1] * ty + this[3][1];
-        dest[3][2] = this[0][2] * tx + this[1][2] * ty + this[3][2];
-        dest[3][3] = this[0][3] * tx + this[1][3] * ty + this[3][3];
-        dest[0][0] = this[0][0] * sx;
-        dest[0][1] = this[0][1] * sx;
-        dest[0][2] = this[0][2] * sx;
-        dest[0][3] = this[0][3] * sx;
-        dest[1][0] = this[1][0] * sy;
-        dest[1][1] = this[1][1] * sy;
-        dest[1][2] = this[1][2] * sy;
-        dest[1][3] = this[1][3] * sy;
+        dest.m30 = this.m00 * tx + this.m10 * ty + this.m30;
+        dest.m31 = this.m01 * tx + this.m11 * ty + this.m31;
+        dest.m32 = this.m02 * tx + this.m12 * ty + this.m32;
+        dest.m33 = this.m03 * tx + this.m13 * ty + this.m33;
+        dest.m00 = this.m00 * sx;
+        dest.m01 = this.m01 * sx;
+        dest.m02 = this.m02 * sx;
+        dest.m03 = this.m03 * sx;
+        dest.m10 = this.m10 * sy;
+        dest.m11 = this.m11 * sy;
+        dest.m12 = this.m12 * sy;
+        dest.m13 = this.m13 * sy;
         return dest;
     }
 
     public isAffine(): boolean {
-        return this[0][3] == 0.0 && this[1][3] == 0.0 && this[2][3] == 0.0 && this[3][3] == 1.0;
+        return this.m03 == 0.0 && this.m13 == 0.0 && this.m23 == 0.0 && this.m33 == 1.0;
     }
 
     /**
@@ -9474,22 +9511,22 @@ export class Matrix4 {
      */
     public swap(other: Matrix4): Matrix4 {
         let tmp;
-        tmp = this[0][0]; this[0][0] = other[0][0]; other[0][0] = tmp;
-        tmp = this[0][1]; this[0][1] = other[0][1]; other[0][1] = tmp;
-        tmp = this[0][2]; this[0][2] = other[0][2]; other[0][2] = tmp;
-        tmp = this[0][3]; this[0][3] = other[0][3]; other[0][3] = tmp;
-        tmp = this[1][0]; this[1][0] = other[1][0]; other[1][0] = tmp;
-        tmp = this[1][1]; this[1][1] = other[1][1]; other[1][1] = tmp;
-        tmp = this[1][2]; this[1][2] = other[1][2]; other[1][2] = tmp;
-        tmp = this[1][3]; this[1][3] = other[1][3]; other[1][3] = tmp;
-        tmp = this[2][0]; this[2][0] = other[2][0]; other[2][0] = tmp;
-        tmp = this[2][1]; this[2][1] = other[2][1]; other[2][1] = tmp;
-        tmp = this[2][2]; this[2][2] = other[2][2]; other[2][2] = tmp;
-        tmp = this[2][3]; this[2][3] = other[2][3]; other[2][3] = tmp;
-        tmp = this[3][0]; this[3][0] = other[3][0]; other[3][0] = tmp;
-        tmp = this[3][1]; this[3][1] = other[3][1]; other[3][1] = tmp;
-        tmp = this[3][2]; this[3][2] = other[3][2]; other[3][2] = tmp;
-        tmp = this[3][3]; this[3][3] = other[3][3]; other[3][3] = tmp;
+        tmp = this.m00; this.m00 = other.m00; other.m00 = tmp;
+        tmp = this.m01; this.m01 = other.m01; other.m01 = tmp;
+        tmp = this.m02; this.m02 = other.m02; other.m02 = tmp;
+        tmp = this.m03; this.m03 = other.m03; other.m03 = tmp;
+        tmp = this.m10; this.m10 = other.m10; other.m10 = tmp;
+        tmp = this.m11; this.m11 = other.m11; other.m11 = tmp;
+        tmp = this.m12; this.m12 = other.m12; other.m12 = tmp;
+        tmp = this.m13; this.m13 = other.m13; other.m13 = tmp;
+        tmp = this.m20; this.m20 = other.m20; other.m20 = tmp;
+        tmp = this.m21; this.m21 = other.m21; other.m21 = tmp;
+        tmp = this.m22; this.m22 = other.m22; other.m22 = tmp;
+        tmp = this.m23; this.m23 = other.m23; other.m23 = tmp;
+        tmp = this.m30; this.m30 = other.m30; other.m30 = tmp;
+        tmp = this.m31; this.m31 = other.m31; other.m31 = tmp;
+        tmp = this.m32; this.m32 = other.m32; other.m32 = tmp;
+        tmp = this.m33; this.m33 = other.m33; other.m33 = tmp;
         return this;
     }
 
@@ -9520,46 +9557,46 @@ export class Matrix4 {
             angleX = angleX as number;
         }
 
-        const m30 = this[2][0] * -radius + this[3][0];
-        const m31 = this[2][1] * -radius + this[3][1];
-        const m32 = this[2][2] * -radius + this[3][2];
-        const m33 = this[2][3] * -radius + this[3][3];
+        const m30 = this.m20 * -radius + this.m30;
+        const m31 = this.m21 * -radius + this.m31;
+        const m32 = this.m22 * -radius + this.m32;
+        const m33 = this.m23 * -radius + this.m33;
         let sin = Math.sin(angleX);
         let cos = Math.cos(angleX);
-        const nm10 = this[1][0] * cos + this[2][0] * sin;
-        const nm11 = this[1][1] * cos + this[2][1] * sin;
-        const nm12 = this[1][2] * cos + this[2][2] * sin;
-        const nm13 = this[1][3] * cos + this[2][3] * sin;
-        const m20 = this[2][0] * cos - this[1][0] * sin;
-        const m21 = this[2][1] * cos - this[1][1] * sin;
-        const m22 = this[2][2] * cos - this[1][2] * sin;
-        const m23 = this[2][3] * cos - this[1][3] * sin;
+        const nm10 = this.m10 * cos + this.m20 * sin;
+        const nm11 = this.m11 * cos + this.m21 * sin;
+        const nm12 = this.m12 * cos + this.m22 * sin;
+        const nm13 = this.m13 * cos + this.m23 * sin;
+        const m20 = this.m20 * cos - this.m10 * sin;
+        const m21 = this.m21 * cos - this.m11 * sin;
+        const m22 = this.m22 * cos - this.m12 * sin;
+        const m23 = this.m23 * cos - this.m13 * sin;
         sin = Math.sin(angleY);
         cos = Math.cos(angleY);
-        const nm00 = this[0][0] * cos - m20 * sin;
-        const nm01 = this[0][1] * cos - m21 * sin;
-        const nm02 = this[0][2] * cos - m22 * sin;
-        const nm03 = this[0][3] * cos - m23 * sin;
-        const nm20 = this[0][0] * sin + m20 * cos;
-        const nm21 = this[0][1] * sin + m21 * cos;
-        const nm22 = this[0][2] * sin + m22 * cos;
-        const nm23 = this[0][3] * sin + m23 * cos;
-        dest[3][0] = -nm00 * centerX - nm10 * centerY - nm20 * centerZ + m30;
-        dest[3][1] = -nm01 * centerX - nm11 * centerY - nm21 * centerZ + m31;
-        dest[3][2] = -nm02 * centerX - nm12 * centerY - nm22 * centerZ + m32;
-        dest[3][3] = -nm03 * centerX - nm13 * centerY - nm23 * centerZ + m33;
-        dest[2][0] = nm20;
-        dest[2][1] = nm21;
-        dest[2][2] = nm22;
-        dest[2][3] = nm23;
-        dest[1][0] = nm10;
-        dest[1][1] = nm11;
-        dest[1][2] = nm12;
-        dest[1][3] = nm13;
-        dest[0][0] = nm00;
-        dest[0][1] = nm01;
-        dest[0][2] = nm02;
-        dest[0][3] = nm03;
+        const nm00 = this.m00 * cos - m20 * sin;
+        const nm01 = this.m01 * cos - m21 * sin;
+        const nm02 = this.m02 * cos - m22 * sin;
+        const nm03 = this.m03 * cos - m23 * sin;
+        const nm20 = this.m00 * sin + m20 * cos;
+        const nm21 = this.m01 * sin + m21 * cos;
+        const nm22 = this.m02 * sin + m22 * cos;
+        const nm23 = this.m03 * sin + m23 * cos;
+        dest.m30 = -nm00 * centerX - nm10 * centerY - nm20 * centerZ + m30;
+        dest.m31 = -nm01 * centerX - nm11 * centerY - nm21 * centerZ + m31;
+        dest.m32 = -nm02 * centerX - nm12 * centerY - nm22 * centerZ + m32;
+        dest.m33 = -nm03 * centerX - nm13 * centerY - nm23 * centerZ + m33;
+        dest.m20 = nm20;
+        dest.m21 = nm21;
+        dest.m22 = nm22;
+        dest.m23 = nm23;
+        dest.m10 = nm10;
+        dest.m11 = nm11;
+        dest.m12 = nm12;
+        dest.m13 = nm13;
+        dest.m00 = nm00;
+        dest.m01 = nm01;
+        dest.m02 = nm02;
+        dest.m03 = nm03;
         // ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
         return dest;
     }
@@ -9590,10 +9627,10 @@ export class Matrix4 {
             const x = ((t & 1) << 1) - 1.0;
             const y = (((t >>> 1) & 1) << 1) - 1.0;
             const z = (((t >>> 2) & 1) << 1) - 1.0;
-            const invW = 1.0 / (this[0][3] * x + this[1][3] * y + this[2][3] * z + this[3][3]);
-            const nx = (this[0][0] * x + this[1][0] * y + this[2][0] * z + this[3][0]) * invW;
-            const ny = (this[0][1] * x + this[1][1] * y + this[2][1] * z + this[3][1]) * invW;
-            const nz = (this[0][2] * x + this[1][2] * y + this[2][2] * z + this[3][2]) * invW;
+            const invW = 1.0 / (this.m03 * x + this.m13 * y + this.m23 * z + this.m33);
+            const nx = (this.m00 * x + this.m10 * y + this.m20 * z + this.m30) * invW;
+            const ny = (this.m01 * x + this.m11 * y + this.m21 * z + this.m31) * invW;
+            const nz = (this.m02 * x + this.m12 * y + this.m22 * z + this.m32) * invW;
             minX = minX < nx ? minX : nx;
             minY = minY < ny ? minY : ny;
             minZ = minZ < nz ? minZ : nz;
@@ -9635,14 +9672,14 @@ export class Matrix4 {
                 c0Y = c1Y = (((t >>> 1) & 1) << 1) - 1.0;
             }
             // unproject corners
-            let invW = 1.0 / (this[0][3] * c0X + this[1][3] * c0Y + this[2][3] * c0Z + this[3][3]);
-            const p0x = (this[0][0] * c0X + this[1][0] * c0Y + this[2][0] * c0Z + this[3][0]) * invW;
-            const p0y = (this[0][1] * c0X + this[1][1] * c0Y + this[2][1] * c0Z + this[3][1]) * invW;
-            const p0z = (this[0][2] * c0X + this[1][2] * c0Y + this[2][2] * c0Z + this[3][2]) * invW;
-            invW = 1.0 / (this[0][3] * c1X + this[1][3] * c1Y + this[2][3] * c1Z + this[3][3]);
-            const p1x = (this[0][0] * c1X + this[1][0] * c1Y + this[2][0] * c1Z + this[3][0]) * invW;
-            const p1y = (this[0][1] * c1X + this[1][1] * c1Y + this[2][1] * c1Z + this[3][1]) * invW;
-            const p1z = (this[0][2] * c1X + this[1][2] * c1Y + this[2][2] * c1Z + this[3][2]) * invW;
+            let invW = 1.0 / (this.m03 * c0X + this.m13 * c0Y + this.m23 * c0Z + this.m33);
+            const p0x = (this.m00 * c0X + this.m10 * c0Y + this.m20 * c0Z + this.m30) * invW;
+            const p0y = (this.m01 * c0X + this.m11 * c0Y + this.m21 * c0Z + this.m31) * invW;
+            const p0z = (this.m02 * c0X + this.m12 * c0Y + this.m22 * c0Z + this.m32) * invW;
+            invW = 1.0 / (this.m03 * c1X + this.m13 * c1Y + this.m23 * c1Z + this.m33);
+            const p1x = (this.m00 * c1X + this.m10 * c1Y + this.m20 * c1Z + this.m30) * invW;
+            const p1y = (this.m01 * c1X + this.m11 * c1Y + this.m21 * c1Z + this.m31) * invW;
+            const p1z = (this.m02 * c1X + this.m12 * c1Y + this.m22 * c1Z + this.m32) * invW;
             const dirX = p1x - p0x;
             const dirY = p1y - p0y;
             const dirZ = p1z - p0z;
@@ -9655,9 +9692,9 @@ export class Matrix4 {
                     // project with projector matrix
                     const ix = p0x + isectT * dirX;
                     const iz = p0z + isectT * dirZ;
-                    invW = 1.0 / (projector[0][3] * ix + projector[2][3] * iz + projector[3][3]);
-                    const px = (projector[0][0] * ix + projector[2][0] * iz + projector[3][0]) * invW;
-                    const py = (projector[0][1] * ix + projector[2][1] * iz + projector[3][1]) * invW;
+                    invW = 1.0 / (projector.m03 * ix + projector.m23 * iz + projector.m33);
+                    const px = (projector.m00 * ix + projector.m20 * iz + projector.m30) * invW;
+                    const py = (projector.m01 * ix + projector.m21 * iz + projector.m31) * invW;
                     minX = minX < px ? minX : px;
                     minY = minY < py ? minY : py;
                     maxX = maxX > px ? maxX : px;
@@ -9673,24 +9710,24 @@ export class Matrix4 {
     }
 
     public perspectiveFrustumSlice(near: number, far: number, dest: Matrix4): Matrix4 {
-        const invOldNear = (this[2][3] + this[2][2]) / this[3][2];
+        const invOldNear = (this.m23 + this.m22) / this.m32;
         const invNearFar = 1.0 / (near - far);
-        dest[0][0] = this[0][0] * invOldNear * near;
-        dest[0][1] = this[0][1];
-        dest[0][2] = this[0][2];
-        dest[0][3] = this[0][3];
-        dest[1][0] = this[1][0];
-        dest[1][1] = this[1][1] * invOldNear * near;
-        dest[1][2] = this[1][2];
-        dest[1][3] = this[1][3];
-        dest[2][0] = this[2][0];
-        dest[2][1] = this[2][1];
-        dest[2][2] = (far + near) * invNearFar;
-        dest[2][3] = this[2][3];
-        dest[3][0] = this[3][0];
-        dest[3][1] = this[3][1];
-        dest[3][2] = (far + far) * near * invNearFar;
-        dest[3][3] = this[3][3];
+        dest.m00 = this.m00 * invOldNear * near;
+        dest.m01 = this.m01;
+        dest.m02 = this.m02;
+        dest.m03 = this.m03;
+        dest.m10 = this.m10;
+        dest.m11 = this.m11 * invOldNear * near;
+        dest.m12 = this.m12;
+        dest.m13 = this.m13;
+        dest.m20 = this.m20;
+        dest.m21 = this.m21;
+        dest.m22 = (far + near) * invNearFar;
+        dest.m23 = this.m23;
+        dest.m30 = this.m30;
+        dest.m31 = this.m31;
+        dest.m32 = (far + far) * near * invNearFar;
+        dest.m33 = this.m33;
         // ._properties(properties & ~(PROPERTY_IDENTITY | PROPERTY_TRANSLATION | PROPERTY_ORTHONORMAL));
         return dest;
     }
@@ -9704,14 +9741,14 @@ export class Matrix4 {
             const x = ((t & 1) << 1) - 1.0;
             const y = (((t >>> 1) & 1) << 1) - 1.0;
             const z = (((t >>> 2) & 1) << 1) - 1.0;
-            let invW = 1.0 / (this[0][3] * x + this[1][3] * y + this[2][3] * z + this[3][3]);
-            const wx = (this[0][0] * x + this[1][0] * y + this[2][0] * z + this[3][0]) * invW;
-            const wy = (this[0][1] * x + this[1][1] * y + this[2][1] * z + this[3][1]) * invW;
-            const wz = (this[0][2] * x + this[1][2] * y + this[2][2] * z + this[3][2]) * invW;
-            invW = 1.0 / (view[0][3] * wx + view[1][3] * wy + view[2][3] * wz + view[3][3]);
-            const vx = view[0][0] * wx + view[1][0] * wy + view[2][0] * wz + view[3][0];
-            const vy = view[0][1] * wx + view[1][1] * wy + view[2][1] * wz + view[3][1];
-            const vz = (view[0][2] * wx + view[1][2] * wy + view[2][2] * wz + view[3][2]) * invW;
+            let invW = 1.0 / (this.m03 * x + this.m13 * y + this.m23 * z + this.m33);
+            const wx = (this.m00 * x + this.m10 * y + this.m20 * z + this.m30) * invW;
+            const wy = (this.m01 * x + this.m11 * y + this.m21 * z + this.m31) * invW;
+            const wz = (this.m02 * x + this.m12 * y + this.m22 * z + this.m32) * invW;
+            invW = 1.0 / (view.m03 * wx + view.m13 * wy + view.m23 * wz + view.m33);
+            const vx = view.m00 * wx + view.m10 * wy + view.m20 * wz + view.m30;
+            const vy = view.m01 * wx + view.m11 * wy + view.m21 * wz + view.m31;
+            const vz = (view.m02 * wx + view.m12 * wy + view.m22 * wz + view.m32) * invW;
             minX = minX < vx ? minX : vx;
             maxX = maxX > vx ? maxX : vx;
             minY = minY < vy ? minY : vy;
@@ -9802,19 +9839,19 @@ export class Matrix4 {
             minZ = minX.z, minY = minX.y, minX = minX.x;
         }
 
-        const xax = this[0][0] * minX, xay = this[0][1] * minX, xaz = this[0][2] * minX;
-        const xbx = this[0][0] * maxX, xby = this[0][1] * maxX, xbz = this[0][2] * maxX;
-        const yax = this[1][0] * minY, yay = this[1][1] * minY, yaz = this[1][2] * minY;
-        const ybx = this[1][0] * maxY, yby = this[1][1] * maxY, ybz = this[1][2] * maxY;
-        const zax = this[2][0] * minZ, zay = this[2][1] * minZ, zaz = this[2][2] * minZ;
-        const zbx = this[2][0] * maxZ, zby = this[2][1] * maxZ, zbz = this[2][2] * maxZ;
+        const xax = this.m00 * minX, xay = this.m01 * minX, xaz = this.m02 * minX;
+        const xbx = this.m00 * maxX, xby = this.m01 * maxX, xbz = this.m02 * maxX;
+        const yax = this.m10 * minY, yay = this.m11 * minY, yaz = this.m12 * minY;
+        const ybx = this.m10 * maxY, yby = this.m11 * maxY, ybz = this.m12 * maxY;
+        const zax = this.m20 * minZ, zay = this.m21 * minZ, zaz = this.m22 * minZ;
+        const zbx = this.m20 * maxZ, zby = this.m21 * maxZ, zbz = this.m22 * maxZ;
 
-        outMin.x = Math.min(xax, xbx) + Math.min(yax, ybx) + Math.min(zax, zbx) + this[3][0];
-        outMin.y = Math.min(xay, xby) + Math.min(yay, yby) + Math.min(zay, zby) + this[3][1];
-        outMin.z = Math.min(xaz, xbz) + Math.min(yaz, ybz) + Math.min(zaz, zbz) + this[3][2];
-        outMax.x = Math.max(xax, xbx) + Math.max(yax, ybx) + Math.max(zax, zbx) + this[3][0];
-        outMax.y = Math.max(xay, xby) + Math.max(yay, yby) + Math.max(zay, zby) + this[3][1];
-        outMax.z = Math.max(xaz, xbz) + Math.max(yaz, ybz) + Math.max(zaz, zbz) + this[3][2];
+        outMin.x = Math.min(xax, xbx) + Math.min(yax, ybx) + Math.min(zax, zbx) + this.m30;
+        outMin.y = Math.min(xay, xby) + Math.min(yay, yby) + Math.min(zay, zby) + this.m31;
+        outMin.z = Math.min(xaz, xbz) + Math.min(yaz, ybz) + Math.min(zaz, zbz) + this.m32;
+        outMax.x = Math.max(xax, xbx) + Math.max(yax, ybx) + Math.max(zax, zbx) + this.m30;
+        outMax.y = Math.max(xay, xby) + Math.max(yay, yby) + Math.max(zay, zby) + this.m31;
+        outMax.z = Math.max(xaz, xbz) + Math.max(yaz, ybz) + Math.max(zaz, zbz) + this.m32;
         return this;
     }
 
@@ -9835,22 +9872,22 @@ export class Matrix4 {
      */
     public lerp(other: Matrix4, t: number, dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
-        dest[0][0] = (other[0][0] - this[0][0]) * t + this[0][0]
-        dest[0][1] = (other[0][1] - this[0][1]) * t + this[0][1]
-        dest[0][2] = (other[0][2] - this[0][2]) * t + this[0][2]
-        dest[0][3] = (other[0][3] - this[0][3]) * t + this[0][3]
-        dest[1][0] = (other[1][0] - this[1][0]) * t + this[1][0]
-        dest[1][1] = (other[1][1] - this[1][1]) * t + this[1][1]
-        dest[1][2] = (other[1][2] - this[1][2]) * t + this[1][2]
-        dest[1][3] = (other[1][3] - this[1][3]) * t + this[1][3]
-        dest[2][0] = (other[2][0] - this[2][0]) * t + this[2][0]
-        dest[2][1] = (other[2][1] - this[2][1]) * t + this[2][1]
-        dest[2][2] = (other[2][2] - this[2][2]) * t + this[2][2]
-        dest[2][3] = (other[2][3] - this[2][3]) * t + this[2][3]
-        dest[3][0] = (other[3][0] - this[3][0]) * t + this[3][0]
-        dest[3][1] = (other[3][1] - this[3][1]) * t + this[3][1]
-        dest[3][2] = (other[3][2] - this[3][2]) * t + this[3][2]
-        dest[3][3] = (other[3][3] - this[3][3]) * t + this[3][3]
+        dest.m00 = (other.m00 - this.m00) * t + this.m00
+        dest.m01 = (other.m01 - this.m01) * t + this.m01
+        dest.m02 = (other.m02 - this.m02) * t + this.m02
+        dest.m03 = (other.m03 - this.m03) * t + this.m03
+        dest.m10 = (other.m10 - this.m10) * t + this.m10
+        dest.m11 = (other.m11 - this.m11) * t + this.m11
+        dest.m12 = (other.m12 - this.m12) * t + this.m12
+        dest.m13 = (other.m13 - this.m13) * t + this.m13
+        dest.m20 = (other.m20 - this.m20) * t + this.m20
+        dest.m21 = (other.m21 - this.m21) * t + this.m21
+        dest.m22 = (other.m22 - this.m22) * t + this.m22
+        dest.m23 = (other.m23 - this.m23) * t + this.m23
+        dest.m30 = (other.m30 - this.m30) * t + this.m30
+        dest.m31 = (other.m31 - this.m31) * t + this.m31
+        dest.m32 = (other.m32 - this.m32) * t + this.m32
+        dest.m33 = (other.m33 - this.m33) * t + this.m33
         return dest;
     }
 
@@ -9958,30 +9995,30 @@ export class Matrix4 {
         const rm20 = ndirX;
         const rm21 = ndirY;
         const rm22 = ndirZ;
-        const nm00 = this[0][0] * rm00 + this[1][0] * rm01 + this[2][0] * rm02;
-        const nm01 = this[0][1] * rm00 + this[1][1] * rm01 + this[2][1] * rm02;
-        const nm02 = this[0][2] * rm00 + this[1][2] * rm01 + this[2][2] * rm02;
-        const nm03 = this[0][3] * rm00 + this[1][3] * rm01 + this[2][3] * rm02;
-        const nm10 = this[0][0] * rm10 + this[1][0] * rm11 + this[2][0] * rm12;
-        const nm11 = this[0][1] * rm10 + this[1][1] * rm11 + this[2][1] * rm12;
-        const nm12 = this[0][2] * rm10 + this[1][2] * rm11 + this[2][2] * rm12;
-        const nm13 = this[0][3] * rm10 + this[1][3] * rm11 + this[2][3] * rm12;
-        dest[3][0] = (this[3][0])
-        dest[3][1] = (this[3][1])
-        dest[3][2] = (this[3][2])
-        dest[3][3] = (this[3][3])
-        dest[2][0] = (this[0][0] * rm20 + this[1][0] * rm21 + this[2][0] * rm22)
-        dest[2][1] = (this[0][1] * rm20 + this[1][1] * rm21 + this[2][1] * rm22)
-        dest[2][2] = (this[0][2] * rm20 + this[1][2] * rm21 + this[2][2] * rm22)
-        dest[2][3] = (this[0][3] * rm20 + this[1][3] * rm21 + this[2][3] * rm22)
-        dest[0][0] = (nm00)
-        dest[0][1] = (nm01)
-        dest[0][2] = (nm02)
-        dest[0][3] = (nm03)
-        dest[1][0] = (nm10)
-        dest[1][1] = (nm11)
-        dest[1][2] = (nm12)
-        dest[1][3] = (nm13)
+        const nm00 = this.m00 * rm00 + this.m10 * rm01 + this.m20 * rm02;
+        const nm01 = this.m01 * rm00 + this.m11 * rm01 + this.m21 * rm02;
+        const nm02 = this.m02 * rm00 + this.m12 * rm01 + this.m22 * rm02;
+        const nm03 = this.m03 * rm00 + this.m13 * rm01 + this.m23 * rm02;
+        const nm10 = this.m00 * rm10 + this.m10 * rm11 + this.m20 * rm12;
+        const nm11 = this.m01 * rm10 + this.m11 * rm11 + this.m21 * rm12;
+        const nm12 = this.m02 * rm10 + this.m12 * rm11 + this.m22 * rm12;
+        const nm13 = this.m03 * rm10 + this.m13 * rm11 + this.m23 * rm12;
+        dest.m30 = (this.m30)
+        dest.m31 = (this.m31)
+        dest.m32 = (this.m32)
+        dest.m33 = (this.m33)
+        dest.m20 = (this.m00 * rm20 + this.m10 * rm21 + this.m20 * rm22)
+        dest.m21 = (this.m01 * rm20 + this.m11 * rm21 + this.m21 * rm22)
+        dest.m22 = (this.m02 * rm20 + this.m12 * rm21 + this.m22 * rm22)
+        dest.m23 = (this.m03 * rm20 + this.m13 * rm21 + this.m23 * rm22)
+        dest.m00 = (nm00)
+        dest.m01 = (nm01)
+        dest.m02 = (nm02)
+        dest.m03 = (nm03)
+        dest.m10 = (nm10)
+        dest.m11 = (nm11)
+        dest.m12 = (nm12)
+        dest.m13 = (nm13)
         // ._properties(properties & ~(PROPERTY_PERSPECTIVE | PROPERTY_IDENTITY | PROPERTY_TRANSLATION));
         return dest;
     }
@@ -10061,15 +10098,15 @@ export class Matrix4 {
         const upnZ = ndirX * leftY - ndirY * leftX;
         if (!this.PROPERTY_IDENTITY)
             this.identity();
-        this[0][0] = leftX;
-        this[0][1] = leftY;
-        this[0][2] = leftZ;
-        this[1][0] = upnX;
-        this[1][1] = upnY;
-        this[1][2] = upnZ;
-        this[2][0] = ndirX;
-        this[2][1] = ndirY;
-        this[2][2] = ndirZ;
+        this.m00 = leftX;
+        this.m01 = leftY;
+        this.m02 = leftZ;
+        this.m10 = upnX;
+        this.m11 = upnY;
+        this.m12 = upnZ;
+        this.m20 = ndirX;
+        this.m21 = ndirY;
+        this.m22 = ndirZ;
         // properties = PROPERTY_AFFINE | PROPERTY_ORTHONORMAL;
         return this;
     }
@@ -10157,38 +10194,38 @@ export class Matrix4 {
         const upnX = ndirY * leftZ - ndirZ * leftY;
         const upnY = ndirZ * leftX - ndirX * leftZ;
         const upnZ = ndirX * leftY - ndirY * leftX;
-        this[0][0] = leftX;
-        this[0][1] = leftY;
-        this[0][2] = leftZ;
-        this[0][3] = 0.0;
-        this[1][0] = upnX;
-        this[1][1] = upnY;
-        this[1][2] = upnZ;
-        this[1][3] = 0.0;
-        this[2][0] = ndirX;
-        this[2][1] = ndirY;
-        this[2][2] = ndirZ;
-        this[2][3] = 0.0;
-        this[3][0] = posX;
-        this[3][1] = posY;
-        this[3][2] = posZ;
-        this[3][3] = 1.0;
+        this.m00 = leftX;
+        this.m01 = leftY;
+        this.m02 = leftZ;
+        this.m03 = 0.0;
+        this.m10 = upnX;
+        this.m11 = upnY;
+        this.m12 = upnZ;
+        this.m13 = 0.0;
+        this.m20 = ndirX;
+        this.m21 = ndirY;
+        this.m22 = ndirZ;
+        this.m23 = 0.0;
+        this.m30 = posX;
+        this.m31 = posY;
+        this.m32 = posZ;
+        this.m33 = 1.0;
         // properties = PROPERTY_AFFINE | PROPERTY_ORTHONORMAL;
         return this;
     }
 
     public getEulerAnglesZYX(dest?: Vector3): Vector3 {
-        dest.x = Math.atan2(this[1][2], this[2][2]);
-        dest.y = Math.atan2(-this[0][2], Math.sqrt(1.0 - this[0][2] * this[0][2]));
-        dest.z = Math.atan2(this[0][1], this[0][0]);
+        dest.x = Math.atan2(this.m12, this.m22);
+        dest.y = Math.atan2(-this.m02, Math.sqrt(1.0 - this.m02 * this.m02));
+        dest.z = Math.atan2(this.m01, this.m00);
         return dest;
     }
 
     public getEulerAnglesXYZ(dest?: Vector3): Vector3 {
         dest = dest ?? new Vector3();
-        dest.x = Math.atan2(-this[2][1], this[2][2]);
-        dest.y = Math.atan2(this[2][0], Math.sqrt(1.0 - this[2][0] * this[2][0]));
-        dest.z = Math.atan2(-this[1][0], this[0][0]);
+        dest.x = Math.atan2(-this.m21, this.m22);
+        dest.y = Math.atan2(this.m20, Math.sqrt(1.0 - this.m20 * this.m20));
+        dest.z = Math.atan2(-this.m10, this.m00);
         return dest;
     }
 
@@ -10215,20 +10252,20 @@ export class Matrix4 {
      * @return this
      */
     public affineSpan(corner: Vector3, xDir: Vector3, yDir: Vector3, zDir: Vector3): Matrix4 {
-        const a = this[1][0] * this[2][2], b = this[1][0] * this[2][1], c = this[1][0] * this[0][2], d = this[1][0] * this[0][1];
-        const e = this[1][1] * this[2][2], f = this[1][1] * this[2][0], g = this[1][1] * this[0][2], h = this[1][1] * this[0][0];
-        const i = this[1][2] * this[2][1], j = this[1][2] * this[2][0], k = this[1][2] * this[0][1], l = this[1][2] * this[0][0];
-        const m = this[2][0] * this[0][2], n = this[2][0] * this[0][1], o = this[2][1] * this[0][2], p = this[2][1] * this[0][0];
-        const q = this[2][2] * this[0][1], r = this[2][2] * this[0][0];
-        const s = 1.0 / (this[0][0] * this[1][1] - this[0][1] * this[1][0]) * this[2][2] +
-            (this[0][2] * this[1][0] - this[0][0] * this[1][2]) * this[2][1] + (this[0][1] * this[1][2] - this[0][2] * this[1][1]) * this[2][0];
+        const a = this.m10 * this.m22, b = this.m10 * this.m21, c = this.m10 * this.m02, d = this.m10 * this.m01;
+        const e = this.m11 * this.m22, f = this.m11 * this.m20, g = this.m11 * this.m02, h = this.m11 * this.m00;
+        const i = this.m12 * this.m21, j = this.m12 * this.m20, k = this.m12 * this.m01, l = this.m12 * this.m00;
+        const m = this.m20 * this.m02, n = this.m20 * this.m01, o = this.m21 * this.m02, p = this.m21 * this.m00;
+        const q = this.m22 * this.m01, r = this.m22 * this.m00;
+        const s = 1.0 / (this.m00 * this.m11 - this.m01 * this.m10) * this.m22 +
+            (this.m02 * this.m10 - this.m00 * this.m12) * this.m21 + (this.m01 * this.m12 - this.m02 * this.m11) * this.m20;
 
         const nm00 = (e - i) * s, nm01 = (o - q) * s, nm02 = (k - g) * s;
         const nm10 = (j - a) * s, nm11 = (r - m) * s, nm12 = (c - l) * s;
         const nm20 = (b - f) * s, nm21 = (n - p) * s, nm22 = (h - d) * s;
-        corner.x = -nm00 - nm10 - nm20 + (a * this[3][1] - b * this[3][2] + f * this[3][2] - e * this[3][0] + i * this[3][0] - j * this[3][1]) * s;
-        corner.y = -nm01 - nm11 - nm21 + (m * this[3][1] - n * this[3][2] + p * this[3][2] - o * this[3][0] + q * this[3][0] - r * this[3][1]) * s;
-        corner.z = -nm02 - nm12 - nm22 + (g * this[3][0] - k * this[3][0] + l * this[3][1] - c * this[3][1] + d * this[3][2] - h * this[3][2]) * s;
+        corner.x = -nm00 - nm10 - nm20 + (a * this.m31 - b * this.m32 + f * this.m32 - e * this.m30 + i * this.m30 - j * this.m31) * s;
+        corner.y = -nm01 - nm11 - nm21 + (m * this.m31 - n * this.m32 + p * this.m32 - o * this.m30 + q * this.m30 - r * this.m31) * s;
+        corner.z = -nm02 - nm12 - nm22 + (g * this.m30 - k * this.m30 + l * this.m31 - c * this.m31 + d * this.m32 - h * this.m32) * s;
         xDir.x = 2.0 * nm00; xDir.y = 2.0 * nm01; xDir.z = 2.0 * nm02;
         yDir.x = 2.0 * nm10; yDir.y = 2.0 * nm11; yDir.z = 2.0 * nm12;
         zDir.x = 2.0 * nm20; zDir.y = 2.0 * nm21; zDir.z = 2.0 * nm22;
@@ -10236,12 +10273,12 @@ export class Matrix4 {
     }
 
     public testPoint(x: number, y: number, z: number): boolean {
-        const nxX = this[0][3] + this[0][0], nxY = this[1][3] + this[1][0], nxZ = this[2][3] + this[2][0], nxW = this[3][3] + this[3][0];
-        const pxX = this[0][3] - this[0][0], pxY = this[1][3] - this[1][0], pxZ = this[2][3] - this[2][0], pxW = this[3][3] - this[3][0];
-        const nyX = this[0][3] + this[0][1], nyY = this[1][3] + this[1][1], nyZ = this[2][3] + this[2][1], nyW = this[3][3] + this[3][1];
-        const pyX = this[0][3] - this[0][1], pyY = this[1][3] - this[1][1], pyZ = this[2][3] - this[2][1], pyW = this[3][3] - this[3][1];
-        const nzX = this[0][3] + this[0][2], nzY = this[1][3] + this[1][2], nzZ = this[2][3] + this[2][2], nzW = this[3][3] + this[3][2];
-        const pzX = this[0][3] - this[0][2], pzY = this[1][3] - this[1][2], pzZ = this[2][3] - this[2][2], pzW = this[3][3] - this[3][2];
+        const nxX = this.m03 + this.m00, nxY = this.m13 + this.m10, nxZ = this.m23 + this.m20, nxW = this.m33 + this.m30;
+        const pxX = this.m03 - this.m00, pxY = this.m13 - this.m10, pxZ = this.m23 - this.m20, pxW = this.m33 - this.m30;
+        const nyX = this.m03 + this.m01, nyY = this.m13 + this.m11, nyZ = this.m23 + this.m21, nyW = this.m33 + this.m31;
+        const pyX = this.m03 - this.m01, pyY = this.m13 - this.m11, pyZ = this.m23 - this.m21, pyW = this.m33 - this.m31;
+        const nzX = this.m03 + this.m02, nzY = this.m13 + this.m12, nzZ = this.m23 + this.m22, nzW = this.m33 + this.m32;
+        const pzX = this.m03 - this.m02, pzY = this.m13 - this.m12, pzZ = this.m23 - this.m22, pzW = this.m33 - this.m32;
         return nxX * x + nxY * y + nxZ * z + nxW >= 0 && pxX * x + pxY * y + pxZ * z + pxW >= 0 &&
             nyX * x + nyY * y + nyZ * z + nyW >= 0 && pyX * x + pyY * y + pyZ * z + pyW >= 0 &&
             nzX * x + nzY * y + nzZ * z + nzW >= 0 && pzX * x + pzY * y + pzZ * z + pzW >= 0;
@@ -10249,22 +10286,22 @@ export class Matrix4 {
 
     public testSphere(x: number, y: number, z: number, r: number): boolean {
         let invl;
-        let nxX = this[0][3] + this[0][0], nxY = this[1][3] + this[1][0], nxZ = this[2][3] + this[2][0], nxW = this[3][3] + this[3][0];
+        let nxX = this.m03 + this.m00, nxY = this.m13 + this.m10, nxZ = this.m23 + this.m20, nxW = this.m33 + this.m30;
         invl = 1 / Math.sqrt(nxX * nxX + nxY * nxY + nxZ * nxZ);
         nxX *= invl; nxY *= invl; nxZ *= invl; nxW *= invl;
-        let pxX = this[0][3] - this[0][0], pxY = this[1][3] - this[1][0], pxZ = this[2][3] - this[2][0], pxW = this[3][3] - this[3][0];
+        let pxX = this.m03 - this.m00, pxY = this.m13 - this.m10, pxZ = this.m23 - this.m20, pxW = this.m33 - this.m30;
         invl = 1 / Math.sqrt(pxX * pxX + pxY * pxY + pxZ * pxZ);
         pxX *= invl; pxY *= invl; pxZ *= invl; pxW *= invl;
-        let nyX = this[0][3] + this[0][1], nyY = this[1][3] + this[1][1], nyZ = this[2][3] + this[2][1], nyW = this[3][3] + this[3][1];
+        let nyX = this.m03 + this.m01, nyY = this.m13 + this.m11, nyZ = this.m23 + this.m21, nyW = this.m33 + this.m31;
         invl = 1 / Math.sqrt(nyX * nyX + nyY * nyY + nyZ * nyZ);
         nyX *= invl; nyY *= invl; nyZ *= invl; nyW *= invl;
-        let pyX = this[0][3] - this[0][1], pyY = this[1][3] - this[1][1], pyZ = this[2][3] - this[2][1], pyW = this[3][3] - this[3][1];
+        let pyX = this.m03 - this.m01, pyY = this.m13 - this.m11, pyZ = this.m23 - this.m21, pyW = this.m33 - this.m31;
         invl = 1 / Math.sqrt(pyX * pyX + pyY * pyY + pyZ * pyZ);
         pyX *= invl; pyY *= invl; pyZ *= invl; pyW *= invl;
-        let nzX = this[0][3] + this[0][2], nzY = this[1][3] + this[1][2], nzZ = this[2][3] + this[2][2], nzW = this[3][3] + this[3][2];
+        let nzX = this.m03 + this.m02, nzY = this.m13 + this.m12, nzZ = this.m23 + this.m22, nzW = this.m33 + this.m32;
         invl = 1 / Math.sqrt(nzX * nzX + nzY * nzY + nzZ * nzZ);
         nzX *= invl; nzY *= invl; nzZ *= invl; nzW *= invl;
-        let pzX = this[0][3] - this[0][2], pzY = this[1][3] - this[1][2], pzZ = this[2][3] - this[2][2], pzW = this[3][3] - this[3][2];
+        let pzX = this.m03 - this.m02, pzY = this.m13 - this.m12, pzZ = this.m23 - this.m22, pzW = this.m33 - this.m32;
         invl = 1 / Math.sqrt(pzX * pzX + pzY * pzY + pzZ * pzZ);
         pzX *= invl; pzY *= invl; pzZ *= invl; pzW *= invl;
         return nxX * x + nxY * y + nxZ * z + nxW >= -r && pxX * x + pxY * y + pxZ * z + pxW >= -r &&
@@ -10273,12 +10310,12 @@ export class Matrix4 {
     }
 
     public testAab(minX: number, minY: number, minZ: number, maxX: number, maxY: number, maxZ: number): boolean {
-        const nxX = this[0][3] + this[0][0], nxY = this[1][3] + this[1][0], nxZ = this[2][3] + this[2][0], nxW = this[3][3] + this[3][0];
-        const pxX = this[0][3] - this[0][0], pxY = this[1][3] - this[1][0], pxZ = this[2][3] - this[2][0], pxW = this[3][3] - this[3][0];
-        const nyX = this[0][3] + this[0][1], nyY = this[1][3] + this[1][1], nyZ = this[2][3] + this[2][1], nyW = this[3][3] + this[3][1];
-        const pyX = this[0][3] - this[0][1], pyY = this[1][3] - this[1][1], pyZ = this[2][3] - this[2][1], pyW = this[3][3] - this[3][1];
-        const nzX = this[0][3] + this[0][2], nzY = this[1][3] + this[1][2], nzZ = this[2][3] + this[2][2], nzW = this[3][3] + this[3][2];
-        const pzX = this[0][3] - this[0][2], pzY = this[1][3] - this[1][2], pzZ = this[2][3] - this[2][2], pzW = this[3][3] - this[3][2];
+        const nxX = this.m03 + this.m00, nxY = this.m13 + this.m10, nxZ = this.m23 + this.m20, nxW = this.m33 + this.m30;
+        const pxX = this.m03 - this.m00, pxY = this.m13 - this.m10, pxZ = this.m23 - this.m20, pxW = this.m33 - this.m30;
+        const nyX = this.m03 + this.m01, nyY = this.m13 + this.m11, nyZ = this.m23 + this.m21, nyW = this.m33 + this.m31;
+        const pyX = this.m03 - this.m01, pyY = this.m13 - this.m11, pyZ = this.m23 - this.m21, pyW = this.m33 - this.m31;
+        const nzX = this.m03 + this.m02, nzY = this.m13 + this.m12, nzZ = this.m23 + this.m22, nzW = this.m33 + this.m32;
+        const pzX = this.m03 - this.m02, pzY = this.m13 - this.m12, pzZ = this.m23 - this.m22, pzW = this.m33 - this.m32;
         /*
          * This is an implementation of the "2.4 Basic intersection test" of the mentioned site.
          * It does not distinguish between partially inside and fully inside, though, so the test with the 'p' vertex is omitted.
@@ -10326,13 +10363,13 @@ export class Matrix4 {
      */
     public obliqueZ(a: number, b: number, dest?: Matrix4): Matrix4 {
         dest.set(
-            this[0][0], this[0][1], this[0][2], this[0][3],
-            this[1][0], this[1][1], this[1][2], this[1][3],
-            this[0][0] * a + this[1][0] * b + this[2][0], // 2 0
-            this[0][1] * a + this[1][1] * b + this[2][1], // 2 1
-            this[0][2] * a + this[1][2] * b + this[2][2], // 2 2
-            this[2][3],                                   // 2 3
-            this[3][0], this[3][1], this[3][2], this[3][3],
+            this.m00, this.m01, this.m02, this.m03,
+            this.m10, this.m11, this.m12, this.m13,
+            this.m00 * a + this.m10 * b + this.m20, // 2 0
+            this.m01 * a + this.m11 * b + this.m21, // 2 1
+            this.m02 * a + this.m12 * b + this.m22, // 2 2
+            this.m23,                                   // 2 3
+            this.m30, this.m31, this.m32, this.m33,
         )
         // dest._properties(properties & PROPERTY_AFFINE);
         return dest;
@@ -10378,10 +10415,10 @@ export class Matrix4 {
         const zs = zd >= 0 ? 1 : -1;
         zx *= zs; zy *= zs; zz *= zs; zd *= zs;
         viewDest.setLookAt(eye.x, eye.y, eye.z, eye.x + zx, eye.y + zy, eye.z + zz, y.x, y.y, y.z);
-        const px = viewDest[0][0] * p.x + viewDest[1][0] * p.y + viewDest[2][0] * p.z + viewDest[3][0];
-        const py = viewDest[0][1] * p.x + viewDest[1][1] * p.y + viewDest[2][1] * p.z + viewDest[3][1];
-        const tx = viewDest[0][0] * x.x + viewDest[1][0] * x.y + viewDest[2][0] * x.z;
-        const ty = viewDest[0][1] * y.x + viewDest[1][1] * y.y + viewDest[2][1] * y.z;
+        const px = viewDest.m00 * p.x + viewDest.m10 * p.y + viewDest.m20 * p.z + viewDest.m30;
+        const py = viewDest.m01 * p.x + viewDest.m11 * p.y + viewDest.m21 * p.z + viewDest.m31;
+        const tx = viewDest.m00 * x.x + viewDest.m10 * x.y + viewDest.m20 * x.z;
+        const ty = viewDest.m01 * y.x + viewDest.m11 * y.y + viewDest.m21 * y.z;
         const len = Math.sqrt(zx * zx + zy * zy + zz * zz);
         let near = zd / len, far;
         isFinite
@@ -10445,22 +10482,22 @@ export class Matrix4 {
         }
 
         const y =
-            (upY * this[2][1] - upZ * this[1][1]) * this[0][2] +
-            (upZ * this[0][1] - upX * this[2][1]) * this[1][2] +
-            (upX * this[1][1] - upY * this[0][1]) * this[2][2];
+            (upY * this.m21 - upZ * this.m11) * this.m02 +
+            (upZ * this.m01 - upX * this.m21) * this.m12 +
+            (upX * this.m11 - upY * this.m01) * this.m22;
 
-        let x = upX * this[0][1] + upY * this[1][1] + upZ * this[2][1];
+        let x = upX * this.m01 + upY * this.m11 + upZ * this.m21;
         if (!this.PROPERTY_ORTHONORMAL) {
-            x *= Math.sqrt(this[0][1] * this[0][1] + this[1][1] * this[1][1] + this[2][1] * this[2][1]);
+            x *= Math.sqrt(this.m01 * this.m01 + this.m11 * this.m11 + this.m21 * this.m21);
         }
 
         const invsqrt = 1 / Math.sqrt(y * y + x * x);
         const c = x * invsqrt, s = y * invsqrt;
         return dest.set(
-            c * this[0][0] - s * this[0][1], s * this[0][0] + c * this[0][1], this[0][2], this[0][3],
-            c * this[1][0] - s * this[1][1], s * this[1][0] + c * this[1][1], this[2][2], this[1][3],
-            c * this[2][0] - s * this[2][1], s * this[2][0] + c * this[2][1], this[1][2], this[2][3],
-            c * this[3][0] - s * this[3][1], s * this[3][0] + c * this[3][1], this[3][2], this[3][3],
+            c * this.m00 - s * this.m01, s * this.m00 + c * this.m01, this.m02, this.m03,
+            c * this.m10 - s * this.m11, s * this.m10 + c * this.m11, this.m22, this.m13,
+            c * this.m20 - s * this.m21, s * this.m20 + c * this.m21, this.m12, this.m23,
+            c * this.m30 - s * this.m31, s * this.m30 + c * this.m31, this.m32, this.m33,
         )
     }
 
@@ -10477,12 +10514,12 @@ export class Matrix4 {
      * @return this
      */
     public mapXZY(dest?: Matrix4): Matrix4 {
-        const m10 = this[1][0], m11 = this[1][1], m12 = this[1][2];
+        const m10 = this.m10, m11 = this.m11, m12 = this.m12;
         return dest.set(
-            this[0][0], this[0][1], this[0][2], this[0][3],
-            this[2][0], this[2][1], this[2][2], this[1][3],
-            this[1][0], this[1][1], this[1][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            this.m00, this.m01, this.m02, this.m03,
+            this.m20, this.m21, this.m22, this.m13,
+            this.m10, this.m11, this.m12, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -10497,12 +10534,12 @@ export class Matrix4 {
      * @return this
      */
     public mapXZnY(dest?: Matrix4): Matrix4 {
-        const m10 = this[1][0], m11 = this[1][1], m12 = this[1][2];
+        const m10 = this.m10, m11 = this.m11, m12 = this.m12;
         return dest.set(
-            this[0][0], this[0][1], this[0][2], this[0][3],
-            this[2][0], this[2][1], this[2][2], this[1][3],
-            -this[1][0], -this[1][1], -this[1][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            this.m00, this.m01, this.m02, this.m03,
+            this.m20, this.m21, this.m22, this.m13,
+            -this.m10, -this.m11, -this.m12, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -10519,10 +10556,10 @@ export class Matrix4 {
     public mapXnYnZ(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            this[0][0], this[0][1], this[0][2], this[0][3],
-            -this[1][0], -this[1][1], -this[1][2], this[1][3],
-            -this[2][0], -this[2][1], -this[2][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            this.m00, this.m01, this.m02, this.m03,
+            -this.m10, -this.m11, -this.m12, this.m13,
+            -this.m20, -this.m21, -this.m22, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -10539,10 +10576,10 @@ export class Matrix4 {
     public mapXnZY(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            this[0][0], this[0][1], this[0][2], this[0][3],
-            -this[2][0], -this[2][1], -this[2][2], this[1][3],
-            this[1][0], this[1][1], this[1][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            this.m00, this.m01, this.m02, this.m03,
+            -this.m20, -this.m21, -this.m22, this.m13,
+            this.m10, this.m11, this.m12, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -10559,10 +10596,10 @@ export class Matrix4 {
     public mapXnZnY(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            this[0][0], this[0][1], this[0][2], this[0][3],
-            -this[2][0], -this[2][1], -this[2][2], this[1][3],
-            -this[1][0], -this[1][1], -this[1][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            this.m00, this.m01, this.m02, this.m03,
+            -this.m20, -this.m21, -this.m22, this.m13,
+            -this.m10, -this.m11, -this.m12, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -10579,10 +10616,10 @@ export class Matrix4 {
     public mapYXZ(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            this[1][0], this[1][1], this[1][2], this[0][3],
-            this[0][0], this[0][1], this[0][2], this[1][3],
-            this[2][0], this[2][1], this[2][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            this.m10, this.m11, this.m12, this.m03,
+            this.m00, this.m01, this.m02, this.m13,
+            this.m20, this.m21, this.m22, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -10599,10 +10636,10 @@ export class Matrix4 {
     public(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            this[1][0], this[1][1], this[1][2], this[0][3],
-            this[0][0], this[0][1], this[0][2], this[1][3],
-            -this[2][0], -this[2][1], -this[2][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            this.m10, this.m11, this.m12, this.m03,
+            this.m00, this.m01, this.m02, this.m13,
+            -this.m20, -this.m21, -this.m22, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -10619,10 +10656,10 @@ export class Matrix4 {
     public mapYZX(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            this[1][0], this[1][1], this[1][2], this[0][3],
-            this[2][0], this[2][1], this[2][2], this[1][3],
-            this[0][0], this[0][1], this[0][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            this.m10, this.m11, this.m12, this.m03,
+            this.m20, this.m21, this.m22, this.m13,
+            this.m00, this.m01, this.m02, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -10639,10 +10676,10 @@ export class Matrix4 {
     public mapYZnX(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            this[1][0], this[1][1], this[1][2], this[0][3],
-            this[2][0], this[2][1], this[2][2], this[1][3],
-            -this[0][0], -this[0][1], -this[0][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            this.m10, this.m11, this.m12, this.m03,
+            this.m20, this.m21, this.m22, this.m13,
+            -this.m00, -this.m01, -this.m02, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -10659,10 +10696,10 @@ export class Matrix4 {
     public mapYnXZ(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            this[1][0], this[1][1], this[1][2], this[0][3],
-            -this[0][0], -this[0][1], -this[0][2], this[1][3],
-            this[2][0], this[2][1], this[2][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            this.m10, this.m11, this.m12, this.m03,
+            -this.m00, -this.m01, -this.m02, this.m13,
+            this.m20, this.m21, this.m22, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -10679,10 +10716,10 @@ export class Matrix4 {
     public mapYnXnZ(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            this[1][0], this[1][1], this[1][2], this[0][3],
-            -this[0][0], -this[0][1], -this[0][2], this[1][3],
-            -this[2][0], -this[2][1], -this[2][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            this.m10, this.m11, this.m12, this.m03,
+            -this.m00, -this.m01, -this.m02, this.m13,
+            -this.m20, -this.m21, -this.m22, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -10699,10 +10736,10 @@ export class Matrix4 {
     public mapYnZX(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            this[1][0], this[1][1], this[1][2], this[0][3],
-            -this[2][0], -this[2][1], -this[2][2], this[1][3],
-            this[0][0], this[0][1], this[0][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            this.m10, this.m11, this.m12, this.m03,
+            -this.m20, -this.m21, -this.m22, this.m13,
+            this.m00, this.m01, this.m02, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -10719,10 +10756,10 @@ export class Matrix4 {
     public mapYnZnX(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            this[1][0], this[1][1], this[1][2], this[0][3],
-            -this[2][0], -this[2][1], -this[2][2], this[1][3],
-            -this[0][0], -this[0][1], -this[0][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            this.m10, this.m11, this.m12, this.m03,
+            -this.m20, -this.m21, -this.m22, this.m13,
+            -this.m00, -this.m01, -this.m02, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -10739,10 +10776,10 @@ export class Matrix4 {
     public mapZXY(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            this[2][0], this[2][1], this[2][2], this[0][3],
-            this[0][0], this[0][1], this[0][2], this[1][3],
-            this[1][0], this[1][1], this[1][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            this.m20, this.m21, this.m22, this.m03,
+            this.m00, this.m01, this.m02, this.m13,
+            this.m10, this.m11, this.m12, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -10759,10 +10796,10 @@ export class Matrix4 {
     public mapZXnY(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            this[2][0], this[2][1], this[2][2], this[0][3],
-            this[0][0], this[0][1], this[0][2], this[1][3],
-            -this[1][0], -this[1][1], -this[1][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            this.m20, this.m21, this.m22, this.m03,
+            this.m00, this.m01, this.m02, this.m13,
+            -this.m10, -this.m11, -this.m12, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -10779,10 +10816,10 @@ export class Matrix4 {
     public mapZYX(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            this[2][0], this[2][1], this[2][2], this[0][3],
-            this[1][0], this[1][1], this[1][2], this[1][3],
-            this[0][0], this[0][1], this[0][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            this.m20, this.m21, this.m22, this.m03,
+            this.m10, this.m11, this.m12, this.m13,
+            this.m00, this.m01, this.m02, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -10799,10 +10836,10 @@ export class Matrix4 {
     public mapZYnX(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            this[2][0], this[2][1], this[2][2], this[0][3],
-            this[1][0], this[1][1], this[1][2], this[1][3],
-            -this[0][0], -this[0][1], -this[0][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            this.m20, this.m21, this.m22, this.m03,
+            this.m10, this.m11, this.m12, this.m13,
+            -this.m00, -this.m01, -this.m02, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -10819,10 +10856,10 @@ export class Matrix4 {
     public mapZnXY(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            this[2][0], this[2][1], this[2][2], this[0][3],
-            -this[0][0], -this[0][1], -this[0][2], this[1][3],
-            this[1][0], this[1][1], this[1][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            this.m20, this.m21, this.m22, this.m03,
+            -this.m00, -this.m01, -this.m02, this.m13,
+            this.m10, this.m11, this.m12, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -10839,10 +10876,10 @@ export class Matrix4 {
     public mapZnXnY(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            this[2][0], this[2][1], this[2][2], this[0][3],
-            -this[0][0], -this[0][1], -this[0][2], this[1][3],
-            -this[1][0], -this[1][1], -this[1][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            this.m20, this.m21, this.m22, this.m03,
+            -this.m00, -this.m01, -this.m02, this.m13,
+            -this.m10, -this.m11, -this.m12, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -10859,10 +10896,10 @@ export class Matrix4 {
     public mapZnYX(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            this[2][0], this[2][1], this[2][2], this[0][3],
-            -this[1][0], -this[1][1], -this[1][2], this[1][3],
-            this[0][0], this[0][1], this[0][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            this.m20, this.m21, this.m22, this.m03,
+            -this.m10, -this.m11, -this.m12, this.m13,
+            this.m00, this.m01, this.m02, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -10879,10 +10916,10 @@ export class Matrix4 {
     public mapZnYnX(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            this[2][0], this[2][1], this[2][2], this[0][3],
-            -this[1][0], -this[1][1], -this[1][2], this[1][3],
-            -this[0][0], -this[0][1], -this[0][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            this.m20, this.m21, this.m22, this.m03,
+            -this.m10, -this.m11, -this.m12, this.m13,
+            -this.m00, -this.m01, -this.m02, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -10898,10 +10935,10 @@ export class Matrix4 {
      */
     public mapnXYnZ(dest?: Matrix4): Matrix4 {
         return dest.set(
-            -this[0][0], -this[0][1], -this[0][2], this[0][3],
-            this[1][0], this[1][1], this[1][2], this[1][3],
-            -this[2][0], -this[2][1], -this[2][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            -this.m00, -this.m01, -this.m02, this.m03,
+            this.m10, this.m11, this.m12, this.m13,
+            -this.m20, -this.m21, -this.m22, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -10918,10 +10955,10 @@ export class Matrix4 {
     public mapnXZY(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            -this[0][0], -this[0][1], -this[0][2], this[0][3],
-            this[2][0], this[2][1], this[2][2], this[1][3],
-            this[1][0], this[1][1], this[1][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            -this.m00, -this.m01, -this.m02, this.m03,
+            this.m20, this.m21, this.m22, this.m13,
+            this.m10, this.m11, this.m12, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -10938,10 +10975,10 @@ export class Matrix4 {
     public mapnXZnY(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            -this[0][0], -this[0][1], -this[0][2], this[0][3],
-            this[2][0], this[2][1], this[2][2], this[1][3],
-            -this[1][0], -this[1][1], -this[1][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            -this.m00, -this.m01, -this.m02, this.m03,
+            this.m20, this.m21, this.m22, this.m13,
+            -this.m10, -this.m11, -this.m12, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -10957,10 +10994,10 @@ export class Matrix4 {
      */
     public mapnXnYZ(dest?: Matrix4): Matrix4 {
         return dest.set(
-            -this[0][0], -this[0][1], -this[0][2], this[0][3],
-            -this[1][0], -this[1][1], -this[1][2], this[1][3],
-            this[2][0], this[2][1], this[2][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            -this.m00, -this.m01, -this.m02, this.m03,
+            -this.m10, -this.m11, -this.m12, this.m13,
+            this.m20, this.m21, this.m22, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -10976,10 +11013,10 @@ export class Matrix4 {
      */
     public mapnXnYnZ(dest?: Matrix4): Matrix4 {
         return dest.set(
-            -this[0][0], -this[0][1], -this[0][2], this[0][3],
-            -this[1][0], -this[1][1], -this[1][2], this[1][3],
-            -this[2][0], -this[2][1], -this[2][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            -this.m00, -this.m01, -this.m02, this.m03,
+            -this.m10, -this.m11, -this.m12, this.m13,
+            -this.m20, -this.m21, -this.m22, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -10996,10 +11033,10 @@ export class Matrix4 {
     public mapnXnZY(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            -this[0][0], -this[0][1], -this[0][2], this[0][3],
-            -this[2][0], -this[2][1], -this[2][2], this[1][3],
-            this[1][0], this[1][1], this[1][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            -this.m00, -this.m01, -this.m02, this.m03,
+            -this.m20, -this.m21, -this.m22, this.m13,
+            this.m10, this.m11, this.m12, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -11016,10 +11053,10 @@ export class Matrix4 {
     public mapnXnZnY(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            -this[0][0], -this[0][1], -this[0][2], this[0][3],
-            -this[2][0], -this[2][1], -this[2][2], this[1][3],
-            -this[1][0], -this[1][1], -this[1][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            -this.m00, -this.m01, -this.m02, this.m03,
+            -this.m20, -this.m21, -this.m22, this.m13,
+            -this.m10, -this.m11, -this.m12, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -11036,10 +11073,10 @@ export class Matrix4 {
     public mapnYXZ(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            -this[1][0], -this[1][1], -this[1][2], this[0][3],
-            this[0][0], this[0][1], this[0][2], this[1][3],
-            this[2][0], this[2][1], this[2][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            -this.m10, -this.m11, -this.m12, this.m03,
+            this.m00, this.m01, this.m02, this.m13,
+            this.m20, this.m21, this.m22, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -11056,10 +11093,10 @@ export class Matrix4 {
     public mapnYXnZ(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            -this[1][0], -this[1][1], -this[1][2], this[0][3],
-            this[0][0], this[0][1], this[0][2], this[1][3],
-            -this[2][0], -this[2][1], -this[2][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            -this.m10, -this.m11, -this.m12, this.m03,
+            this.m00, this.m01, this.m02, this.m13,
+            -this.m20, -this.m21, -this.m22, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -11076,10 +11113,10 @@ export class Matrix4 {
     public mapnYZX(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            -this[1][0], -this[1][1], -this[1][2], this[0][3],
-            this[2][0], this[2][1], this[2][2], this[1][3],
-            this[0][0], this[0][1], this[0][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            -this.m10, -this.m11, -this.m12, this.m03,
+            this.m20, this.m21, this.m22, this.m13,
+            this.m00, this.m01, this.m02, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -11096,10 +11133,10 @@ export class Matrix4 {
     public mapnYZnX(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            -this[1][0], -this[1][1], -this[1][2], this[0][3],
-            this[2][0], this[2][1], this[2][2], this[1][3],
-            -this[0][0], -this[0][1], -this[0][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            -this.m10, -this.m11, -this.m12, this.m03,
+            this.m20, this.m21, this.m22, this.m13,
+            -this.m00, -this.m01, -this.m02, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -11116,10 +11153,10 @@ export class Matrix4 {
     public mapnYnXZ(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            -this[1][0], -this[1][1], -this[1][2], this[0][3],
-            -this[0][0], -this[0][1], -this[0][2], this[1][3],
-            this[2][0], this[2][1], this[2][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            -this.m10, -this.m11, -this.m12, this.m03,
+            -this.m00, -this.m01, -this.m02, this.m13,
+            this.m20, this.m21, this.m22, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -11136,10 +11173,10 @@ export class Matrix4 {
     public mapnYnXnZ(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            -this[1][0], -this[1][1], -this[1][2], this[0][3],
-            -this[0][0], -this[0][1], -this[0][2], this[1][3],
-            -this[2][0], -this[2][1], -this[2][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            -this.m10, -this.m11, -this.m12, this.m03,
+            -this.m00, -this.m01, -this.m02, this.m13,
+            -this.m20, -this.m21, -this.m22, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -11156,10 +11193,10 @@ export class Matrix4 {
     public mapnYnZX(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            -this[1][0], -this[1][1], -this[1][2], this[0][3],
-            -this[2][0], -this[2][1], -this[2][2], this[1][3],
-            this[0][0], this[0][1], this[0][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            -this.m10, -this.m11, -this.m12, this.m03,
+            -this.m20, -this.m21, -this.m22, this.m13,
+            this.m00, this.m01, this.m02, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -11176,10 +11213,10 @@ export class Matrix4 {
     public mapnYnZnX(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            -this[1][0], -this[1][1], -this[1][2], this[0][3],
-            -this[2][0], -this[2][1], -this[2][2], this[1][3],
-            -this[0][0], -this[0][1], -this[0][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            -this.m10, -this.m11, -this.m12, this.m03,
+            -this.m20, -this.m21, -this.m22, this.m13,
+            -this.m00, -this.m01, -this.m02, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -11196,10 +11233,10 @@ export class Matrix4 {
     public mapnZXY(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            -this[2][0], -this[2][1], -this[2][2], this[0][3],
-            this[0][0], this[0][1], this[0][2], this[1][3],
-            this[1][0], this[1][1], this[1][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            -this.m20, -this.m21, -this.m22, this.m03,
+            this.m00, this.m01, this.m02, this.m13,
+            this.m10, this.m11, this.m12, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -11216,10 +11253,10 @@ export class Matrix4 {
     public mapnZXnY(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            -this[2][0], -this[2][1], -this[2][2], this[0][3],
-            this[0][0], this[0][1], this[0][2], this[1][3],
-            -this[1][0], -this[1][1], -this[1][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            -this.m20, -this.m21, -this.m22, this.m03,
+            this.m00, this.m01, this.m02, this.m13,
+            -this.m10, -this.m11, -this.m12, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -11236,10 +11273,10 @@ export class Matrix4 {
     public mapnZYX(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            -this[2][0], -this[2][1], -this[2][2], this[0][3],
-            this[1][0], this[1][1], this[1][2], this[1][3],
-            this[0][0], this[0][1], this[0][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            -this.m20, -this.m21, -this.m22, this.m03,
+            this.m10, this.m11, this.m12, this.m13,
+            this.m00, this.m01, this.m02, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -11256,10 +11293,10 @@ export class Matrix4 {
     public mapnZYnX(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            -this[2][0], -this[2][1], -this[2][2], this[0][3],
-            this[1][0], this[1][1], this[1][2], this[1][3],
-            -this[0][0], -this[0][1], -this[0][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            -this.m20, -this.m21, -this.m22, this.m03,
+            this.m10, this.m11, this.m12, this.m13,
+            -this.m00, -this.m01, -this.m02, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -11276,10 +11313,10 @@ export class Matrix4 {
     public mapnZnXY(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            -this[2][0], -this[2][1], -this[2][2], this[0][3],
-            -this[0][0], -this[0][1], -this[0][2], this[1][3],
-            this[1][0], this[1][1], this[1][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            -this.m20, -this.m21, -this.m22, this.m03,
+            -this.m00, -this.m01, -this.m02, this.m13,
+            this.m10, this.m11, this.m12, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -11296,10 +11333,10 @@ export class Matrix4 {
     public mapnZnXnY(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            -this[2][0], -this[2][1], -this[2][2], this[0][3],
-            -this[0][0], -this[0][1], -this[0][2], this[1][3],
-            -this[1][0], -this[1][1], -this[1][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            -this.m20, -this.m21, -this.m22, this.m03,
+            -this.m00, -this.m01, -this.m02, this.m13,
+            -this.m10, -this.m11, -this.m12, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -11316,10 +11353,10 @@ export class Matrix4 {
     public mapnZnYX(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            -this[2][0], -this[2][1], -this[2][2], this[0][3],
-            -this[1][0], -this[1][1], -this[1][2], this[1][3],
-            this[0][0], this[0][1], this[0][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            -this.m20, -this.m21, -this.m22, this.m03,
+            -this.m10, -this.m11, -this.m12, this.m13,
+            this.m00, this.m01, this.m02, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
     /**
@@ -11336,10 +11373,10 @@ export class Matrix4 {
     public mapnZnYnX(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            -this[2][0], -this[2][1], -this[2][2], this[0][3],
-            -this[1][0], -this[1][1], -this[1][2], this[1][3],
-            -this[0][0], -this[0][1], -this[0][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            -this.m20, -this.m21, -this.m22, this.m03,
+            -this.m10, -this.m11, -this.m12, this.m13,
+            -this.m00, -this.m01, -this.m02, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
 
@@ -11357,10 +11394,10 @@ export class Matrix4 {
     public negateX(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            -this[0][0], -this[0][1], -this[0][2], this[0][3],
-            this[1][0], this[1][1], this[1][2], this[1][3],
-            this[2][0], this[2][1], this[2][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            -this.m00, -this.m01, -this.m02, this.m03,
+            this.m10, this.m11, this.m12, this.m13,
+            this.m20, this.m21, this.m22, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
 
@@ -11378,10 +11415,10 @@ export class Matrix4 {
     public negateY(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            this[0][0], this[0][1], this[0][2], this[0][3],
-            -this[1][0], -this[1][1], -this[1][2], this[1][3],
-            this[2][0], this[2][1], this[2][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            this.m00, this.m01, this.m02, this.m03,
+            -this.m10, -this.m11, -this.m12, this.m13,
+            this.m20, this.m21, this.m22, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
 
@@ -11399,18 +11436,18 @@ export class Matrix4 {
     public negateZ(dest?: Matrix4): Matrix4 {
         dest = dest ?? this;
         return dest.set(
-            this[0][0], this[0][1], this[0][2], this[0][3],
-            this[1][0], this[1][1], this[1][2], this[1][3],
-            -this[2][0], -this[2][1], -this[2][2], this[2][3],
-            this[3][0], this[3][1], this[3][2], this[3][3]
+            this.m00, this.m01, this.m02, this.m03,
+            this.m10, this.m11, this.m12, this.m13,
+            -this.m20, -this.m21, -this.m22, this.m23,
+            this.m30, this.m31, this.m32, this.m33
         );
     }
 
     public isFinite(): boolean {
-        return isFinite(this[0][0]) && isFinite(this[0][1]) && isFinite(this[0][2]) && isFinite(this[0][3])
-            && isFinite(this[1][0]) && isFinite(this[1][1]) && isFinite(this[1][2]) && isFinite(this[1][3])
-            && isFinite(this[2][0]) && isFinite(this[2][1]) && isFinite(this[2][2]) && isFinite(this[2][3])
-            && isFinite(this[3][0]) && isFinite(this[3][1]) && isFinite(this[3][2]) && isFinite(this[3][3]);
+        return isFinite(this.m00) && isFinite(this.m01) && isFinite(this.m02) && isFinite(this.m03)
+            && isFinite(this.m10) && isFinite(this.m11) && isFinite(this.m12) && isFinite(this.m13)
+            && isFinite(this.m20) && isFinite(this.m21) && isFinite(this.m22) && isFinite(this.m23)
+            && isFinite(this.m30) && isFinite(this.m31) && isFinite(this.m32) && isFinite(this.m33);
     }
 
     public clone(): Matrix4 {
