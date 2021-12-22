@@ -11453,5 +11453,4 @@ export class Matrix4 {
     public clone(): Matrix4 {
         return new Matrix4(this);
     }
-
 }
