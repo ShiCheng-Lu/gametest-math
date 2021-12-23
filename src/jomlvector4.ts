@@ -947,15 +947,15 @@ export class Vector4 {
     public equals(v: Vector4, delta: number): boolean;
     public equals(x: number, y: number, z: number, w: number, delta?: number): boolean;
     public equals(x: number | Vector4, y?: number, z?: number, w?: number, delta?: number): boolean {
-        delta = delta ?? ((x instanceof Vector4) ? y : 0);
+        delta = delta ?? (x instanceof Vector4 ? y ?? 0 : 0);
         if (x instanceof Vector4) {
             w = x.w, z = x.z, y = x.y, x = x.x;
         }
         return (
             Math.abs(this.x - x) <= delta &&
-            Math.abs(this.x - x) <= delta &&
-            Math.abs(this.x - x) <= delta &&
-            Math.abs(this.x - x) <= delta
+            Math.abs(this.y - y) <= delta &&
+            Math.abs(this.z - z) <= delta &&
+            Math.abs(this.w - w) <= delta
         );
     }
 

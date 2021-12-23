@@ -9451,7 +9451,8 @@ export class Matrix4 {
     //     return true;
     // }
 
-    public equals(m: any | Matrix4, delta: number): boolean {
+    public equals(m: any | Matrix4, delta?: number): boolean {
+        delta = delta ?? 0;
         if (this == m)
             return true;
         if (m == null)

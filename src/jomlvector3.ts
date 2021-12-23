@@ -910,7 +910,7 @@ export class Vector3 {
     public equals(v: Vector3, delta?: number): boolean;
     public equals(x: number, y: number, z: number): boolean;
     public equals(x: number | Vector3, y?: number, z?: number, delta?: number): boolean {
-        delta = delta ?? ((x instanceof Vector3) ? y : 0);
+        delta = delta ?? (x instanceof Vector3 ? y ?? 0 : 0);
         if (x instanceof Vector3) {
             z = x.z, y = x.y, x = x.x;
         }
