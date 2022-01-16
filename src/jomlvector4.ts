@@ -24,7 +24,7 @@
 
 import { BlockLocation, Location } from "mojang-minecraft";
 import { Matrix4 } from "./jomlmatrix4.js";
-import { Vector2 } from "./vector2.js";
+import { Vector2 } from "./jomlvector2.js";
 import { Vector3 } from "./jomlvector3.js";
 
 /**
@@ -874,12 +874,7 @@ export class Vector4 {
      * @return this
      */
     public negate(dest?: Vector4): Vector4 {
-        dest = dest ?? this;
-        dest.x = -this.x;
-        dest.y = -this.y;
-        dest.z = -this.z;
-        dest.w = -this.w;
-        return dest;
+        return this.applyFunction(x => -x, dest);
     }
 
     /**

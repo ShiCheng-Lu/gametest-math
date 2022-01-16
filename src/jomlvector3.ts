@@ -25,7 +25,7 @@
 import { BlockLocation, Location } from "mojang-minecraft";
 import { Matrix3 } from "./matrix3.js";
 import { Matrix4 } from "./jomlmatrix4.js";
-import { Vector2 } from "./vector2.js";
+import { Vector2 } from "./jomlvector2.js";
 
 export type Vector3Like = {
     x: number,
@@ -551,7 +551,7 @@ export class Vector3 {
             return this.rotateY(aY * angle, dest);
         else if (aX === 0.0 && aY === 0.0 && Math.abs(aZ) === 1)
             return this.rotateZ(aZ * angle, dest);
-        
+
         const hangle = angle * 0.5;
         const sinAngle = Math.sin(hangle);
         const qx = aX * sinAngle, qy = aY * sinAngle, qz = aZ * sinAngle;
@@ -878,11 +878,7 @@ export class Vector3 {
      * @return this
      */
     public negate(dest?: Vector3) {
-        dest = dest ?? this;
-        dest.x = -this.x;
-        dest.y = -this.y;
-        dest.z = -this.z;
-        return dest;
+        return this.applyFunction(x => -x, dest);
     }
 
     /**
@@ -890,12 +886,8 @@ export class Vector3 {
      * 
      * @return this
      */
-    public absolute(dest: Vector3) {
-        dest = dest ?? this;
-        dest.x = Math.abs(this.x);
-        dest.y = Math.abs(this.y);
-        dest.z = Math.abs(this.z);
-        return dest;
+    public absolute(dest?: Vector3) {
+        return this.applyFunction(Math.abs, dest);
     }
 
     // public int hashCode() {
@@ -914,13 +906,11 @@ export class Vector3 {
         if (x instanceof Vector3) {
             z = x.z, y = x.y, x = x.x;
         }
-        if (Math.abs(this.x - x) > delta)
-            return false;
-        if (Math.abs(this.y - y) > delta)
-            return false;
-        if (Math.abs(this.z - z) > delta)
-            return false;
-        return true;
+        return (
+            Math.abs(this.x - x) <= delta &&
+            Math.abs(this.y - y) <= delta &&
+            Math.abs(this.z - z) <= delta
+        );
     }
 
     /**
