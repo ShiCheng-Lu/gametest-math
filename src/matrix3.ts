@@ -1,4 +1,5 @@
 import { Matrix4 } from "./jomlmatrix4"
+import { Quaternion } from "./quaternion"
 
 export type rawMatrix3 = {
     [key: number]: [number, number, number]
@@ -24,7 +25,11 @@ export class Matrix3 {
         this.set(m);
     }
 
-    set(m: rawMatrix3 | Matrix4): Matrix3 {
+    set(m: rawMatrix3 | Matrix4 | Quaternion): Matrix3 {
+        if (m instanceof Quaternion) {
+            return;
+        }
+
         for (let x = 0; x < 3; ++x) {
             for (let y = 0; y < 3; ++y) {
                 this[x][y] = m[x][y]
@@ -32,6 +37,4 @@ export class Matrix3 {
         }
         return this;
     }
-    
-
 }

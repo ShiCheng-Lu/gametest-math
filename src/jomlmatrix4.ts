@@ -1071,9 +1071,7 @@ export class Matrix4 {
      *          the {@link Quaterniondc}
      * @return this
      */
-    // public set( q: Quaternion): Matrix4 {
-    //     return rotation(q);
-    // }
+    public set( q: Quaternion): Matrix4;
 
     /** Set the values within this matrix to the supplied double values. The matrix will look like this:<br><br>
      *  
@@ -1193,11 +1191,14 @@ export class Matrix4 {
      * @return this
      */
     public set(m: Matrix3): Matrix4;
-    public set(m00?: number | number[] | Vector4 | Matrix3 | Matrix4,
+    public set(m00?: number | number[] | Vector4 | Matrix3 | Matrix4 | Quaternion,
         m01?: number | Vector4, m02?: number | Vector4, m03?: number | Vector4,
         m10?: number, m11?: number, m12?: number, m13?: number,
         m20?: number, m21?: number, m22?: number, m23?: number,
         m30?: number, m31?: number, m32?: number, m33?: number): Matrix4 {
+        if (m00 instanceof Quaternion) {
+            return this.rotation(m00);
+        }
         if (typeof m00 === "number" && typeof m01 === "number" && typeof m02 === "number" && m03 === undefined) {
             this[m00][m01] = m02;
             return this;
