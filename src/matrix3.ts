@@ -1,5 +1,5 @@
 import { Matrix4 } from "./jomlmatrix4"
-import { Quaternion } from "./quaternion"
+import { Quaternion } from "./jomlquaternion"
 
 export type rawMatrix3 = {
     [key: number]: [number, number, number]

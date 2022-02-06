@@ -22,8 +22,6 @@
  * THE SOFTWARE.
  */
 
-// TODO: translate rotate for Quaternions
-
 class AxisAngle4 {
     angle: number
     x: number
@@ -34,7 +32,7 @@ class AxisAngle4 {
 import { Vector3 } from "./jomlvector3.js";
 import { Matrix3 } from "./matrix3.js";
 import { Vector4 } from "./jomlvector4.js";
-import { Quaternion } from "./quaternion";
+import { Quaternion } from "./jomlquaternion";
 
 /**
  * Contains the definition of a 4x4 Matrix of doubles, and associated functions to transform
@@ -1071,7 +1069,7 @@ export class Matrix4 {
      *          the {@link Quaterniondc}
      * @return this
      */
-    public set( q: Quaternion): Matrix4;
+    public set(q: Quaternion): Matrix4;
 
     /** Set the values within this matrix to the supplied double values. The matrix will look like this:<br><br>
      *  
@@ -1639,14 +1637,6 @@ export class Matrix4 {
         return dest;
     }
     public get(dest: Matrix4): Matrix4;
-    // TODO: Quaternion
-    // public getUnnormalizedRotation( dest: Quaternion): Quaternion {
-    //     return dest.setFromUnnormalized(this);
-    // }
-
-    // public getNormalizedRotation( dest: Quaternion): Quaternion {
-    //     return dest.setFromNormalized(this);
-    // }
 
     public get(column: number, row: number): number;
     public get(dest: number[], offset?: number): number[];
@@ -1675,6 +1665,14 @@ export class Matrix4 {
         dest[offset + 14] = this.m32;
         dest[offset + 15] = this.m33;
         return dest;
+    }
+
+    public getUnnormalizedRotation(dest: Quaternion): Quaternion {
+        return dest.setFromUnnormalized(this);
+    }
+
+    public getNormalizedRotation(dest: Quaternion): Quaternion {
+        return dest.setFromNormalized(this);
     }
 
     /**
@@ -4663,6 +4661,7 @@ export class Matrix4 {
         if (tx instanceof Vector3) {
             tz = tx.z, ty = tx.y, tx = tx.x;
         }
+        qx = qx as number;
 
         const w2 = qw * qw;
         const x2 = qx * qx;
@@ -5662,6 +5661,27 @@ export class Matrix4 {
     public reflect(normal: Vector3, point: Vector3, dest: Matrix4): Matrix4;
 
     /**
+     * Apply a mirror/reflection transformation to this matrix that reflects about a plane
+     * specified via the plane orientation and a point on the plane.
+     * <p>
+     * This method can be used to build a reflection transformation based on the orientation of a mirror object in the scene.
+     * It is assumed that the default mirror plane's normal is <code>(0, 0, 1)</code>. So, if the given {@link Quaterniondc} is
+     * the identity (does not apply any additional rotation), the reflection plane will be <code>z=0</code>, offset by the given <code>point</code>.
+     * <p>
+     * If <code>M</code> is <code>this</code> matrix and <code>R</code> the reflection matrix,
+     * then the new matrix will be <code>M * R</code>. So when transforming a
+     * vector <code>v</code> with the new matrix by using <code>M * R * v</code>, the
+     * reflection will be applied first!
+     * 
+     * @param orientation
+     *          the plane orientation relative to an implied normal vector of <code>(0, 0, 1)</code>
+     * @param point
+     *          a point on the plane
+     * @return this
+     */
+    public reflect(orientation: Quaternion, point: Vector3, dest?: Matrix4): Matrix4;
+
+    /**
      * Apply a mirror/reflection transformation to this matrix that reflects about the given plane
      * specified via the equation <code>x*a + y*b + z*c + d = 0</code>.
      * <p>
@@ -5685,8 +5705,21 @@ export class Matrix4 {
      * @return this
      */
     public reflect(a: number, b: number, c: number, d: number, dest?: Matrix4): Matrix4;
-    public reflect(a: number | Vector3, b: number | Vector3, c?: number | Matrix4, px?: number, py?: number | Matrix4, pz?: number, dest?: Matrix4): Matrix4 {
+    public reflect(a: number | Vector3 | Quaternion, b: number | Vector3, c?: number | Matrix4, px?: number, py?: number | Matrix4, pz?: number, dest?: Matrix4): Matrix4 {
         dest = dest ?? (py instanceof Matrix4 ? py : (c instanceof Matrix4 ? c : this));
+
+        if (a instanceof Quaternion) {
+            b = b as Vector3;
+            pz = b.z, py = b.y, px = b.x;
+
+            const num1 = a.x + a.x;
+            const num2 = a.y + a.y;
+            const num3 = a.z + a.z;
+            c = 1.0 - (a.x * num1 + a.y * num2);
+            b = a.y * num3 - a.w * num1;
+            a = a.x * num3 + a.w * num2;
+        }
+
 
         if (b instanceof Vector3) {
             pz = b.z, py = b.y, px = b.x;
@@ -5788,37 +5821,6 @@ export class Matrix4 {
     }
 
     /**
-     * Apply a mirror/reflection transformation to this matrix that reflects about a plane
-     * specified via the plane orientation and a point on the plane.
-     * <p>
-     * This method can be used to build a reflection transformation based on the orientation of a mirror object in the scene.
-     * It is assumed that the default mirror plane's normal is <code>(0, 0, 1)</code>. So, if the given {@link Quaterniondc} is
-     * the identity (does not apply any additional rotation), the reflection plane will be <code>z=0</code>, offset by the given <code>point</code>.
-     * <p>
-     * If <code>M</code> is <code>this</code> matrix and <code>R</code> the reflection matrix,
-     * then the new matrix will be <code>M * R</code>. So when transforming a
-     * vector <code>v</code> with the new matrix by using <code>M * R * v</code>, the
-     * reflection will be applied first!
-     * 
-     * @param orientation
-     *          the plane orientation relative to an implied normal vector of <code>(0, 0, 1)</code>
-     * @param point
-     *          a point on the plane
-     * @return this
-     */
-    // public reflect(orientation: Quaternion, point: Vector3, dest?: Matrix4): Matrix4 {
-    //     dest = dest ?? this;
-    //     const num1 = orientation.x + orientation.x;
-    //     const num2 = orientation.y + orientation.y;
-    //     const num3 = orientation.z + orientation.z;
-    //     const normalX = orientation.x * num3 + orientation.w * num2;
-    //     const normalY = orientation.y * num3 - orientation.w * num1;
-    //     const normalZ = 1.0 - (orientation.x * num1 + orientation.y * num2);
-    //     return this.reflect(normalX, normalY, normalZ, point.x, point.y, point.z, dest);
-    // }
-
-    // TODO: reflection with other args
-    /**
      * Set this matrix to a mirror/reflection transformation that reflects about the given plane
      * specified via the equation <code>x*a + y*b + z*c + d = 0</code>.
      * <p>
@@ -5851,6 +5853,22 @@ export class Matrix4 {
     public reflection(normal: Vector3, point: Vector3): Matrix4;
 
     /**
+     * Set this matrix to a mirror/reflection transformation that reflects about a plane
+     * specified via the plane orientation and a point on the plane.
+     * <p>
+     * This method can be used to build a reflection transformation based on the orientation of a mirror object in the scene.
+     * It is assumed that the default mirror plane's normal is <code>(0, 0, 1)</code>. So, if the given {@link Quaterniondc} is
+     * the identity (does not apply any additional rotation), the reflection plane will be <code>z=0</code>, offset by the given <code>point</code>.
+     * 
+     * @param orientation
+     *          the plane orientation
+     * @param point
+     *          a point on the plane
+     * @return this
+     */
+    public reflection(orientation: Quaternion, point: Vector3): Matrix4;
+
+    /**
      * Set this matrix to a mirror/reflection transformation that reflects about the given plane
      * specified via the plane normal and a point on the plane.
      * 
@@ -5869,7 +5887,20 @@ export class Matrix4 {
      * @return this
      */
     public reflection(nx: number, ny: number, nz: number, px: number, py: number, pz: number): Matrix4;
-    public reflection(a: number | Vector3, b: number | Vector3, c?: number, px?: number, py?: number, pz?: number): Matrix4 {
+    public reflection(a: number | Vector3 | Quaternion, b: number | Vector3, c?: number, px?: number, py?: number, pz?: number): Matrix4 {
+
+        if (a instanceof Quaternion) {
+            b = b as Vector3;
+            pz = b.z, py = b.y, px = b.x;
+
+            const num1 = a.x + a.x;
+            const num2 = a.y + a.y;
+            const num3 = a.z + a.z;
+            c = 1.0 - (a.x * num1 + a.y * num2);
+            b = a.y * num3 - a.w * num1;
+            a = a.x * num3 + a.w * num2;
+        }
+
         if (b instanceof Vector3) {
             pz = b.z, py = b.y, px = b.x;
         }
@@ -5907,30 +5938,6 @@ export class Matrix4 {
         this.m33 = 1.0;
         return this;
     }
-
-    /**
-     * Set this matrix to a mirror/reflection transformation that reflects about a plane
-     * specified via the plane orientation and a point on the plane.
-     * <p>
-     * This method can be used to build a reflection transformation based on the orientation of a mirror object in the scene.
-     * It is assumed that the default mirror plane's normal is <code>(0, 0, 1)</code>. So, if the given {@link Quaterniondc} is
-     * the identity (does not apply any additional rotation), the reflection plane will be <code>z=0</code>, offset by the given <code>point</code>.
-     * 
-     * @param orientation
-     *          the plane orientation
-     * @param point
-     *          a point on the plane
-     * @return this
-     */
-    // public reflection(orientation: Quaternion, point: Vector3): Matrix4 {
-    //     const num1 = orientation.x + orientation.x;
-    //     const num2 = orientation.y + orientation.y;
-    //     const num3 = orientation.z + orientation.z;
-    //     const normalX = orientation.x * num3 + orientation.w * num2;
-    //     const normalY = orientation.y * num3 - orientation.w * num1;
-    //     const normalZ = 1.0 - (orientation.x * num1 + orientation.y * num2);
-    //     return reflection(normalX, normalY, normalZ, point.x, point.y, point.z);
-    // }
 
     /**
      * Apply an orthographic projection transformation for a right-handed coordinate system

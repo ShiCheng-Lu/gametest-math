@@ -24,6 +24,7 @@
 
 import { BlockLocation, Location } from "mojang-minecraft";
 import { Matrix4 } from "./jomlmatrix4.js";
+import { Quaternion } from "./jomlquaternion.js";
 import { Vector2 } from "./jomlvector2.js";
 import { Vector3 } from "./jomlvector3.js";
 
@@ -565,7 +566,6 @@ export class Vector4 {
         }
     }
 
-    // TODO: translate to ts
     /**
      * Transform this vector by the given quaternion <code>quat</code> and store the result in <code>this</code>.
      * 
@@ -575,15 +575,11 @@ export class Vector4 {
      *          the quaternion to transform this vector
      * @return this
      */
-    // public rotate(quat: Quaterniondc): Vector4 {
-    //     quat.transform(this, this);
-    //     return this;
-    // }
-
-    // public rotate(quat: Quaterniondc, dest: Vector4): Vector4 {
-    //     quat.transform(this, dest);
-    //     return dest;
-    // }
+    public rotate(quat: Quaternion, dest?: Vector4): Vector4 {
+        dest = dest ?? this;
+        quat.transform(this, dest);
+        return dest;
+    }
 
     /**
      * Rotate this vector the specified radians around the given rotation axis.

@@ -26,6 +26,7 @@ import { BlockLocation, Location } from "mojang-minecraft";
 import { Matrix3 } from "./matrix3.js";
 import { Matrix4 } from "./jomlmatrix4.js";
 import { Vector2 } from "./jomlvector2.js";
+import { Quaternion } from "./jomlquaternion.js";
 
 export type Vector3Like = {
     x: number,
@@ -518,21 +519,22 @@ export class Vector3 {
      * @param quat the quaternion to rotate this vector
      * @return this
      */
-    // public Vector3f rotate(Quaternionfc quat) {
-    //     return quat.transform(this, this);
-    // }
+    public rotate(quat: Quaternion, dest?: Vector3): Vector3 {
+        dest = dest ?? this;
+        return quat.transform(this, dest);
+    }
 
-    // public Vector3f rotate(Quaternionfc quat, Vector3f dest) {
-    //     return quat.transform(this, dest);
-    // }
-
-    // public Quaternionf rotationTo(Vector3fc toDir, Quaternionf dest) {
-    //     return dest.rotationTo(this, toDir);
-    // }
-
-    // public Quaternionf rotationTo(float toDirX, float toDirY, float toDirZ, Quaternionf dest) {
-    //     return dest.rotationTo(x, y, z, toDirX, toDirY, toDirZ);
-    // }
+    public rotationTo(toDir: Vector3, dest?: Quaternion): Quaternion;
+    public rotationTo(toDirX: number, toDirY: number, toDirZ: number, dest?: Quaternion): Quaternion;
+    public rotationTo(toDirX: number | Vector3, toDirY?: number | Quaternion, toDirZ?: number, dest?: Quaternion): Quaternion {
+        dest = dest ?? (toDirY instanceof Quaternion ? toDirY : new Quaternion);
+        if (toDirX instanceof Vector3) {
+            toDirZ = toDirX.z, toDirY = toDirX.y, toDirX = toDirX.x;
+        } else {
+            toDirY = toDirY as number;
+        }
+        return dest.rotationTo(this.x, this.y, this.z, toDirX, toDirY, toDirZ);
+    }
 
     /**
      * Rotate this vector the specified radians around the given rotation axis.
